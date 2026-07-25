@@ -1,5 +1,27 @@
-import { analyzePortfolioProfile } from "./portfolioAnalysis";
-import { formatNumber, formatPercent, getAssetValue, getAssetWeight } from "./portfolioFormatters";
+import { analyzePortfolioProfile } from "./portfolioAnalysis.js";
+import { formatNumber, formatPercent, getAssetValue, getAssetWeight } from "./portfolioFormatters.js";
+import {
+  getDistributionFrequencyLabel,
+  isNonOrdinaryDistribution,
+} from "../../../data/tickers/distributionPolicy.js";
+
+function formatNullablePercent(value, digits = 2) {
+  if (value === null || value === undefined || value === "") return "-";
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? `${numberValue.toFixed(digits)}%` : "-";
+}
+
+export function describeAssetDistribution(asset = {}) {
+  if (!isNonOrdinaryDistribution(asset)) {
+    return `일반 배당률 ${formatNullablePercent(asset.dividendYield)}`;
+  }
+  return [
+    `최근 12개월 분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`,
+    `${getDistributionFrequencyLabel(asset.distributionFrequency)} 분배`,
+    "일반 배당수익률·총수익률과 다름",
+    "옵션 프리미엄 및 원금환급 가능성 있음",
+  ].join(" / ");
+}
 
 export function createPortfolioReportText({
   activePortfolio,
@@ -51,8 +73,12 @@ export function createPortfolioReportText({
     `예상 CAGR: ${result.expectedCagr.toFixed(2)}%`,
     `예상 BETA: ${result.expectedBeta.toFixed(2)}`,
     `예상 MDD: ${result.simpleMdd.toFixed(2)}%`,
-    `예상 배당률: ${result.expectedDividendYield.toFixed(2)}%`,
-    `예상 연배당금: ${formatNumber(result.expectedAnnualDividend)}원`,
+    `예상 일반 배당률: ${formatNullablePercent(result.expectedDividendYield)}`,
+    `예상 연배당금: ${
+      result.expectedAnnualDividend === null || result.expectedAnnualDividend === undefined
+        ? "-"
+        : `${formatNumber(result.expectedAnnualDividend)}원`
+    }`,
     `최종 예상 평가금액: ${formatNumber(result.futureValue)}원`,
     `물가 반영 실질 평가금액: ${formatNumber(
       result.inflationAdjustedFutureValue
@@ -69,9 +95,7 @@ export function createPortfolioReportText({
         asset.cagr || 0
       ).toFixed(1)}% / BETA ${Number(asset.beta || 0).toFixed(
         2
-      )} / MDD ${Number(asset.mdd || 0).toFixed(1)}% / 배당률 ${Number(
-        asset.dividendYield || 0
-      ).toFixed(1)}%`;
+      )} / MDD ${Number(asset.mdd || 0).toFixed(1)}% / ${describeAssetDistribution(asset)}`;
     }),
     ``,
     `비교 순위`,
@@ -103,7 +127,7 @@ export function createReportSummaryText({ activePortfolio, detailReport, result,
     `예상 CAGR: ${result.expectedCagr.toFixed(2)}%`,
     `예상 BETA: ${result.expectedBeta.toFixed(2)}`,
     `예상 MDD: ${result.simpleMdd.toFixed(2)}%`,
-    `예상 배당률: ${result.expectedDividendYield.toFixed(2)}%`,
+    `예상 일반 배당률: ${formatNullablePercent(result.expectedDividendYield)}`,
     `최종 예상 평가금액: ${formatNumber(result.futureValue)}원`,
     `물가 반영 실질 평가금액: ${formatNumber(
       result.inflationAdjustedFutureValue

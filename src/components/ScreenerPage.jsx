@@ -6,6 +6,10 @@ import {
   KR_SCREENER_CANDIDATES,
   US_SCREENER_CANDIDATES,
 } from "../data/tickers/screenerCandidateLoader";
+import {
+  getDistributionFrequencyLabel,
+  isNonOrdinaryDistribution,
+} from "../data/tickers/distributionPolicy";
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
@@ -113,9 +117,6 @@ function formatDividendYieldValue(value, item = {}) {
   if (item.dividendPolicy === "no_dividend") return "-";
   if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
   return formatPercentValue(value, "확인 중");
-}
-function isOptionDistribution(item = {}) {
-  return item.distributionType && !["ordinary_cash_dividend", "none", "unknown"].includes(item.distributionType);
 }
 function getSearchQuery(query = "") {
   return normalizeTicker(query).toLowerCase();
@@ -264,9 +265,16 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
       {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
-      {/covered_call|option_income|premium_income/.test(inferExposureType(item)) ? <p className="tickerResultRiskNotice">상승 제한, 옵션 프리미엄·분배금 변동 및 원금환급 가능성이 있습니다. 분배율은 일반 배당수익률과 다릅니다.</p> : null}
+      {isNonOrdinaryDistribution(item) ? (
+        <div className="tickerResultDistributionNotice">
+          <strong>최근 12개월 분배율 {formatPercentValue(item.trailingDistributionYield, "확인 중")}</strong>
+          <span>{getDistributionFrequencyLabel(item.distributionFrequency)} 분배</span>
+          <span>일반 배당수익률·총수익률과 다름</span>
+          <span>옵션 프리미엄 및 원금환급 가능성 있음</span>
+        </div>
+      ) : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isOptionDistribution(item) ? <span>분배 {item.distributionFrequency || "변동"} · 배당수익률과 별도</span> : <span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span>}<span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span>}<span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );

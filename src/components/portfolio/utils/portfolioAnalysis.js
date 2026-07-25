@@ -1,3 +1,5 @@
+import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy.js";
+
 function getAssetValue(asset) {
   return Number(asset?.quantity || 0) * Number(asset?.price || 0);
 }
@@ -11,7 +13,9 @@ function classifyAssetRole(asset = {}) {
   const ticker = String(asset.ticker || "").toUpperCase();
   const name = String(asset.name || "");
   const beta = Number(asset.beta || 0);
-  const dividendYield = Number(asset.dividendYield || 0);
+  const dividendYield = isNonOrdinaryDistribution(asset)
+    ? 0
+    : Number(asset.dividendYield || 0);
   const mdd = Number(asset.mdd || 0);
 
   if (ticker === "CASH" || name.includes("현금") || beta === 0) return { key: "cash", label: "현금/대기자금" };

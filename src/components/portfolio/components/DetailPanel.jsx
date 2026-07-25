@@ -1,6 +1,10 @@
 import PerformanceChart from "../../PerformanceChart";
 import DetailAssetTable from "./DetailAssetTable";
 import { analyzePortfolioProfile } from "../utils/portfolioCalculations";
+import {
+  getDistributionFrequencyLabel,
+  isNonOrdinaryDistribution,
+} from "../../../data/tickers/distributionPolicy";
 
 function MetricTooltip({ label, children }) {
   return (
@@ -96,6 +100,7 @@ export default function DetailPanel({
   const safeSettings = settings || {};
   const safeResult = result || {};
   const safeAssets = safeArray(assets);
+  const distributionAssets = safeAssets.filter(isNonOrdinaryDistribution);
   const safePerformanceRows = safeArray(performanceRows);
   const safeReport = detailReport || null;
   const safeFormatNumber = typeof formatNumber === "function" ? formatNumber : (value) => Math.floor(safeNumber(value)).toLocaleString();
@@ -176,6 +181,29 @@ export default function DetailPanel({
             </ul>
           ) : null}
         </div>
+        {distributionAssets.length > 0 ? (
+          <div className="detailInfoSection" aria-label="옵션 분배 검토 정보">
+            <div className="detailInfoHeader">
+              <p className="sectionLabel">Distribution Review</p>
+              <h4>일반 배당과 분리된 분배 정보</h4>
+              <span>승인된 분배금 재투자 모델이 없어 기준 계산과 배당 순위에서 제외됩니다.</span>
+            </div>
+            <ul>
+              {distributionAssets.map((asset) => (
+                <li key={`${asset.market || ""}:${asset.ticker || asset.id || ""}`}>
+                  <strong>{asset.ticker || "-"}</strong>
+                  {" · 최근 12개월 분배율 "}
+                  {safeMetricFixed(asset.trailingDistributionYield) === "-"
+                    ? "확인 필요"
+                    : `${safeMetricFixed(asset.trailingDistributionYield)}%`}
+                  {" · "}
+                  {getDistributionFrequencyLabel(asset.distributionFrequency)} 분배
+                  {" · 일반 배당수익률·총수익률과 다름 · 옵션 프리미엄 및 원금환급 가능성 있음"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     );
   }

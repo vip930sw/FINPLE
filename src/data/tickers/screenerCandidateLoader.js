@@ -8,6 +8,10 @@ import {
   isAppPreviewRuntimeEnabled,
   loadAppPreviewCatalog,
 } from "./appPreviewDataSource";
+import {
+  isNonOrdinaryDistribution,
+  resolveDistributionYieldFields,
+} from "./distributionPolicy";
 
 const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
 const toNumber = (value) => {
@@ -79,6 +83,15 @@ export function normalizeScreenerCandidate(row = {}) {
   const aum = toNumber(row.aum);
   const sizeMetric = assetType === "ETF" ? aum ?? marketCap : marketCap ?? aum;
   const nameKr = row.nameKr || row.koreanName || row.name || "";
+  const distributionFields = resolveDistributionYieldFields(
+    {
+      ...row,
+      exposureType: row.exposureType || (assetType === "stock" ? "ordinary_equity" : "ordinary_etf"),
+      distributionType: row.distributionType || "unknown",
+    },
+    row.dividendYield,
+    row.displayDividendYield,
+  );
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
@@ -97,8 +110,7 @@ export function normalizeScreenerCandidate(row = {}) {
     expectedCagr: toNumber(row.expectedCagr),
     beta: toNumber(row.beta),
     mdd: toNumber(row.mdd),
-    dividendYield: toNumber(row.dividendYield),
-    displayDividendYield: row.displayDividendYield || "",
+    ...distributionFields,
     dividendPolicy: row.dividendPolicy || "",
     dividendSource: row.dividendSource || "",
     marketCap,
@@ -184,6 +196,10 @@ function notifyAppPreviewSubscribers() {
 
 function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
   const rawMissing = metricRow.rawPriceCoverageStatus === "missing";
+  const distributionFields = resolveDistributionYieldFields(
+    baseCandidate,
+    metricRow.dividendYield,
+  );
   return {
     ...baseCandidate,
     expectedCagr: metricRow.selectedCagr,
@@ -201,11 +217,7 @@ function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
     mdd: metricRow.selectedMdd,
     selectedMdd: metricRow.selectedMdd,
     mddPolicy: metricRow.mddPolicy,
-    dividendYield: metricRow.dividendYield,
-    displayDividendYield:
-      metricRow.dividendYield === null || metricRow.dividendYield === undefined
-        ? ""
-        : `${Number(metricRow.dividendYield).toFixed(2)}%`,
+    ...distributionFields,
     dividendStatus: metricRow.dividendStatus,
     dividendPolicy: metricRow.dividendStatus,
     dataStatus: metricRow.dataStatus,
@@ -360,6 +372,10 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     optionCoverageRatio: candidate.optionCoverageRatio,
     distributionFrequency: candidate.distributionFrequency,
     distributionType: candidate.distributionType,
+    trailingDistributionYield: candidate.trailingDistributionYield,
+    cashDistributionYieldTtm: candidate.cashDistributionYieldTtm,
+    distributionYieldPolicy: candidate.distributionYieldPolicy,
+    distributionCalculationStatus: candidate.distributionCalculationStatus,
     issuer: candidate.issuer,
     inceptionDate: candidate.inceptionDate,
     listingStatus: candidate.listingStatus,
@@ -421,10 +437,14 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     cagr: patch.cagr !== undefined ? patch.cagr : asset.cagr,
     beta: patch.beta !== undefined ? patch.beta : asset.beta,
     mdd: patch.mdd !== undefined ? patch.mdd : asset.mdd,
-    dividendYield: patch.internalPreviewReviewOnly
-      ? patch.dividendYield
-      : patch.dividendYield ?? asset.dividendYield ?? null,
-    displayDividendYield: patch.displayDividendYield || asset.displayDividendYield || "",
+    dividendYield: isNonOrdinaryDistribution(patch)
+      ? null
+      : patch.internalPreviewReviewOnly
+        ? patch.dividendYield
+        : patch.dividendYield ?? asset.dividendYield ?? null,
+    displayDividendYield: isNonOrdinaryDistribution(patch)
+      ? ""
+      : patch.displayDividendYield || asset.displayDividendYield || "",
     dividendPolicy: patch.dividendPolicy || asset.dividendPolicy || "",
     dividendSource: patch.dividendSource || asset.dividendSource || "",
     marketCap: patch.marketCap ?? asset.marketCap ?? null,
