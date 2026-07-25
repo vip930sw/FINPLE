@@ -1,3 +1,8 @@
+import {
+  isNonOrdinaryDistribution,
+  resolveDistributionYieldFields,
+} from "../../../data/tickers/distributionPolicy.js";
+
 function normalizeNullableNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
   const numberValue = Number(value);
@@ -10,15 +15,30 @@ function normalizeMetricNumber(asset, field) {
 }
 
 export function normalizePersistedMetricFields(asset = {}) {
+  const sourceYield = isNonOrdinaryDistribution(asset)
+    ? asset.trailingDistributionYield ?? asset.cashDistributionYieldTtm ?? asset.dividendYield
+    : asset.dividendYield;
+  const distributionFields = resolveDistributionYieldFields(
+    asset,
+    sourceYield,
+    asset.displayDividendYield,
+  );
   return {
     targetEvaluationAmount: normalizeNullableNumber(asset.targetEvaluationAmount, null),
     cagr: normalizeMetricNumber(asset, "cagr"),
     beta: normalizeMetricNumber(asset, "beta"),
     mdd: normalizeMetricNumber(asset, "mdd"),
-    dividendYield: normalizeNullableNumber(asset.dividendYield, null),
-    displayDividendYield: asset.displayDividendYield || "",
+    dividendYield: distributionFields.dividendYield,
+    displayDividendYield: distributionFields.displayDividendYield,
     dividendPolicy: asset.dividendPolicy || "",
     dividendSource: asset.dividendSource || "",
+    exposureType: asset.exposureType || "",
+    distributionType: asset.distributionType || "unknown",
+    distributionFrequency: asset.distributionFrequency || "unknown",
+    trailingDistributionYield: distributionFields.trailingDistributionYield,
+    cashDistributionYieldTtm: distributionFields.cashDistributionYieldTtm,
+    distributionYieldPolicy: distributionFields.distributionYieldPolicy,
+    distributionCalculationStatus: distributionFields.distributionCalculationStatus,
     reviewTag: asset.reviewTag || "",
     reviewReason: asset.reviewReason || "",
     priceCagr10y: normalizeNullableNumber(asset.priceCagr10y, null),

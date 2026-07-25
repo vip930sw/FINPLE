@@ -1,3 +1,5 @@
+import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy.js";
+
 export const MONTHLY_BASELINE_ENGINE_VERSION = "monthly-baseline-v1-step114-2e";
 export const LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION = "legacy-may-app-ready-compat-v1-step114-2e";
 
@@ -257,6 +259,7 @@ function getAnnualCagr(asset = {}) {
 }
 
 function getAnnualDividendYield(asset = {}) {
+  if (isNonOrdinaryDistribution(asset)) return null;
   return toFiniteNumber(asset.dividendYieldAnnual ?? asset.dividendYield);
 }
 
@@ -334,6 +337,15 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
 
   validateAnnualPercentValue(getAnnualCagr(metadata), `${ticker}.selectedCagrAnnual`, reasons);
 
+  if (isNonOrdinaryDistribution(metadata)) {
+    addBlockReason(
+      reasons,
+      "unsupported_distribution_calculation_policy",
+      `${ticker}.${metadata.distributionType || metadata.exposureType || "non_ordinary_distribution"}`,
+    );
+    return { reasons, metadata };
+  }
+
   const dividendYield = getAnnualDividendYield(metadata);
   if (dividendReinvest && isDividendMissing(metadata)) {
     addBlockReason(reasons, "missing_dividend_yield_for_reinvestment", ticker);
@@ -366,6 +378,11 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
     beta: toFiniteNumber(asset.beta ?? asset.selectedBeta, null),
     mdd: toFiniteNumber(asset.mdd ?? asset.selectedMdd, null),
     dividendIncludedInReturn: Boolean(dividendReinvest && dividendYieldForCalculation !== null),
+    exposureType: asset.exposureType || "",
+    distributionType: asset.distributionType || "unknown",
+    distributionFrequency: asset.distributionFrequency || "unknown",
+    trailingDistributionYield: toFiniteNumber(asset.trailingDistributionYield),
+    distributionYieldPolicy: asset.distributionYieldPolicy || "",
     metricLineage: {
       compatibilityAdapter: asset.compatibilityAdapter || "",
       metricMode: asset.metricMode || "",

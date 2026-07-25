@@ -5,6 +5,10 @@ import {
   screenTickerCandidates,
   searchTickerCandidates,
 } from "../services/assetDataService";
+import {
+  getDistributionFrequencyLabel,
+  isNonOrdinaryDistribution,
+} from "../../../data/tickers/distributionPolicy";
 
 const GOAL_OPTIONS = [
   { value: "all", label: "전체" },
@@ -104,6 +108,7 @@ function getRiskLabel(value) {
 
 function TickerResultCard({ item, isAdded, onAdd }) {
   const displayName = item.koreanName || item.name || item.ticker;
+  const nonOrdinaryDistribution = isNonOrdinaryDistribution(item);
 
   return (
     <article className={isAdded ? "tickerResultCard added" : "tickerResultCard"}>
@@ -126,12 +131,24 @@ function TickerResultCard({ item, isAdded, onAdd }) {
         {item.description || item.name || "티커 마스터에 등록된 후보 자산입니다."}
       </p>
 
+      {nonOrdinaryDistribution ? (
+        <p className="tickerResultRiskNotice">
+          최근 12개월 분배율 {formatPercentValue(item.trailingDistributionYield)} ·{" "}
+          {getDistributionFrequencyLabel(item.distributionFrequency)} 분배 · 일반 배당수익률·총수익률과 다름 ·
+          옵션 프리미엄 및 원금환급 가능성 있음
+        </p>
+      ) : null}
+
       <div className="tickerResultMetaGrid compact">
         <span>유형 {item.type || "-"}</span>
         <span>전략 {item.strategy || "-"}</span>
         <span>위험 {getRiskLabel(item.riskLevel)}</span>
         <span>CAGR {formatPercentValue(item.expectedCagr)}</span>
-        <span>배당 {formatPercentValue(item.dividendYield)}</span>
+        {nonOrdinaryDistribution ? (
+          <span>분배 review-only</span>
+        ) : (
+          <span>배당 {formatPercentValue(item.dividendYield)}</span>
+        )}
         <span>MDD {formatPercentValue(item.mdd)}</span>
       </div>
 

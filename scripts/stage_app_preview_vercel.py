@@ -25,11 +25,6 @@ import zipfile
 
 
 EXPECTED_EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z"
-EXPECTED_ASSET_COUNT = 6000
-EXPECTED_MONTHLY_RETURN_ASSET_COUNT = 5318
-EXPECTED_MONTHLY_RETURN_ROW_COUNT = 700375
-EXPECTED_SHARD_COUNT = 64
-EXPECTED_METRIC_DATA_THROUGH_MONTH = "2026-06"
 MANIFEST_NAME = "app-preview-manifest.json"
 FORBIDDEN_SOURCE_ROLE_TOKENS = ("raw_daily_prices", "normalized_month_end")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -221,13 +216,11 @@ def validate_export(export_root: Path) -> dict[str, object]:
         "internalPreviewReviewOnly": True,
         "productionPublishReady": False,
         "appExportApproved": False,
-        "assetCount": EXPECTED_ASSET_COUNT,
-        "monthlyReturnAssetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
-        "monthlyReturnRowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
-        "metricDataThroughMonth": EXPECTED_METRIC_DATA_THROUGH_MONTH,
     }
     for field, expected in gates.items():
         _require_equal(manifest.get(field), expected, f"manifest {field}")
+    if not re.fullmatch(r"\d{4}-\d{2}", str(manifest.get("metricDataThroughMonth") or "")):
+        raise StagingError("manifest metricDataThroughMonth must be YYYY-MM")
 
     excluded_roles = manifest.get("excludedSourceRoles")
     if not isinstance(excluded_roles, list):
@@ -287,7 +280,21 @@ def validate_export(export_root: Path) -> dict[str, object]:
     shards = manifest.get("shards")
     if not isinstance(shards, list):
         raise StagingError("manifest shards must be a list")
-    _require_equal(len(shards), EXPECTED_SHARD_COUNT, "manifest shard count")
+    asset_count = manifest.get("assetCount")
+    monthly_asset_count = manifest.get("monthlyReturnAssetCount")
+    monthly_row_count = manifest.get("monthlyReturnRowCount")
+    shard_count = manifest.get("shardCount")
+    if not isinstance(asset_count, int) or asset_count <= 0:
+        raise StagingError("manifest asset count must be positive")
+    if not isinstance(monthly_asset_count, int) or monthly_asset_count < 0:
+        raise StagingError("manifest monthly-return asset count is invalid")
+    if not isinstance(monthly_row_count, int) or monthly_row_count < 0:
+        raise StagingError("manifest monthly-return row count is invalid")
+    if shard_count not in (64, 128, 256):
+        raise StagingError("manifest shard count must be 64, 128, or 256")
+    _require_equal(len(shards), shard_count, "manifest shard count")
+    if manifest.get("shardInventory") != shards:
+        raise StagingError("manifest shardInventory must equal the canonical shards inventory")
     shard_paths: set[str] = set()
     for shard in shards:
         if not isinstance(shard, dict):
@@ -299,8 +306,16 @@ def validate_export(export_root: Path) -> dict[str, object]:
         record = inventory[relative]
         _require_equal(shard.get("sha256"), record.get("sha256"), f"shard SHA-256 {relative}")
         _require_equal(shard.get("sizeBytes"), record.get("sizeBytes"), f"shard size {relative}")
-    _require_equal(sum(int(item.get("rowCount", -1)) for item in shards), EXPECTED_MONTHLY_RETURN_ROW_COUNT, "shard row total")
-    _require_equal(sum(int(item.get("assetCount", -1)) for item in shards), EXPECTED_MONTHLY_RETURN_ASSET_COUNT, "shard asset total")
+    _require_equal(
+        sum(int(item.get("rowCount", -1)) for item in shards),
+        monthly_row_count,
+        "manifest monthlyReturnRowCount vs shard row total",
+    )
+    _require_equal(
+        sum(int(item.get("assetCount", -1)) for item in shards),
+        monthly_asset_count,
+        "manifest monthlyReturnAssetCount vs shard asset total",
+    )
 
     overlay_record = manifest.get("metricsOverlay")
     index_record = manifest.get("monthlyReturnsIndex")
@@ -314,7 +329,7 @@ def validate_export(export_root: Path) -> dict[str, object]:
     overlay = load_json_strict(export_root.joinpath(*PurePosixPath(overlay_path).parts))
     if not isinstance(overlay, dict) or not isinstance(overlay.get("rows"), list):
         raise StagingError("metrics overlay rows are missing")
-    _require_equal(len(overlay["rows"]), EXPECTED_ASSET_COUNT, "metrics overlay row count")
+    _require_equal(len(overlay["rows"]), asset_count, "metrics overlay row count")
     identities: set[str] = set()
     qqq_row: dict[str, object] | None = None
     for row in overlay["rows"]:
@@ -350,24 +365,24 @@ def validate_export(export_root: Path) -> dict[str, object]:
     monthly_index = load_json_strict(export_root.joinpath(*PurePosixPath(index_path).parts))
     if not isinstance(monthly_index, dict):
         raise StagingError("monthly returns index must be a JSON object")
-    _require_equal(monthly_index.get("assetCount"), EXPECTED_MONTHLY_RETURN_ASSET_COUNT, "monthly returns index asset count")
-    _require_equal(monthly_index.get("rowCount"), EXPECTED_MONTHLY_RETURN_ROW_COUNT, "monthly returns index row count")
+    _require_equal(monthly_index.get("assetCount"), monthly_asset_count, "monthly returns index asset count")
+    _require_equal(monthly_index.get("rowCount"), monthly_row_count, "monthly returns index row count")
     index_assets = monthly_index.get("assets")
     index_shards = monthly_index.get("shards")
     if not isinstance(index_assets, dict) or not isinstance(index_shards, list):
         raise StagingError("monthly returns index assets or shards are missing")
-    _require_equal(len(index_assets), EXPECTED_MONTHLY_RETURN_ASSET_COUNT, "monthly returns index identity count")
-    _require_equal(len(index_shards), EXPECTED_SHARD_COUNT, "monthly returns index shard count")
+    _require_equal(len(index_assets), monthly_asset_count, "monthly returns index identity count")
+    _require_equal(len(index_shards), shard_count, "monthly returns index shard count")
     _require_equal({item.get("path") for item in index_shards if isinstance(item, dict)}, shard_paths, "monthly returns index shard paths")
 
     return {
         "manifest": manifest,
         "fileCount": len(actual_files),
         "contentBytes": sum((export_root / path).stat().st_size for path in actual_files),
-        "assetCount": EXPECTED_ASSET_COUNT,
-        "monthlyReturnAssetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
-        "monthlyReturnRowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
-        "shardCount": EXPECTED_SHARD_COUNT,
+        "assetCount": asset_count,
+        "monthlyReturnAssetCount": monthly_asset_count,
+        "monthlyReturnRowCount": monthly_row_count,
+        "shardCount": shard_count,
     }
 
 

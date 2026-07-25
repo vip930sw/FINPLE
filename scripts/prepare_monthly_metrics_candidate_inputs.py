@@ -74,7 +74,44 @@ def benchmark_keys_from_kr_metrics(path: Path) -> dict[str, str]:
     return mapping
 
 
-def build_candidate_rows(universe_rows: list[dict[str, str]], kr_benchmark_keys: Mapping[str, str]) -> tuple[list[dict[str, str]], list[str]]:
+def load_benchmark_additions(
+    path: Path,
+    canonical_identities: set[tuple[str, str]],
+) -> dict[str, str]:
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames != ["market", "ticker", "benchmarkKey"]:
+            raise ValueError("benchmark additions header mismatch")
+        rows = list(reader)
+    if any(
+        None in row
+        or any(row.get(field) is None for field in reader.fieldnames)
+        for row in rows
+    ):
+        raise ValueError("benchmark additions contains a malformed CSV row")
+    identities = [
+        (
+            str(row.get("market", "")).strip().upper(),
+            str(row.get("ticker", "")).strip(),
+        )
+        for row in rows
+    ]
+    if any(not market or not ticker for market, ticker in identities):
+        raise ValueError("benchmark additions contains a blank identity")
+    if len(rows) != 29 or len(identities) != len(set(identities)):
+        raise ValueError("benchmark additions must contain 29 unique identities")
+    if any(identity not in canonical_identities for identity in identities):
+        raise ValueError("benchmark addition identity is outside the canonical universe")
+    if any(market != "US" or row.get("benchmarkKey") != "US_SPY" for (market, _), row in zip(identities, rows)):
+        raise ValueError("benchmark additions must map US identities to US_SPY")
+    return {ticker: row["benchmarkKey"] for (_, ticker), row in zip(identities, rows)}
+
+
+def build_candidate_rows(
+    universe_rows: list[dict[str, str]],
+    kr_benchmark_keys: Mapping[str, str],
+    us_benchmark_addition_keys: Mapping[str, str] | None = None,
+) -> tuple[list[dict[str, str]], list[str]]:
     candidates: list[dict[str, str]] = []
     review_tickers: list[str] = []
     seen: set[tuple[str, str]] = set()
@@ -87,7 +124,11 @@ def build_candidate_rows(universe_rows: list[dict[str, str]], kr_benchmark_keys:
         if identity in seen:
             raise ValueError(f"duplicate canonical market+ticker: {identity}")
         seen.add(identity)
-        benchmark_key = "US_SPY" if market == "US" else kr_benchmark_keys.get(ticker, "")
+        benchmark_key = (
+            (us_benchmark_addition_keys or {}).get(ticker, "US_SPY")
+            if market == "US"
+            else kr_benchmark_keys.get(ticker, "")
+        )
         if market == "KR" and not benchmark_key:
             review_tickers.append(ticker)
         candidates.append(
@@ -201,8 +242,24 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     universe_rows = read_csv(Path(args.universe))
+    canonical_identities = {
+        (str(row.get("market", "")).strip().upper(), str(row.get("ticker", "")).strip())
+        for row in universe_rows
+    }
+    benchmark_addition_keys: dict[str, str] = {}
+    benchmark_additions_value = str(getattr(args, "benchmark_additions", "") or "")
+    benchmark_additions_path = Path(benchmark_additions_value) if benchmark_additions_value else None
+    if benchmark_additions_path is not None:
+        benchmark_addition_keys = load_benchmark_additions(
+            benchmark_additions_path,
+            canonical_identities,
+        )
     kr_mapping = benchmark_keys_from_kr_metrics(Path(args.kr_metrics))
-    candidates, benchmark_review_tickers = build_candidate_rows(universe_rows, kr_mapping)
+    candidates, benchmark_review_tickers = build_candidate_rows(
+        universe_rows,
+        kr_mapping,
+        benchmark_addition_keys,
+    )
     candidate_identities = {(row["market"], row["ticker"]) for row in candidates}
 
     candidate_path = output_dir / "candidate_asset_master.csv"
@@ -301,6 +358,8 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         },
         "benchmarkReviewCount": len(benchmark_review_tickers),
         "benchmarkReviewTickerSample": benchmark_review_tickers[:20],
+        "benchmarkAdditionCount": len(benchmark_addition_keys),
+        "benchmarkAdditionsSha256": sha256(benchmark_additions_path) if benchmark_additions_path else "",
         "priceCoveredAssetCount": len(covered),
         "priceCoveredMarketCounts": {
             market: sum(1 for identity in covered if identity[0] == market) for market in ["US", "KR"]
@@ -331,6 +390,10 @@ def main() -> None:
     parser.add_argument("--us-raw", required=True)
     parser.add_argument("--kr-raw", required=True)
     parser.add_argument("--kr-metrics", required=True, help="Combined KR runtime overlay with benchmarkTicker resolution.")
+    parser.add_argument(
+        "--benchmark-additions",
+        help="Optional Step 114-2ZB market+ticker to US_SPY reconciliation CSV.",
+    )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--metric-base-date", required=True)

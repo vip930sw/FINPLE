@@ -213,6 +213,74 @@ test("dividend reinvestment is separate from price CAGR and can be disabled", ()
   assertClose(reinvested.performanceRows[0].annualDividend, reinvested.cumulativeDividendResult);
 });
 
+test("option and covered-call distributions fail closed before ordinary dividend calculations and ranking", () => {
+  const optionIncomeAsset = asset({
+    ticker: "AIPI",
+    exposureType: "single_stock_option_income",
+    distributionType: "mixed_distribution",
+    distributionFrequency: "weekly",
+    trailingDistributionYield: 34.98,
+    distributionYieldPolicy: "trailing_12m_cash_distribution_not_ordinary_dividend",
+    dividendYield: 34.98,
+  });
+  const blocked = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: true },
+    assets: [optionIncomeAsset],
+  });
+  assert.equal(blocked.status, "blocked");
+  assert.equal(blocked.expectedDividendYield, null);
+  assert.equal(blocked.expectedAnnualDividend, null);
+  assert.match(blocked.blockReasons.join("|"), /unsupported_distribution_calculation_policy/);
+
+  const [ranked] = createRankedComparisonPortfolios([
+    {
+      id: "option-income",
+      name: "AIPI review",
+      assets: [optionIncomeAsset],
+      result: blocked,
+    },
+  ]);
+  assert.equal(ranked.dividendRank, "-");
+  const [withInsight] = createInsightComparisonPortfolios([ranked]);
+  assert.equal(withInsight.insight.type, "기준 계산 보류");
+  assert.doesNotMatch(withInsight.insight.text, /배당 매력/);
+});
+
+test("QQQ, SPY, and confirmed-zero GLD retain ordinary dividend calculation behavior", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: true },
+    assets: [
+      asset({
+        ticker: "QQQ",
+        targetWeight: 40,
+        dividendYield: 0.41,
+        distributionType: "ordinary_cash_dividend",
+        exposureType: "ordinary_etf",
+      }),
+      asset({
+        ticker: "SPY",
+        targetWeight: 40,
+        dividendYield: 1.01,
+        distributionType: "ordinary_cash_dividend",
+        exposureType: "ordinary_etf",
+      }),
+      asset({
+        ticker: "GLD",
+        targetWeight: 20,
+        dividendYield: 0,
+        dividendStatus: "confirmed_zero",
+        distributionType: "none",
+        exposureType: "ordinary_etf",
+      }),
+    ],
+  });
+  assert.equal(result.status, "ready");
+  assertClose(result.expectedDividendYield, 0.568);
+  assert.equal(result.assets.find((item) => item.ticker === "GLD").annualDividendYield, 0);
+  assert.equal(result.assets.every((item) => item.dividendIncludedInReturn), true);
+  assert.equal(result.totalReturnStatus, "ready");
+});
+
 test("missing dividend is not inferred as zero", () => {
   const blocked = buildMonthlyBaselineProjection({
     settings: {
@@ -377,6 +445,13 @@ test("saved portfolio normalization preserves preview identity, nulls, policies,
       previewLoaderEnabled: true,
       productionPublishReady: false,
       appExportApproved: false,
+      exposureType: "index_covered_call_growth",
+      distributionType: "mixed_distribution",
+      distributionFrequency: "monthly",
+      trailingDistributionYield: 16.26,
+      cashDistributionYieldTtm: 16.26,
+      distributionYieldPolicy: "trailing_12m_cash_distribution_not_ordinary_dividend",
+      distributionCalculationStatus: "review_only_no_approved_reinvestment_model",
     },
   ]);
   const parsed = JSON.parse(serialized)[0];
@@ -396,6 +471,19 @@ test("saved portfolio normalization preserves preview identity, nulls, policies,
   assert.equal(reloaded.internalPreviewReviewOnly, true);
   assert.equal(reloaded.productionPublishReady, false);
   assert.equal(reloaded.appExportApproved, false);
+  assert.equal(reloaded.exposureType, "index_covered_call_growth");
+  assert.equal(reloaded.distributionType, "mixed_distribution");
+  assert.equal(reloaded.distributionFrequency, "monthly");
+  assert.equal(reloaded.trailingDistributionYield, 16.26);
+  assert.equal(reloaded.cashDistributionYieldTtm, 16.26);
+  assert.equal(
+    reloaded.distributionYieldPolicy,
+    "trailing_12m_cash_distribution_not_ordinary_dividend",
+  );
+  assert.equal(
+    reloaded.distributionCalculationStatus,
+    "review_only_no_approved_reinvestment_model",
+  );
 });
 
 test("approved metric lineage is required and unknown CAGR fallback is blocked", () => {
