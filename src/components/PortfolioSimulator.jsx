@@ -308,6 +308,9 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             enableInternalPreviewReview={
               screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only"
             }
+            enableProductionAppExport={
+              screenerCandidateSnapshot?.preview?.status === "production_app_export_ready"
+            }
           />
         </div>
       )}

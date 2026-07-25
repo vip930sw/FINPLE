@@ -25,7 +25,8 @@ test("production selector and immutable public v1 CSV stay unchanged", () => {
     "utf8",
   );
   assert.match(loader, /RAW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv\(finpleAppCandidates6000Csv\)/);
-  assert.match(loader, /APP_PREVIEW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv\(finpleAppCandidatesV2Csv\)/);
+  assert.match(loader, /import\("\.\/finple_app_candidates_v2\.csv\?raw"\)/);
+  assert.doesNotMatch(loader, /^import finpleAppCandidatesV2Csv/m);
   assert.equal(readCsv("src/data/tickers/finple_app_candidates_6000_balanced_v1.csv").length - 1, 6000);
   assert.equal(manifestFromV2().productionSelectorChanged, false);
   assert.equal(manifestFromV2().publicCsvChanged, false);

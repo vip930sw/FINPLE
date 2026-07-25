@@ -61,14 +61,19 @@ import {
 import { normalizeSimulatorTab } from "../utils/simulatorNavigation";
 import {
   createAssetPatchFromScreenerCandidate,
+  activateProductionAppExportFallback,
   getScreenerCandidateSnapshot,
+  hydrateAssetForProductionFallback,
   hydrateAssetFromScreenerCandidate,
-  loadScreenerAppPreview,
+  loadScreenerCandidateRuntime,
   subscribeScreenerCandidateSnapshot,
 } from "../../../data/tickers/screenerCandidateLoader";
 import { loadMonthlyReturnsForIdentities } from "../../../data/tickers/appPreviewDataSource";
+import {
+  loadProductionMonthlyReturnsForIdentities,
+} from "../../../data/tickers/productionAppExportDataSource";
 import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy";
-import { buildAppPreviewScenarioResult } from "../utils/appPreviewScenarioService";
+import { buildAppExportScenarioResult } from "../utils/appPreviewScenarioService";
 
 import {
   consumeFreeApiLookup,
@@ -145,8 +150,27 @@ export default function usePortfolioSimulator() {
     let appliedPackageHash = "";
     function applySnapshot(snapshot) {
       setScreenerCandidateSnapshot(snapshot);
-      if (snapshot.preview.status !== "internal_preview_review_only") return;
-      const packageHash = snapshot.preview.manifest?.sourceCandidatePackageHash || "internal-preview";
+      if (snapshot.preview.status === "production_v1_fallback" &&
+          snapshot.preview.operationalReasonCode) {
+        setPortfolioList((previousList) => previousList.map((portfolio) => ({
+          ...portfolio,
+          assets: portfolio.assets.map((asset, index) =>
+            normalizeAsset(hydrateAssetForProductionFallback(asset), index)
+          ),
+        })));
+        setAssets((previousAssets) => previousAssets.map((asset, index) =>
+          normalizeAsset(hydrateAssetForProductionFallback(asset), index)
+        ));
+        setAssetLookupSummary("기존 Production 데이터로 안전하게 전환했습니다.");
+        appliedPackageHash = "";
+        return;
+      }
+      if (!["internal_preview_review_only", "production_app_export_ready"].includes(
+        snapshot.preview.status,
+      )) return;
+      const packageHash = snapshot.preview.manifest?.sourceCandidatePackageHash ||
+        snapshot.preview.release?.candidatePackageHash ||
+        snapshot.preview.status;
       if (appliedPackageHash === packageHash) return;
       appliedPackageHash = packageHash;
       setPortfolioList((previousList) => previousList.map((portfolio) => ({
@@ -163,7 +187,7 @@ export default function usePortfolioSimulator() {
       );
     }
     const unsubscribe = subscribeScreenerCandidateSnapshot(applySnapshot);
-    loadScreenerAppPreview()
+    loadScreenerCandidateRuntime()
       .then(applySnapshot)
       .catch((error) => {
         setAssetLookupSummary(`Internal Preview 로드 실패: ${error?.message || "알 수 없는 오류"}`);
@@ -191,7 +215,9 @@ export default function usePortfolioSimulator() {
   useEffect(() => {
     if (
       activeSimulatorTab !== "probability" ||
-      screenerCandidateSnapshot.preview.status !== "internal_preview_review_only"
+      !["internal_preview_review_only", "production_app_export_ready"].includes(
+        screenerCandidateSnapshot.preview.status,
+      )
     ) {
       setPreviewScenarioState({ status: "idle", result: null, error: null });
       return undefined;
@@ -212,25 +238,39 @@ export default function usePortfolioSimulator() {
     }
     let cancelled = false;
     setPreviewScenarioState({ status: "loading", result: null, error: null });
-    loadMonthlyReturnsForIdentities(identities)
+    const productionMode =
+      screenerCandidateSnapshot.preview.status === "production_app_export_ready";
+    const monthlyLoader = productionMode
+      ? loadProductionMonthlyReturnsForIdentities
+      : loadMonthlyReturnsForIdentities;
+    monthlyLoader(identities)
       .then((monthlyReturns) => {
         if (cancelled) return;
         if (monthlyReturns.missingIdentities.length > 0) {
-          throw new Error(
+          const unavailableError = new Error(
             `월수익률을 사용할 수 없는 자산: ${monthlyReturns.missingIdentities.join(", ")}`,
           );
+          unavailableError.code = "production_monthly_identity_unavailable";
+          throw unavailableError;
         }
-        const scenarioResult = buildAppPreviewScenarioResult({
+        const scenarioResult = buildAppExportScenarioResult({
           activePortfolio,
           assets,
           settings,
           rowsByIdentity: monthlyReturns.rowsByIdentity,
-          manifest: monthlyReturns.manifest,
+          manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
+          release: monthlyReturns.release || null,
+          runtimeMode: screenerCandidateSnapshot.preview.status,
         });
         setPreviewScenarioState({ status: "ready", result: scenarioResult, error: null });
       })
       .catch((error) => {
         if (cancelled) return;
+        if (productionMode && error?.code !== "production_monthly_identity_unavailable") {
+          activateProductionAppExportFallback(
+            error?.code || "production_monthly_returns_unavailable",
+          );
+        }
         setPreviewScenarioState({
           status: "unavailable",
           result: null,

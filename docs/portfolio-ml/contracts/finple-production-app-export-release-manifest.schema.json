@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://finple.co.kr/contracts/finple-production-app-export-release-manifest.schema.json",
+  "title": "FINPLE Step 114-2ZC Production App Export Release Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "universeVersion",
+    "candidateZipSha256",
+    "candidatePackageHash",
+    "sourceAppExportSha256",
+    "sourceManifest",
+    "assetCount",
+    "marketAssetCounts",
+    "priceCoveredAssetCount",
+    "monthlyReturnAssetCount",
+    "monthlyReturnRowCount",
+    "metricDataThroughMonth",
+    "metricsOverlay",
+    "monthlyReturnsIndex",
+    "shardCount",
+    "shardInventory",
+    "productionPublishReady",
+    "appExportApproved",
+    "approvedAt",
+    "approvedBy",
+    "sourceGitMainSha"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": {
+      "const": "finple-production-app-export-release-v1-step114-2zc"
+    },
+    "universeVersion": { "const": "finple-universe-v2-2026-07-24" },
+    "candidateZipSha256": {
+      "const": "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e"
+    },
+    "candidatePackageHash": {
+      "const": "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
+    },
+    "sourceAppExportSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceManifest": { "$ref": "#/$defs/fileRecord" },
+    "assetCount": { "const": 6029 },
+    "marketAssetCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["KR", "US"],
+      "properties": {
+        "KR": { "const": 3000 },
+        "US": { "const": 3029 }
+      }
+    },
+    "priceCoveredAssetCount": { "const": 6013 },
+    "monthlyReturnAssetCount": { "const": 5347 },
+    "monthlyReturnRowCount": { "const": 701485 },
+    "metricDataThroughMonth": { "const": "2026-06" },
+    "metricsOverlay": { "$ref": "#/$defs/fileRecord" },
+    "monthlyReturnsIndex": { "$ref": "#/$defs/fileRecord" },
+    "shardCount": { "enum": [64, 128, 256] },
+    "shardInventory": {
+      "type": "array",
+      "minItems": 64,
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/shardRecord" }
+    },
+    "productionPublishReady": { "const": true },
+    "appExportApproved": { "const": true },
+    "approvedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approvedBy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceGitMainSha": {
+      "const": "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef"
+    }
+  },
+  "$defs": {
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "sizeBytes"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "shardRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shardId",
+        "path",
+        "assetCount",
+        "rowCount",
+        "sha256",
+        "sizeBytes"
+      ],
+      "properties": {
+        "shardId": { "type": "string", "minLength": 1 },
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "assetCount": { "type": "integer", "minimum": 0 },
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

@@ -380,6 +380,57 @@ function validateInternalPreviewContext({ result, context, activePortfolio, asse
   if (expectedOutputHash && expectedOutputHash !== result.outputHash) issues.push("expected_outputHash_mismatch");
 }
 
+function validateProductionAppExportContext({
+  result,
+  context,
+  activePortfolio,
+  assets,
+  expectedInputHash,
+  expectedOutputHash,
+  issues,
+}) {
+  if (context?.reviewOnly !== false) issues.push("production_app_export_review_gate_invalid");
+  if (context?.productionPublishReady !== true || result.productionPublishReady !== true) {
+    issues.push("production_app_export_publish_gate_invalid");
+  }
+  if (context?.appExportApproved !== true || result.appExportApproved !== true) {
+    issues.push("production_app_export_approval_gate_invalid");
+  }
+  if (context?.scenarioContextProviderEligible !== false ||
+      context?.providerPayloadExcluded !== true ||
+      result.scenarioContextProviderEligible !== false) {
+    issues.push("production_app_export_ai_context_boundary_invalid");
+  }
+  if (context?.gapsForwardFilled !== false) {
+    issues.push("production_app_export_forward_fill_invalid");
+  }
+  if (context?.universeVersion !== "finple-universe-v2-2026-07-24" ||
+      context?.releaseContractVersion !==
+        "finple-production-app-export-release-v1-step114-2zc") {
+    issues.push("production_app_export_release_binding_invalid");
+  }
+  if (String(context?.portfolioId || "") !== String(activePortfolio?.id || "")) {
+    issues.push("portfolioFingerprint_mismatch");
+  }
+  const expectedIdentities = safeArray(assets)
+    .map((asset) => `${normalizeMarket(asset)}:${normalizeTicker(asset)}`)
+    .filter((identity) => !identity.endsWith(":") && !identity.endsWith(":CASH"))
+    .sort();
+  const contextIdentities = safeArray(context?.identities)
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .sort();
+  if (expectedIdentities.join("|") !== contextIdentities.join("|")) {
+    issues.push("production_app_export_asset_identity_mismatch");
+  }
+  if (expectedInputHash && expectedInputHash !== result.inputHash) {
+    issues.push("expected_inputHash_mismatch");
+  }
+  if (expectedOutputHash && expectedOutputHash !== result.outputHash) {
+    issues.push("expected_outputHash_mismatch");
+  }
+}
+
 function normalizeContributionSeries(result) {
   return result.contributionSeries.map((point) => ({
     monthIndex: point.monthIndex,
@@ -488,9 +539,11 @@ function createReadyViewModel({
   expectedOutputHash,
   providerApprovalEvidence = null,
   internalPreviewContext = null,
+  productionAppExportContext = null,
 }) {
   const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   const isInternalPreview = isPlainObject(internalPreviewContext);
+  const isProductionAppExport = isPlainObject(productionAppExportContext);
   return {
     uiVersion: PROBABILITY_UI_VERSION,
     status: "ready",
@@ -500,13 +553,18 @@ function createReadyViewModel({
     expectedOutputHash: expectedOutputHash || result.outputHash,
     resultInputHash: result.inputHash,
     resultOutputHash: result.outputHash,
-    fixtureOnly: isInternalPreview ? false : approvalEvidence ? false : true,
+    fixtureOnly: isInternalPreview || isProductionAppExport ? false : approvalEvidence ? false : true,
     internalPreviewReviewOnly: isInternalPreview,
-    productionPublishReady: Boolean(approvalEvidence?.productionPublishReady),
-    appExportApproved: Boolean(approvalEvidence?.appExportApproved),
+    productionAppExportEnabled: isProductionAppExport,
+    productionPublishReady: isProductionAppExport ||
+      Boolean(approvalEvidence?.productionPublishReady),
+    appExportApproved: isProductionAppExport ||
+      Boolean(approvalEvidence?.appExportApproved),
     providerApprovalEvidence: approvalEvidence,
     fixtureContext: result.fixtureContext,
     internalPreviewContext,
+    productionAppExportContext,
+    scenarioContextProviderEligible: false,
     scenarioVersion: result.scenarioVersion,
     method: result.method,
     prngAlgorithm: result.prngAlgorithm,
@@ -562,6 +620,7 @@ export function buildProbabilityScenarioViewModel({
   expectedOutputHash = null,
   enableFixtureReview = false,
   enableInternalPreviewReview = false,
+  enableProductionAppExport = false,
   providerApprovalEvidence = null,
 } = {}) {
   const selectedPortfolioName = activePortfolio?.name || "선택 포트폴리오";
@@ -583,11 +642,29 @@ export function buildProbabilityScenarioViewModel({
   const issues = [];
   const hasFixtureContext = isPlainObject(result.fixtureContext);
   const hasInternalPreviewContext = isPlainObject(result.internalPreviewContext);
+  const hasProductionAppExportContext = isPlainObject(result.productionAppExportContext);
   const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   validateContractHeader(result, issues);
 
   if (status === "ready") {
-    if (hasInternalPreviewContext) {
+    if (hasProductionAppExportContext) {
+      if (!enableProductionAppExport) {
+        return createStatusViewModel({
+          status: "idle",
+          selectedPortfolioName,
+          reasons: ["production_app_export_gate_disabled"],
+        });
+      }
+      validateProductionAppExportContext({
+        result,
+        context: result.productionAppExportContext,
+        activePortfolio,
+        assets,
+        expectedInputHash,
+        expectedOutputHash,
+        issues,
+      });
+    } else if (hasInternalPreviewContext) {
       if (!enableInternalPreviewReview) {
         return createStatusViewModel({
           status: "idle",
@@ -665,6 +742,29 @@ export function buildProbabilityScenarioViewModel({
   }
 
   if (status !== "ready") {
+    if (hasProductionAppExportContext && enableProductionAppExport) {
+      return {
+        ...createStatusViewModel({
+          status,
+          selectedPortfolioName,
+          reasons: safeArray(result?.dataQuality?.blockReasons),
+        }),
+        scenarioVersion: result.scenarioVersion,
+        methodology: createMethodology(result),
+        fixtureOnly: false,
+        productionAppExportEnabled: true,
+        productionPublishReady: true,
+        appExportApproved: true,
+        scenarioContextProviderEligible: false,
+        productionAppExportContext: result.productionAppExportContext,
+        resultInputHash: result.inputHash,
+        resultOutputHash: result.outputHash,
+        audit: {
+          sourceHashCount: safeArray(result.sourceHashes).length,
+          outputHash: result.outputHash,
+        },
+      };
+    }
     if (hasInternalPreviewContext && enableInternalPreviewReview) {
       return {
         ...createStatusViewModel({
@@ -721,6 +821,7 @@ export function buildProbabilityScenarioViewModel({
     result,
     selectedPortfolioName:
       result.internalPreviewContext?.portfolioName ||
+      result.productionAppExportContext?.portfolioName ||
       result.fixtureContext?.portfolioName ||
       selectedPortfolioName,
     assets,
@@ -730,6 +831,9 @@ export function buildProbabilityScenarioViewModel({
     expectedOutputHash,
     providerApprovalEvidence: hasFixtureContext || hasInternalPreviewContext ? null : approvalEvidence,
     internalPreviewContext: hasInternalPreviewContext ? result.internalPreviewContext : null,
+    productionAppExportContext: hasProductionAppExportContext
+      ? result.productionAppExportContext
+      : null,
   });
 }
 

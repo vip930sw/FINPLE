@@ -172,7 +172,7 @@ test("metric overlay follows the public App Preview path through save/reload and
 
   try {
     const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
-    const candidates = loader.APP_PREVIEW_SCREENER_CANDIDATES;
+    const candidates = await loader.loadCanonicalV2ScreenerCandidates();
     assert.equal(candidates.length, 6029);
     const snapshot = await loader.loadScreenerAppPreview({
       enabled: true,

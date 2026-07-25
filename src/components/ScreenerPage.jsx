@@ -155,10 +155,14 @@ function isCryptoBlockchainCandidate(item = {}) {
   return /가상화폐|블록체인|비트코인|이더리움|crypto|bitcoin|ethereum|ether|blockchain|digital assets?/i.test(text);
 }
 function inferExposureType(item = {}) {
-  if (item.exposureType) return item.exposureType;
+  const explicitExposureType = String(item.exposureType || "").trim();
+  if (explicitExposureType &&
+      !["ordinary_etf", "ordinary_equity"].includes(explicitExposureType)) {
+    return explicitExposureType;
+  }
   const tagText = getTagText(item);
   const name = item.koreanName || "";
-  if (item.type === "stock") return "single_stock";
+  if (item.type === "stock") return explicitExposureType || "single_stock";
   if (isCryptoBlockchainCandidate(item)) return "crypto_blockchain";
   if (/레버리지|인버스|3배|2배/.test(tagText)) return "leveraged_inverse";
   if (hasAnyTag(item, ["채권", "국고채", "미국채", "회사채", "통안채", "초단기채", "종합채권", "하이일드"]) || /채권|국고채|미국채|회사채|통안채|하이일드/.test(name)) return "bond";
@@ -166,7 +170,7 @@ function inferExposureType(item = {}) {
   if (/리츠|부동산/.test(tagText + name)) return "reit";
   if (/배당|현금흐름|인컴/.test(tagText)) return "dividend";
   if (/섹터|헬스케어|반도체|테크/.test(tagText + name)) return "sector";
-  return "broad_index";
+  return explicitExposureType || "broad_index";
 }
 function getExposureLabel(item = {}) {
   return {
