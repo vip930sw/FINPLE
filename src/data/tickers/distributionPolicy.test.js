@@ -91,6 +91,48 @@ test("QQQ and SPY keep ordinary dividends while GLD keeps confirmed zero distinc
   assert.notEqual(gld.dividendYield, null);
 });
 
+test("ordinary saved assets never replace dividendYield with trailing distribution fields", () => {
+  const reloadedSpy = normalizePersistedMetricFields(JSON.parse(JSON.stringify({
+    ticker: "SPY",
+    exposureType: "ordinary_etf",
+    distributionType: "ordinary_cash_dividend",
+    dividendYield: 1.01,
+    trailingDistributionYield: 9.99,
+    cashDistributionYieldTtm: 8.88,
+  })));
+  assert.equal(reloadedSpy.dividendYield, 1.01);
+  assert.equal(reloadedSpy.trailingDistributionYield, 9.99);
+  assert.equal(reloadedSpy.cashDistributionYieldTtm, 8.88);
+
+  for (const [ticker, dividendYield, distributionType] of [
+    ["QQQ", 0.41, "ordinary_cash_dividend"],
+    ["GLD", 0, "none"],
+  ]) {
+    const reloaded = normalizePersistedMetricFields({
+      ticker,
+      exposureType: "ordinary_etf",
+      distributionType,
+      dividendYield,
+      trailingDistributionYield: 9.99,
+    });
+    assert.equal(reloaded.dividendYield, dividendYield, ticker);
+    assert.equal(reloaded.trailingDistributionYield, 9.99, ticker);
+  }
+});
+
+test("legacy saved ordinary assets retain their dividend value without distribution metadata", () => {
+  const reloaded = normalizePersistedMetricFields(JSON.parse(JSON.stringify({
+    ticker: "LEGACY",
+    dividendYield: 2.5,
+    displayDividendYield: "2.50%",
+  })));
+  assert.equal(reloaded.dividendYield, 2.5);
+  assert.equal(reloaded.displayDividendYield, "2.50%");
+  assert.equal(reloaded.trailingDistributionYield, null);
+  assert.equal(reloaded.cashDistributionYieldTtm, null);
+  assert.equal(reloaded.distributionType, "unknown");
+});
+
 test("saved portfolio reload and report text preserve non-ordinary distribution semantics", () => {
   const source = {
     ticker: "AIPI",
@@ -110,6 +152,10 @@ test("saved portfolio reload and report text preserve non-ordinary distribution 
   assert.equal(reloaded.trailingDistributionYield, 34.98);
   assert.equal(reloaded.cashDistributionYieldTtm, 34.98);
   assert.equal(reloaded.distributionYieldPolicy, TRAILING_DISTRIBUTION_YIELD_POLICY);
+  assert.equal(
+    reloaded.distributionCalculationStatus,
+    "review_only_no_approved_reinvestment_model",
+  );
   assert.equal(reloaded.dividendYield, null);
 
   const pdfLine = describeAssetDistribution(reloaded);

@@ -451,6 +451,7 @@ test("saved portfolio normalization preserves preview identity, nulls, policies,
       trailingDistributionYield: 16.26,
       cashDistributionYieldTtm: 16.26,
       distributionYieldPolicy: "trailing_12m_cash_distribution_not_ordinary_dividend",
+      distributionCalculationStatus: "review_only_no_approved_reinvestment_model",
     },
   ]);
   const parsed = JSON.parse(serialized)[0];
@@ -478,6 +479,10 @@ test("saved portfolio normalization preserves preview identity, nulls, policies,
   assert.equal(
     reloaded.distributionYieldPolicy,
     "trailing_12m_cash_distribution_not_ordinary_dividend",
+  );
+  assert.equal(
+    reloaded.distributionCalculationStatus,
+    "review_only_no_approved_reinvestment_model",
   );
 });
 

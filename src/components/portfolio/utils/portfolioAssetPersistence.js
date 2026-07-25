@@ -1,4 +1,7 @@
-import { resolveDistributionYieldFields } from "../../../data/tickers/distributionPolicy.js";
+import {
+  isNonOrdinaryDistribution,
+  resolveDistributionYieldFields,
+} from "../../../data/tickers/distributionPolicy.js";
 
 function normalizeNullableNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
@@ -12,9 +15,12 @@ function normalizeMetricNumber(asset, field) {
 }
 
 export function normalizePersistedMetricFields(asset = {}) {
+  const sourceYield = isNonOrdinaryDistribution(asset)
+    ? asset.trailingDistributionYield ?? asset.cashDistributionYieldTtm ?? asset.dividendYield
+    : asset.dividendYield;
   const distributionFields = resolveDistributionYieldFields(
     asset,
-    asset.trailingDistributionYield ?? asset.cashDistributionYieldTtm ?? asset.dividendYield,
+    sourceYield,
     asset.displayDividendYield,
   );
   return {
