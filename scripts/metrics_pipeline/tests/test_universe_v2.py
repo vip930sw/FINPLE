@@ -1,6 +1,8 @@
 import csv
 import hashlib
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -9,17 +11,24 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SCRIPTS = ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS))
+ONBOARDING_NOTEBOOK = ROOT / "notebooks/FINPLE_UNIVERSE_V2_DELTA_ONBOARDING.ipynb"
+DELTA_RUNBOOK = ROOT / "docs/portfolio-ml/FINPLE_STEP114_2ZB_UNIVERSE_V2_DELTA_RUNBOOK.md"
 
-import finple_universe_v2 as universe
-from collect_finple_universe_delta import (
+from scripts import finple_universe_v2 as universe
+from scripts.collect_finple_universe_delta import (
     DeltaCollectionError,
     adapt_yfinance_history,
     collect_delta,
 )
-from merge_finple_universe_delta import StreamingMergeError, streaming_merge
-from export_finple_app_preview import choose_shard_count
+from scripts.finple_universe_delta_operator import (
+    OperatorContractError,
+    assert_sources_unchanged,
+    build_candidate_prepare_command,
+    cleanup_temporary_merged_us,
+    preflight_combined_sources,
+)
+from scripts.merge_finple_universe_delta import StreamingMergeError, streaming_merge
+from scripts.export_finple_app_preview import choose_shard_count
 from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS
 
 
@@ -63,6 +72,252 @@ def rewrite_checksum(output_dir: Path, name: str) -> None:
 
 
 class UniverseV2Tests(unittest.TestCase):
+    def run_module(self, *arguments: str) -> subprocess.CompletedProcess[str]:
+        environment = os.environ.copy()
+        environment.pop("PYTHONPATH", None)
+        return subprocess.run(
+            [sys.executable, "-m", *arguments],
+            cwd=ROOT,
+            env=environment,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+    def test_operator_module_cli_help_runs_from_repository_root(self):
+        for module in (
+            "scripts.collect_finple_universe_delta",
+            "scripts.merge_finple_universe_delta",
+        ):
+            with self.subTest(module=module):
+                result = self.run_module(module, "--help")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("usage:", result.stdout)
+
+    def test_collector_and_merge_module_cli_subprocess_fixture(self):
+        canonical = ROOT / "src/data/tickers/finple_app_candidates_v2.csv"
+        reconciliation = ROOT / "src/data/tickers/finple_universe_v2_reconciliation.json"
+        new_identities = set(json.loads(reconciliation.read_text())["newIdentities"])
+        with canonical.open(encoding="utf-8", newline="") as handle:
+            additions = [
+                row
+                for row in csv.DictReader(handle)
+                if f"{row['market']}:{row['ticker']}" in new_identities
+            ]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture_raw = root / "fixture-raw.csv"
+            with fixture_raw.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
+                writer.writeheader()
+                writer.writerows(canonical_raw_row(row["ticker"]) for row in additions)
+
+            collected = self.run_module(
+                "scripts.collect_finple_universe_delta",
+                "--canonical", str(canonical),
+                "--reconciliation", str(reconciliation),
+                "--drive-root", str(root),
+                "--target-version", universe.TARGET_UNIVERSE_VERSION,
+                "--fixture-raw", str(fixture_raw),
+            )
+            self.assertEqual(collected.returncode, 0, collected.stderr)
+            manifest = json.loads(collected.stdout)
+            self.assertEqual(manifest["additionCount"], 29)
+            delta_root = root / "universe-deltas" / universe.TARGET_UNIVERSE_VERSION
+            delta = delta_root / "us-new-assets-raw-daily.csv"
+            with (delta_root / "benchmark-additions.csv").open(
+                encoding="utf-8", newline=""
+            ) as handle:
+                benchmark_rows = list(csv.DictReader(handle))
+            self.assertEqual({row["benchmarkKey"] for row in benchmark_rows}, {"US_SPY"})
+
+            source = root / "us_raw_daily_prices.csv"
+            with source.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
+                writer.writeheader()
+                writer.writerow(canonical_raw_row("AAPL", "2026-01-01"))
+            output = root / "finple-universe-v2-us-merged-raw.csv"
+            merge_report = root / "merge-reconciliation.json"
+            merged = self.run_module(
+                "scripts.merge_finple_universe_delta",
+                "--source", str(source),
+                "--delta", str(delta),
+                "--output", str(output),
+                "--reconciliation", str(merge_report),
+            )
+            self.assertEqual(merged.returncode, 0, merged.stderr)
+            self.assertEqual(json.loads(merged.stdout)["mergedRowCount"], 30)
+            self.assertTrue(output.is_file())
+
+            kr_raw = root / "kr_raw_daily_prices.csv"
+            with kr_raw.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
+                writer.writeheader()
+                writer.writerow({
+                    **canonical_raw_row("069500", "2026-01-01"),
+                    "market": "KR",
+                    "currency": "KRW",
+                })
+            kr_overlay = root / "kr_price_metrics_overlay.csv"
+            kr_overlay.write_text(
+                "ticker,benchmarkTicker\n069500,069500\n",
+                encoding="utf-8",
+            )
+            candidate_inputs = root / "candidate-inputs"
+            candidate_report = root / "candidate-input-reconciliation.json"
+            prepared = self.run_module(
+                "scripts.prepare_monthly_metrics_candidate_inputs",
+                "--universe", str(canonical),
+                "--us-raw", str(output),
+                "--kr-raw", str(kr_raw),
+                "--kr-metrics", str(kr_overlay),
+                "--benchmark-additions", str(delta_root / "benchmark-additions.csv"),
+                "--output-dir", str(candidate_inputs),
+                "--report", str(candidate_report),
+                "--metric-base-date", "2026-07-23",
+                "--as-of-included", "2026-07-23",
+                "--submission-id", "subprocess-fixture",
+            )
+            self.assertEqual(prepared.returncode, 0, prepared.stderr)
+            prepared_summary = json.loads(prepared.stdout)
+            self.assertEqual(prepared_summary["candidateCount"], 6029)
+            self.assertEqual(prepared_summary["benchmarkAdditionCount"], 29)
+            self.assertEqual(
+                {path.name for path in candidate_inputs.iterdir() if path.is_file()},
+                {
+                    "candidate_asset_master.csv",
+                    "benchmark_map.csv",
+                    "raw_daily_prices.csv",
+                    "source_declaration.json",
+                    "operator_submission_manifest.json",
+                },
+            )
+
+    def test_operator_combined_contract_read_only_sources_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            combined = root / "2026-07-22" / "combined"
+            combined.mkdir(parents=True)
+            for name, row in (
+                ("us_raw_daily_prices.csv", canonical_raw_row("SPY")),
+                (
+                    "kr_raw_daily_prices.csv",
+                    {**canonical_raw_row("069500"), "market": "KR", "currency": "KRW"},
+                ),
+            ):
+                with (combined / name).open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
+                    writer.writeheader()
+                    writer.writerow(row)
+            overlay = combined / "kr_price_metrics_overlay.csv"
+            overlay.write_text("ticker,benchmarkTicker\n069500,069500\n", encoding="utf-8")
+
+            inventory = preflight_combined_sources(combined)
+            self.assertEqual(
+                {record["name"] for record in inventory.values()},
+                {
+                    "us_raw_daily_prices.csv",
+                    "kr_raw_daily_prices.csv",
+                    "kr_price_metrics_overlay.csv",
+                },
+            )
+            assert_sources_unchanged(inventory)
+
+            merged_us = root / "finple-universe-v2-us-merged-raw.csv"
+            merged_us.write_text("temporary", encoding="utf-8")
+            cleanup_temporary_merged_us(merged_us, local_root=root)
+            self.assertFalse(merged_us.exists())
+            self.assertTrue((combined / "kr_raw_daily_prices.csv").is_file())
+            self.assertTrue(overlay.is_file())
+            assert_sources_unchanged(inventory)
+
+            overlay.write_text("ticker,benchmarkTicker\n069500,229200\n", encoding="utf-8")
+            with self.assertRaisesRegex(OperatorContractError, "read-only source changed"):
+                assert_sources_unchanged(inventory)
+
+    def test_operator_preflight_blocks_missing_drive_source_and_builds_exact_prepare_command(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with self.assertRaisesRegex(OperatorContractError, "does not exist"):
+                preflight_combined_sources(root / "missing" / "combined")
+            command = build_candidate_prepare_command(
+                repository_root=ROOT,
+                canonical_v2=ROOT / "src/data/tickers/finple_app_candidates_v2.csv",
+                merged_us_raw=root / "finple-universe-v2-us-merged-raw.csv",
+                kr_raw=root / "kr_raw_daily_prices.csv",
+                kr_overlay=root / "kr_price_metrics_overlay.csv",
+                benchmark_additions=root / "benchmark-additions.csv",
+                output_dir=root / "candidate-inputs",
+                report=root / "candidate-input-reconciliation.json",
+                metric_base_date="2026-07-22",
+                attempt_id="operator-fixture",
+                python_executable=sys.executable,
+            )
+            self.assertEqual(
+                command[:3],
+                [sys.executable, "-m", "scripts.prepare_monthly_metrics_candidate_inputs"],
+            )
+            for flag in (
+                "--universe", "--us-raw", "--kr-raw", "--kr-metrics",
+                "--benchmark-additions", "--output-dir", "--report",
+            ):
+                self.assertIn(flag, command)
+
+    def test_operator_notebook_has_bootstrap_head_assertion_and_all_executable_cells(self):
+        notebook = json.loads(ONBOARDING_NOTEBOOK.read_text(encoding="utf-8"))
+        code_cells = [
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"]
+            if cell.get("cell_type") == "code"
+        ]
+        self.assertEqual(len(code_cells), 16)
+        for index, source in enumerate(code_cells, start=1):
+            self.assertIn(f"# {index}.", source)
+            compile(source, f"{ONBOARDING_NOTEBOOK.name}:cell-{index}", "exec")
+        payload = "\n".join(code_cells)
+        self.assertIn('REPOSITORY_URL = "https://github.com/vip930sw/FINPLE.git"', payload)
+        self.assertIn(
+            'OPERATOR_BRANCH = "codex/step114-2zb-dynamic-universe-megacap-income"',
+            payload,
+        )
+        self.assertIn('["git", "fetch", "--depth", "1", "origin", OPERATOR_BRANCH]', payload)
+        self.assertIn('["git", "checkout", "--detach", "FETCH_HEAD"]', payload)
+        self.assertIn("ACTUAL_OPERATOR_HEAD != EXPECTED_OPERATOR_HEAD", payload)
+        self.assertIn("preflight_combined_sources(SOURCE_COMBINED_ROOT)", payload)
+        self.assertIn("scripts.collect_finple_universe_delta", payload)
+        self.assertIn("scripts.merge_finple_universe_delta", payload)
+        self.assertIn("build_candidate_prepare_command", payload)
+        self.assertIn("run_finple_production_candidate_package", payload)
+        self.assertIn("cleanup_temporary_merged_us", payload)
+        self.assertNotIn("sys.path.insert", payload)
+        self.assertNotIn("python scripts/", payload)
+        for token in (
+            "RUN_29_US_PROVIDER_COLLECTION",
+            "MOUNT_FINPLE_DRIVE",
+            "MERGE_US_DELTA_LOCALLY",
+            "RUN_REVIEW_ONLY_CANDIDATE_PACKAGE",
+            "DELETE_LOCAL_MERGED_US_RAW",
+        ):
+            self.assertIn(token, payload)
+
+    def test_runbook_records_executable_module_commands_and_us_only_paths(self):
+        runbook = DELTA_RUNBOOK.read_text(encoding="utf-8")
+        self.assertIn("python -m scripts.collect_finple_universe_delta", runbook)
+        self.assertIn("python -m scripts.merge_finple_universe_delta", runbook)
+        self.assertIn("python -m scripts.prepare_monthly_metrics_candidate_inputs", runbook)
+        self.assertNotIn("python scripts/collect_finple_universe_delta.py", runbook)
+        self.assertNotIn("python scripts/merge_finple_universe_delta.py", runbook)
+        self.assertNotIn("us-kr-combined-raw.csv", runbook)
+        self.assertIn(
+            "2026-07-22/combined/us_raw_daily_prices.csv",
+            runbook,
+        )
+        self.assertIn("/content/finple-universe-v2-us-merged-raw.csv", runbook)
+        self.assertIn("kr_raw_daily_prices.csv", runbook)
+        self.assertIn("kr_price_metrics_overlay.csv", runbook)
+        self.assertIn("--benchmark-additions", runbook)
+
     def test_generated_universe_is_deterministic_and_preserves_v1(self):
         manifest = json.loads((ROOT / "src/data/tickers/finple_universe_v2_manifest.json").read_text())
         reconciliation = json.loads(

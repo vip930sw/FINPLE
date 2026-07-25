@@ -13,6 +13,8 @@ immutable `2026-07-22` source package. It does not use KIS or any credential.
   `/content/drive/MyDrive/FINPLE/monthly-metrics/universe-deltas/finple-universe-v2-2026-07-24`
 
 Each phase must use a new attempt ID. Never reuse a target-version folder.
+Run every Python operator CLI from the repository root with `python -m`.
+Direct `python scripts/...` execution is not a supported operator mode.
 
 ## Phase A — official-product review
 
@@ -31,12 +33,21 @@ Each phase must use a new attempt ID. Never reuse a target-version folder.
    prices and do not replace missing history with zero.
 6. Regenerate the canonical v2 files locally and run the Step check.
 
+```bash
+python -m scripts.finple_universe_v2 \
+  --source src/data/tickers/finple_app_candidates_6000_balanced_v1.csv \
+  --output src/data/tickers/finple_app_candidates_v2.csv \
+  --manifest src/data/tickers/finple_universe_v2_manifest.json \
+  --reconciliation src/data/tickers/finple_universe_v2_reconciliation.json \
+  --check
+```
+
 ## Phase B — new-ticker delta collection
 
 In Colab, mount Drive, clone this Draft PR branch, install `yfinance`, and run:
 
 ```bash
-python scripts/collect_finple_universe_delta.py \
+python -m scripts.collect_finple_universe_delta \
   --canonical src/data/tickers/finple_app_candidates_v2.csv \
   --reconciliation src/data/tickers/finple_universe_v2_reconciliation.json \
   --drive-root /content/drive/MyDrive/FINPLE/monthly-metrics \
@@ -78,7 +89,21 @@ universe-deltas/finple-universe-v2-2026-07-24/
 
 ## Phase C — bounded temporary merge
 
-The source and delta inputs must both be sorted by `market,ticker,date`.
+The canonical `2026-07-22/combined` source contract is:
+
+```text
+us_raw_daily_prices.csv
+kr_raw_daily_prices.csv
+kr_price_metrics_overlay.csv
+```
+
+Preflight all three files for existence, non-zero size, and SHA-256. The new
+delta contains US assets only, so merge only the existing US raw file. Retain
+the KR raw and KR overlay as read-only inputs and prove their size and SHA-256
+are unchanged after candidate preparation and package execution. Do not modify,
+move, delete, combine, or replace any existing `2026-07-22/combined` file.
+
+The US source and delta inputs must both be sorted by `market,ticker,date`.
 Both headers must exactly equal `RAW_DAILY_PRICE_COLUMNS`:
 
 ```text
@@ -94,22 +119,51 @@ canonical neutral `splitFactor=1`. Raw provider payloads and non-contract
 fields are not written.
 
 ```bash
-python scripts/merge_finple_universe_delta.py \
-  --source /content/drive/MyDrive/FINPLE/monthly-metrics/2026-07-22/combined/us-kr-combined-raw.csv \
+python -m scripts.merge_finple_universe_delta \
+  --source /content/drive/MyDrive/FINPLE/monthly-metrics/2026-07-22/combined/us_raw_daily_prices.csv \
   --delta /content/drive/MyDrive/FINPLE/monthly-metrics/universe-deltas/finple-universe-v2-2026-07-24/us-new-assets-raw-daily.csv \
-  --output /content/finple-universe-v2-merged-raw.csv \
+  --output /content/finple-universe-v2-us-merged-raw.csv \
   --reconciliation /content/merge-reconciliation.json
 ```
 
 The command preflights free disk, streams one row from each input, blocks
 duplicate `market+ticker+date`, writes an atomic temporary file, and renames it
-only after success. Delete `/content/finple-universe-v2-merged-raw.csv` after
-the candidate package and app-preview export succeed. Never copy it to Drive.
+only after success. Never copy the merged US file or a full US+KR merged raw
+copy to Drive.
 
-## Phase D — candidate package and protected Preview
+## Phase D — candidate input preparation
 
-1. Use the temporary merged raw as read-only One-Click input.
-2. Export with `scripts/export_finple_app_preview.py`. Omit `--shard-count` to
+Use exactly the canonical v2, local temporary merged US raw, existing read-only
+KR raw, existing read-only KR overlay, and delta benchmark additions:
+
+```bash
+python -m scripts.prepare_monthly_metrics_candidate_inputs \
+  --universe src/data/tickers/finple_app_candidates_v2.csv \
+  --us-raw /content/finple-universe-v2-us-merged-raw.csv \
+  --kr-raw /content/drive/MyDrive/FINPLE/monthly-metrics/2026-07-22/combined/kr_raw_daily_prices.csv \
+  --kr-metrics /content/drive/MyDrive/FINPLE/monthly-metrics/2026-07-22/combined/kr_price_metrics_overlay.csv \
+  --benchmark-additions /content/drive/MyDrive/FINPLE/monthly-metrics/universe-deltas/finple-universe-v2-2026-07-24/benchmark-additions.csv \
+  --output-dir "/content/finple-universe-v2-candidate-inputs/${ATTEMPT_ID}" \
+  --report "/content/finple-universe-v2-candidate-input-reconciliation-${ATTEMPT_ID}.json" \
+  --metric-base-date 2026-07-22 \
+  --as-of-included 2026-07-22 \
+  --submission-id "${ATTEMPT_ID}" \
+  --operator-id colab-operator
+```
+
+This produces the existing five-file One-Click candidate input contract and an
+extended `benchmark_map.csv` containing `US_SPY`, `KR_KOSPI`, and `KR_KOSDAQ`.
+Run `run_finple_production_candidate_package` only from the confirmed notebook
+cell and only into an attempt-specific local `/content` directory.
+
+After the candidate package succeeds and the KR size/SHA checks still match,
+delete only `/content/finple-universe-v2-us-merged-raw.csv`. Do not delete any
+Drive source or delta artifact.
+
+## Phase E — protected Preview
+
+1. Export with `python -m scripts.export_finple_app_preview`. Omit
+   `--shard-count` to
    select 64/128/256 from row and byte thresholds; an explicit compatibility
    override may be 64, 128, or 256.
 3. Inspect manifest count reconciliation, `shardDecision`,

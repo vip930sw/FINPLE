@@ -16,8 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from finple_universe_v2 import CANONICAL_FIELDS
-from raw_daily_price_chunks import extract_raw_daily_rows, write_raw_daily_rows
+from scripts.finple_universe_v2 import CANONICAL_FIELDS
+from scripts.raw_daily_price_chunks import extract_raw_daily_rows, write_raw_daily_rows
 from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS
 
 
@@ -127,6 +127,29 @@ def default_fetcher(ticker: str, start: str) -> list[dict[str, Any]]:
     return adapt_yfinance_history(ticker, frame, retrieved_at=retrieved_at)
 
 
+def fixture_fetcher(path: Path) -> Callable[[str, str], list[dict[str, Any]]]:
+    """Load canonical rows for offline CLI/subprocess validation only."""
+    rows = read_csv_rows(
+        path,
+        RAW_DAILY_PRICE_COLUMNS,
+        "fixture raw daily",
+        error_prefix="fixture refused",
+    )
+    by_ticker: dict[str, list[dict[str, Any]]] = {}
+    seen: set[tuple[str, str, str]] = set()
+    for row in rows:
+        if row["market"] != "US":
+            raise DeltaCollectionError("fixture raw daily permits US rows only")
+        key = (row["market"], row["ticker"], row["date"])
+        if key in seen:
+            raise DeltaCollectionError("fixture raw daily contains duplicate identities")
+        seen.add(key)
+        by_ticker.setdefault(row["ticker"], []).append(row)
+    for ticker_rows in by_ticker.values():
+        ticker_rows.sort(key=lambda row: row["date"])
+    return lambda ticker, _start: [dict(row) for row in by_ticker.get(ticker, [])]
+
+
 def read_json_object(path: Path, label: str) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -163,18 +186,24 @@ def read_checksum_manifest(output_dir: Path) -> dict[str, str]:
     return checksums
 
 
-def read_csv_rows(path: Path, expected_fields: list[str], label: str) -> list[dict[str, str]]:
+def read_csv_rows(
+    path: Path,
+    expected_fields: list[str],
+    label: str,
+    *,
+    error_prefix: str = "--resume refused",
+) -> list[dict[str, str]]:
     try:
         with path.open(encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
             if reader.fieldnames != expected_fields:
-                raise DeltaCollectionError(f"--resume refused: {label} header mismatch")
+                raise DeltaCollectionError(f"{error_prefix}: {label} header mismatch")
             rows = list(reader)
             if any(None in row or any(value is None for value in row.values()) for row in rows):
-                raise DeltaCollectionError(f"--resume refused: malformed {label}")
+                raise DeltaCollectionError(f"{error_prefix}: malformed {label}")
             return rows
     except (OSError, UnicodeError, csv.Error) as exc:
-        raise DeltaCollectionError(f"--resume refused: malformed {label}") from exc
+        raise DeltaCollectionError(f"{error_prefix}: malformed {label}") from exc
 
 
 def validate_resume_artifacts(
@@ -288,7 +317,7 @@ def collect_delta(
         created.append(additions_path)
 
         benchmark_rows = [
-            {"market": "US", "ticker": row["ticker"], "benchmarkKey": "US:SPY"}
+            {"market": "US", "ticker": row["ticker"], "benchmarkKey": "US_SPY"}
             for row in additions
         ]
         benchmark_path = output_dir / "benchmark-additions.csv"
@@ -404,13 +433,20 @@ def main() -> int:
     parser.add_argument("--drive-root", type=Path, required=True)
     parser.add_argument("--target-version", required=True)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--fixture-raw",
+        type=Path,
+        help="Offline tests only: canonical raw CSV used instead of yfinance.",
+    )
     args = parser.parse_args()
+    fetcher = fixture_fetcher(args.fixture_raw) if args.fixture_raw else default_fetcher
     manifest = collect_delta(
         args.canonical,
         args.reconciliation,
         args.drive_root,
         args.target_version,
         resume=args.resume,
+        fetcher=fetcher,
     )
     print(json.dumps(manifest, indent=2, sort_keys=True))
     return 0
