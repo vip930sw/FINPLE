@@ -36,6 +36,10 @@
 
 ## Runtime QA
 
+- [ ] Production API origin:
+- [ ] Production API base URL is explicit HTTPS with exact `/api` path
+- [ ] compiled bundle contains the exact Production API base URL
+- [ ] compiled bundle contains no `localhost:5050` or `/preview-api`
 - [ ] new source artifact received a complete Production-mode Preview QA run
 - [ ] QQQ selected CAGR equals rolling 10-year median
 - [ ] SPY / VOO / 069500 ready
@@ -58,6 +62,7 @@
 
 - previous Production deployment ID:
 - rollback deployment ID:
+- previous `VITE_FINPLE_API_BASE_URL`:
 - previous `VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED`:
 - previous `VITE_FINPLE_PRODUCTION_APP_EXPORT_BASE_URL`:
 - previous `VITE_FINPLE_PRODUCTION_APP_EXPORT_MANIFEST`:

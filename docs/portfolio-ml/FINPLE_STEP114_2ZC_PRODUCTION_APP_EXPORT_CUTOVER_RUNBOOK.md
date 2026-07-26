@@ -191,16 +191,23 @@ $ReleaseManifest = (Resolve-Path "<approved production-app-export-release.json>"
 $Stage = "<external staging directory>"
 $AppExportSha256 = "<exact source app-export ZIP SHA-256>"
 $ReleaseSha256 = "<exact production release manifest SHA-256>"
+$ProductionApiBaseUrl = "<approved HTTPS Production API base ending in /api>"
 
-& $Python -m scripts.stage_production_app_export_vercel `
+& $Python -B -m scripts.stage_production_app_export_vercel `
   --input-export-zip $AppExportZip `
   --release-manifest $ReleaseManifest `
   --staging-dir $Stage `
   --target-segment "finple-universe-v2-2026-07-24" `
   --expected-app-export-sha256 $AppExportSha256 `
   --expected-release-manifest-sha256 $ReleaseSha256 `
+  --api-base-url $ProductionApiBaseUrl `
   --project-dir $Repo
 ```
+
+`--api-base-url` is mandatory and fail-closed before build. It must be an HTTPS
+URL with the exact `/api` path and no credentials, query, fragment, localhost,
+or loopback address. The stager normalizes a trailing slash and force-overrides
+any ambient `VITE_FINPLE_API_BASE_URL` value.
 
 생성 Build Output은
 `/app-data/finple-universe-v2-2026-07-24/`를 사용한다.
@@ -219,6 +226,7 @@ $ReleaseSha256 = "<exact production release manifest SHA-256>"
 실제 별도 변경 승인 단계에서만 다음 값을 Production 환경에 공급한다.
 
 ```text
+VITE_FINPLE_API_BASE_URL=<approved HTTPS Production API base ending in /api>
 VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED=true
 VITE_FINPLE_PRODUCTION_APP_EXPORT_BASE_URL=/app-data/finple-universe-v2-2026-07-24
 VITE_FINPLE_PRODUCTION_APP_EXPORT_MANIFEST=production-app-export-release.json

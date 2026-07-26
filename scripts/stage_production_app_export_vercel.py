@@ -8,6 +8,7 @@ Production release manifest while preserving the source review manifest.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Callable, Mapping
+from urllib.parse import urlsplit, urlunsplit
 
 from scripts.stage_app_preview_vercel import (
     StagingError,
@@ -84,6 +86,53 @@ def _validate_sha256(value: object, label: str) -> str:
 def _require_equal(actual: object, expected: object, label: str) -> None:
     if actual != expected:
         raise StagingError(f"{label} mismatch")
+
+
+def normalize_production_api_base_url(value: object) -> str:
+    if not isinstance(value, str):
+        raise StagingError("Production API base URL must be a string")
+    raw = value
+    if not raw:
+        raise StagingError("Production API base URL is required")
+    if any(character.isspace() for character in raw):
+        raise StagingError("Production API base URL must not contain whitespace")
+    if "?" in raw or "#" in raw:
+        raise StagingError("Production API base URL must not contain query or fragment")
+    try:
+        parsed = urlsplit(raw)
+        hostname = parsed.hostname
+        port = parsed.port
+    except ValueError as exc:
+        raise StagingError("Production API base URL is invalid") from exc
+    if parsed.scheme.lower() != "https":
+        raise StagingError("Production API base URL must use HTTPS")
+    if parsed.username is not None or parsed.password is not None:
+        raise StagingError("Production API base URL must not contain credentials")
+    if not hostname:
+        raise StagingError("Production API base URL must include a hostname")
+    normalized_hostname = hostname.lower()
+    if normalized_hostname == "localhost" or normalized_hostname.endswith(".localhost"):
+        raise StagingError("Production API base URL must not use localhost")
+    try:
+        parsed_address = ipaddress.ip_address(normalized_hostname)
+    except ValueError:
+        parsed_address = None
+    if parsed_address is not None and parsed_address.is_loopback:
+        raise StagingError("Production API base URL must not use a loopback address")
+    if parsed.query or parsed.fragment:
+        raise StagingError("Production API base URL must not contain query or fragment")
+    if parsed.path.rstrip("/") != "/api":
+        raise StagingError("Production API base URL path must be exactly /api")
+    normalized_host = (
+        f"[{normalized_hostname}]" if ":" in normalized_hostname else normalized_hostname
+    )
+    netloc = f"{normalized_host}:{port}" if port is not None else normalized_host
+    return urlunsplit(("https", netloc, "/api", "", ""))
+
+
+def _production_api_origin(api_base_url: str) -> str:
+    parsed = urlsplit(api_base_url)
+    return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
 
 
 def _validate_file_record(record: object, label: str) -> dict[str, object]:
@@ -235,13 +284,18 @@ def run_production_build(
     target_base_url: str,
     release_manifest_sha256: str,
     source_app_export_sha256: str,
+    api_base_url: str,
     *,
     extra_env: Mapping[str, str] | None = None,
 ) -> None:
+    normalized_api_base_url = normalize_production_api_base_url(api_base_url)
     environment = os.environ.copy()
+    if extra_env:
+        environment.update(extra_env)
     environment.update(
         {
             "VITE_FINPLE_APP_PREVIEW_ENABLED": "false",
+            "VITE_FINPLE_API_BASE_URL": normalized_api_base_url,
             "VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED": "true",
             "VITE_FINPLE_PRODUCTION_APP_EXPORT_BASE_URL": target_base_url,
             "VITE_FINPLE_PRODUCTION_APP_EXPORT_MANIFEST": RELEASE_MANIFEST_NAME,
@@ -250,13 +304,49 @@ def run_production_build(
             "FINPLE_BUILD_OUTPUT_DIR": str(static_output_dir),
         }
     )
-    if extra_env:
-        environment.update(extra_env)
     command = ["npm.cmd" if os.name == "nt" else "npm", "run", "build"]
     subprocess.run(command, cwd=project_dir, env=environment, check=True)
 
 
-BuildRunner = Callable[[Path, Path, str, str, str], None]
+BuildRunner = Callable[[Path, Path, str, str, str, str], None]
+
+
+def validate_production_bundle(
+    static_root: Path,
+    *,
+    api_base_url: str,
+    target_base_url: str,
+    release_manifest_sha256: str,
+    source_app_export_sha256: str,
+) -> None:
+    assets_root = static_root / "assets"
+    bundle_paths = sorted(
+        path
+        for path in assets_root.rglob("*")
+        if path.is_file() and path.suffix.lower() in {".css", ".html", ".js", ".mjs"}
+    )
+    index_path = static_root / "index.html"
+    if index_path.is_file():
+        bundle_paths.insert(0, index_path)
+    if not any(path.suffix.lower() in {".js", ".mjs"} for path in bundle_paths):
+        raise StagingError("Production build did not produce a JavaScript bundle")
+    bundle_text = "\n".join(path.read_text(encoding="utf-8") for path in bundle_paths)
+    required_values = {
+        "Production API base URL": api_base_url,
+        "Production app-export base URL": target_base_url,
+        "Production app-export manifest": RELEASE_MANIFEST_NAME,
+        "Production release manifest SHA-256": release_manifest_sha256,
+        "Production source app-export SHA-256": source_app_export_sha256,
+    }
+    for label, value in required_values.items():
+        if value not in bundle_text:
+            raise StagingError(f"{label} is missing from the Production bundle")
+    lowered_bundle = bundle_text.lower()
+    for forbidden in ("http://localhost:5050", "localhost:5050", "/preview-api"):
+        if forbidden in lowered_bundle:
+            raise StagingError(
+                f"Production bundle contains forbidden runtime string: {forbidden}"
+            )
 
 
 def _output_inventory(output_root: Path) -> list[dict[str, object]]:
@@ -279,10 +369,13 @@ def stage_production_app_export(
     target_segment: str,
     expected_app_export_sha256: str,
     expected_release_manifest_sha256: str,
+    api_base_url: str,
     project_dir: Path,
     build_runner: BuildRunner = run_production_build,
 ) -> dict[str, object]:
     project = project_dir.resolve(strict=True)
+    normalized_api_base_url = normalize_production_api_base_url(api_base_url)
+    production_api_origin = _production_api_origin(normalized_api_base_url)
     if not SEGMENT_RE.fullmatch(target_segment):
         raise StagingError("target segment must be one safe URL path segment")
     source = input_export_zip.resolve(strict=True)
@@ -333,9 +426,17 @@ def stage_production_app_export(
             target_base_url,
             release_hash,
             actual_export_hash,
+            normalized_api_base_url,
         )
         if not (static_root / "index.html").is_file():
             raise StagingError("Production build did not produce index.html")
+        validate_production_bundle(
+            static_root,
+            api_base_url=normalized_api_base_url,
+            target_base_url=target_base_url,
+            release_manifest_sha256=release_hash,
+            source_app_export_sha256=actual_export_hash,
+        )
         data_target = static_root / "app-data" / target_segment
         shutil.copytree(export_root, data_target)
         shutil.copyfile(release_path, data_target / RELEASE_MANIFEST_NAME)
@@ -378,8 +479,11 @@ def stage_production_app_export(
             "schemaVersion": 1,
             "cutoverExecuted": False,
             "productionDeployPromoteExecuted": False,
+            "productionApiOrigin": production_api_origin,
+            "productionApiBaseUrl": normalized_api_base_url,
             "rollbackDeploymentId": "",
             "previousProductionSettings": {
+                "VITE_FINPLE_API_BASE_URL": "",
                 "VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED": "",
                 "VITE_FINPLE_PRODUCTION_APP_EXPORT_BASE_URL": "",
                 "VITE_FINPLE_PRODUCTION_APP_EXPORT_MANIFEST": "",
@@ -415,7 +519,9 @@ def stage_production_app_export(
             "shardCount": release["shardCount"],
             "productionPublishReady": release["productionPublishReady"],
             "appExportApproved": release["appExportApproved"],
-            "productionApiConfiguration": "inherited_unmodified",
+            "productionApiConfiguration": "explicit_required_https_api_base",
+            "productionApiOrigin": production_api_origin,
+            "productionApiBaseUrl": normalized_api_base_url,
             "previewApiRewriteIncluded": False,
             "previewProtectionCopied": False,
             "repositoryStatusUnchanged": True,
@@ -448,6 +554,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--target-segment", required=True)
     parser.add_argument("--expected-app-export-sha256", required=True)
     parser.add_argument("--expected-release-manifest-sha256", required=True)
+    parser.add_argument("--api-base-url", required=True)
     parser.add_argument(
         "--project-dir",
         type=Path,
@@ -466,6 +573,7 @@ def main(argv: list[str] | None = None) -> int:
             target_segment=args.target_segment,
             expected_app_export_sha256=args.expected_app_export_sha256,
             expected_release_manifest_sha256=args.expected_release_manifest_sha256,
+            api_base_url=args.api_base_url,
             project_dir=args.project_dir,
         )
     except (OSError, subprocess.CalledProcessError, StagingError) as exc:

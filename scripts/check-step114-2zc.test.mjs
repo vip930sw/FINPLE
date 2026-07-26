@@ -107,8 +107,26 @@ test("Production stager is external, versioned, inventory-bound, and never deplo
   assert.match(stager, /production-cutover-qa-template\.json/);
   assert.match(stager, /"previewApiRewriteIncluded": False/);
   assert.match(stager, /"productionDeployPromoteExecuted": False/);
+  assert.match(stager, /"--api-base-url", required=True/);
+  assert.match(stager, /"VITE_FINPLE_API_BASE_URL": normalized_api_base_url/);
+  assert.match(stager, /explicit_required_https_api_base/);
+  assert.match(stager, /validate_production_bundle/);
+  assert.match(stager, /localhost:5050/);
+  assert.match(stager, /\/preview-api/);
   assert.match(stager, /staging directory must be outside/);
   assert.doesNotMatch(stager, /vercel deploy|vercel promote|--prod/);
+  const runbook = read(
+    "docs/portfolio-ml/FINPLE_STEP114_2ZC_PRODUCTION_APP_EXPORT_CUTOVER_RUNBOOK.md",
+  );
+  assert.match(runbook, /python -B -m scripts\.stage_production_app_export_vercel/i);
+  assert.match(runbook, /--api-base-url \$ProductionApiBaseUrl/);
+  assert.match(runbook, /VITE_FINPLE_API_BASE_URL=<approved HTTPS Production API base ending in \/api>/);
+  const qaTemplate = read(
+    "docs/portfolio-ml/FINPLE_STEP114_2ZC_PRODUCTION_CUTOVER_QA_TEMPLATE.md",
+  );
+  assert.match(qaTemplate, /Production API base URL is explicit HTTPS/);
+  assert.match(qaTemplate, /compiled bundle contains no `localhost:5050` or `\/preview-api`/);
+  assert.match(qaTemplate, /previous `VITE_FINPLE_API_BASE_URL`/);
 });
 
 test("desktop/mobile and PDF print share controls remain wired", () => {
