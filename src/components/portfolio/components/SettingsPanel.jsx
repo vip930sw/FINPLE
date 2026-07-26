@@ -1,8 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AssetInputTable from "./AssetInputTable";
+import NewPortfolioMenu from "./NewPortfolioMenu";
 import "./TargetWeightControls.css";
 
 export default function SettingsPanel({
+  portfolioList,
+  activePortfolio,
+  isNewPortfolioMenuOpen,
+  setIsNewPortfolioMenuOpen,
+  createPortfolioFromTemplate,
+  duplicateActivePortfolio,
+  portfolioCreationEvent,
   settings,
   totalAssetValue,
   simulationStartValue,
@@ -34,6 +42,7 @@ export default function SettingsPanel({
   cleanEmptyAssetRows,
   resetActivePortfolioAssets,
 }) {
+  const firstSettingInputRef = useRef(null);
   const summary = targetWeightSummary || {
     total: 0,
     remaining: 0,
@@ -59,6 +68,11 @@ export default function SettingsPanel({
   useEffect(() => {
     setStartValueInput(formatNumber(floorToStartValueUnit(simulationStartValue)));
   }, [simulationStartValue]);
+
+  useEffect(() => {
+    if (!portfolioCreationEvent?.id) return;
+    firstSettingInputRef.current?.focus();
+  }, [portfolioCreationEvent?.id]);
 
   const toOneDecimal = (value) => {
     const numberValue = Number(value || 0);
@@ -107,11 +121,25 @@ export default function SettingsPanel({
 
   return (
     <div className="simulatorTabPanel settingsPanel">
-      <div className="tabSectionHeader">
+      <div className="tabSectionHeader tabSectionHeaderRow step1PortfolioHeader">
+        <div className="step1PortfolioHeaderCopy">
         <p className="sectionLabel">Step 1. Simulator</p>
         <h3>시뮬레이터 설정</h3>
         <p>선택한 자산의 목표비중과 투자 조건을 입력해 장기 성과를 계산합니다.</p>
+        </div>
+        <NewPortfolioMenu
+          portfolioCount={portfolioList?.length || 0}
+          activePortfolio={activePortfolio}
+          isOpen={isNewPortfolioMenuOpen}
+          setIsOpen={setIsNewPortfolioMenuOpen}
+          createPortfolioFromTemplate={createPortfolioFromTemplate}
+          duplicateActivePortfolio={duplicateActivePortfolio}
+          enableDesktopFloatingRepeat
+        />
       </div>
+      <p className="srOnly" role="status" aria-live="polite" aria-atomic="true">
+        {portfolioCreationEvent?.message || ""}
+      </p>
 
       <div className="simulatorControls fiveCardControls">
         <div className="summaryCard">
@@ -122,6 +150,7 @@ export default function SettingsPanel({
             시작 평가금액 (원)
           </TooltipLabel>
           <input
+            ref={firstSettingInputRef}
             type="text"
             inputMode="numeric"
             value={startValueInput}

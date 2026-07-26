@@ -29,6 +29,7 @@ export function normalizePersistedMetricFields(asset = {}) {
   );
   return {
     targetEvaluationAmount: normalizeNullableNumber(asset.targetEvaluationAmount, null),
+    targetWeight: normalizeNullableNumber(asset.targetWeight, null),
     cagr: normalizeMetricNumber(asset, "cagr"),
     beta: normalizeMetricNumber(asset, "beta"),
     mdd: normalizeMetricNumber(asset, "mdd"),

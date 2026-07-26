@@ -484,9 +484,15 @@ test("production loader applies RM and distribution policy through saved hydrati
         savedAssets.size,
       );
       savedAssets.set(ticker, saved);
+      assert.equal(saved.quantity, 1, ticker);
+      assert.equal(saved.price, 100, ticker);
+      assert.equal(saved.targetWeight, 100, ticker);
       assert.equal(saved.productionAppExportEnabled, true, ticker);
       assert.equal(saved.productionPublishReady, true, ticker);
       assert.equal(saved.appExportApproved, true, ticker);
+      assert.equal(saved.sourceHash, "", ticker);
+      assert.equal(saved.rawSourceSha256, "", ticker);
+      assert.equal(saved.normalizedSeriesHash, "", ticker);
       if (expected.distributionYield !== undefined) {
         assert.equal(saved.dividendYield, null, ticker);
         assert.equal(saved.trailingDistributionYield, expected.distributionYield, ticker);
@@ -513,6 +519,7 @@ test("production loader applies RM and distribution policy through saved hydrati
         );
       } else if (expected.dividendYield !== undefined) {
         assert.equal(saved.dividendYield, expected.dividendYield, ticker);
+        assert.equal(saved.displayDividendYield, `${expected.dividendYield.toFixed(2)}%`, ticker);
       }
       if (expected.distributionYield === undefined) {
         const ordinaryBaseline = buildMonthlyBaselineProjection({
@@ -535,7 +542,7 @@ test("production loader applies RM and distribution policy through saved hydrati
     }
 
     const ordinaryMixedAssets = ["QQQ", "SPY", "VOO", "069500", "GLD"]
-      .map((ticker) => savedAssets.get(ticker));
+      .map((ticker) => ({ ...savedAssets.get(ticker), targetWeight: 20 }));
     const baselineSettings = {
       startValue: 500,
       monthlyCashFlow: 10,
@@ -547,7 +554,11 @@ test("production loader applies RM and distribution policy through saved hydrati
       settings: baselineSettings,
       assets: ordinaryMixedAssets,
     });
-    assert.equal(mixedBaseline.status, "ready");
+    assert.equal(
+      mixedBaseline.status,
+      "ready",
+      mixedBaseline.blockReasons.join("|"),
+    );
     assert.equal(savedAssets.get("QQQ").selectedCagr, 17.11);
     assert.equal(savedAssets.get("GLD").dividendStatus, "confirmed_zero");
 

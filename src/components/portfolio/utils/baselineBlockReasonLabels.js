@@ -14,3 +14,10 @@ export function formatUserFacingBaselineBlockReason(reason = "") {
   const code = getBaselineBlockReasonCode(reason);
   return USER_FACING_BLOCK_REASON_LABELS[code] || "지표 계산 계약을 확인할 수 없습니다.";
 }
+
+export function formatUserFacingBaselineBlockReasons(reasons = []) {
+  const labels = Array.isArray(reasons)
+    ? reasons.map(formatUserFacingBaselineBlockReason)
+    : [];
+  return [...new Set(labels)];
+}

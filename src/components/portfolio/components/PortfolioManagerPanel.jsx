@@ -2,9 +2,7 @@ import { useState } from "react";
 
 import {
   FINPLE_PLAN_CONFIGS,
-  getPlanLimitMessage,
   getStoredFinplePlan,
-  getUpgradePromptText,
 } from "../config/planConfig";
 import {
   getLocalPortfolioSnapshot,
@@ -12,10 +10,7 @@ import {
   listServerPortfolios,
   syncLocalPortfoliosToServer,
 } from "../services/serverPortfolioService.js";
-import {
-  canCreatePortfolio,
-  deletePortfolioWithServerSync,
-} from "../utils/portfolioLifecycle.js";
+import { deletePortfolioWithServerSync } from "../utils/portfolioLifecycle.js";
 
 function getCurrentPlanPortfolioLimit() {
   const planKey = getStoredFinplePlan();
@@ -23,19 +18,6 @@ function getCurrentPlanPortfolioLimit() {
   const portfolioLimit = currentPlan?.limits?.portfolios;
 
   return Number.isFinite(portfolioLimit) ? Math.max(1, Number(portfolioLimit)) : Infinity;
-}
-
-function openPricingPage() {
-  if (typeof window === "undefined") return;
-  window.location.href = "/pricing";
-}
-
-function showPortfolioLimitNotice() {
-  const planKey = getStoredFinplePlan();
-  const message = getPlanLimitMessage(planKey, "portfolio");
-  const shouldMove = window.confirm(getUpgradePromptText(planKey, "portfolio"));
-  if (shouldMove) openPricingPage();
-  return message;
 }
 
 function getFriendlyServerSyncErrorMessage(error, actionLabel) {
@@ -70,10 +52,6 @@ export default function PortfolioManagerPanel({
   portfolioList,
   activePortfolioId,
   activePortfolio,
-  isNewPortfolioMenuOpen,
-  setIsNewPortfolioMenuOpen,
-  createPortfolioFromTemplate,
-  duplicateActivePortfolio,
   selectPortfolio,
   renameActivePortfolio,
   deleteActivePortfolio,
@@ -82,46 +60,14 @@ export default function PortfolioManagerPanel({
   backupFileInputRef,
   restorePortfolioBackup,
   dataManagementSummary,
+  hydratePortfolio,
+  goToStepOne,
 }) {
   const [serverSyncStatus, setServerSyncStatus] = useState(
     "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요. 첫 요청은 서버 준비로 잠시 지연될 수 있습니다."
   );
   const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
   const portfolioLimit = getCurrentPlanPortfolioLimit();
-  const isPortfolioLimitReached =
-    !canCreatePortfolio(portfolioList?.length || 0, portfolioLimit);
-
-  function handleNewPortfolioButtonClick() {
-    if (isPortfolioLimitReached) {
-      setIsNewPortfolioMenuOpen(false);
-      showPortfolioLimitNotice();
-      return;
-    }
-
-    setIsNewPortfolioMenuOpen(!isNewPortfolioMenuOpen);
-  }
-
-  function handleCreatePortfolioFromTemplate(templateKey) {
-    if (isPortfolioLimitReached) {
-      setIsNewPortfolioMenuOpen(false);
-      showPortfolioLimitNotice();
-      return;
-    }
-
-    createPortfolioFromTemplate(templateKey);
-  }
-
-  function handleDuplicateActivePortfolio() {
-    if (!activePortfolio) return;
-    if (isPortfolioLimitReached) {
-      setIsNewPortfolioMenuOpen(false);
-      showPortfolioLimitNotice();
-      return;
-    }
-
-    duplicateActivePortfolio();
-  }
-
   async function savePortfoliosToServer() {
     if (isServerSyncLoading) return;
     const localSnapshot = getLocalPortfolioSnapshot();
@@ -168,6 +114,7 @@ export default function PortfolioManagerPanel({
       const result = importServerPortfoliosToBrowser(payload, {
         mode: "replace",
         maxPortfolios: portfolioLimit,
+        hydratePortfolio,
       });
       const limitedCount = serverPortfolios.length - result.totalCount;
       setServerSyncStatus(
@@ -230,78 +177,6 @@ export default function PortfolioManagerPanel({
           <h3>저장된 포트폴리오</h3>
         </div>
 
-        <div className="newPortfolioMenuWrap">
-          <button
-            className="newPortfolioButton"
-            onClick={handleNewPortfolioButtonClick}
-          >
-            새 포트폴리오 ▾
-          </button>
-
-          {isNewPortfolioMenuOpen && (
-            <div className="newPortfolioMenu">
-              <button onClick={() => handleCreatePortfolioFromTemplate("balanced")}>
-                <strong>균형형으로 시작</strong>
-                <span>성장·배당·안정 자산을 혼합</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("growth")}>
-                <strong>성장형으로 시작</strong>
-                <span>나스닥100 중심의 성장 구성</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("dividend")}>
-                <strong>배당형으로 시작</strong>
-                <span>배당 현금흐름과 장기 보유 중심</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("stable")}>
-                <strong>안정형으로 시작</strong>
-                <span>채권·금 비중을 높인 방어 구성</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("goldDefense")}>
-                <strong>금 방어형으로 시작</strong>
-                <span>금·장기채 중심의 위기 방어 구성</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("reitIncome")}>
-                <strong>리츠 인컴형으로 시작</strong>
-                <span>리츠·배당 현금흐름 중심</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("growthZero")}>
-                <strong>성장주 제로형으로 시작</strong>
-                <span>성장주 없이 배당·채권·금 중심</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("growthFocus")}>
-                <strong>성장주 집중형으로 시작</strong>
-                <span>나스닥100 비중을 극대화</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("allWeather")}>
-                <strong>올웨더형으로 시작</strong>
-                <span>주식·채권·금·현금 균형 배분</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("highConviction")}>
-                <strong>하이컨빅션형으로 시작</strong>
-                <span>성장주와 블록체인 테마 집중</span>
-              </button>
-
-              <button onClick={() => handleCreatePortfolioFromTemplate("empty")}>
-                <strong>빈 포트폴리오로 시작</strong>
-                <span>티커와 수량을 직접 입력</span>
-              </button>
-
-              <button onClick={handleDuplicateActivePortfolio} disabled={!activePortfolio}>
-                <strong>현재 포트폴리오 복제</strong>
-                <span>현재 자산 구성을 그대로 복사</span>
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="portfolioTabs">
@@ -341,9 +216,9 @@ export default function PortfolioManagerPanel({
       ) : (
         <div className="portfolioEmptyState" role="status">
           <strong>저장된 포트폴리오가 없습니다.</strong>
-          <span>새 포트폴리오를 만들어 자산과 설정을 저장할 수 있습니다.</span>
-          <button type="button" onClick={() => handleCreatePortfolioFromTemplate("empty")}>
-            새 포트폴리오 만들기
+          <span>Step 1에서 새 포트폴리오를 만들 수 있습니다.</span>
+          <button type="button" onClick={goToStepOne}>
+            Step 1로 이동
           </button>
         </div>
       )}

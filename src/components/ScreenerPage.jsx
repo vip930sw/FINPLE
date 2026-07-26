@@ -10,6 +10,7 @@ import {
 import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
+  resolveDividendYieldDisplay,
 } from "../data/tickers/distributionPolicy";
 import "./ScreenerPage.css";
 
@@ -113,11 +114,8 @@ function formatPercentValue(value, pendingText = "확인 중") {
   if (!Number.isFinite(numberValue)) return pendingText;
   return `${numberValue.toFixed(2)}%`;
 }
-function formatDividendYieldValue(value, item = {}) {
-  if (item.displayDividendYield) return item.displayDividendYield === "0.00%" ? "-" : item.displayDividendYield;
-  if (item.dividendPolicy === "no_dividend") return "-";
-  if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
-  return formatPercentValue(value, "확인 중");
+function formatDividendYieldValue(item = {}) {
+  return resolveDividendYieldDisplay(item).text || "-";
 }
 function getSearchQuery(query = "") {
   return normalizeTicker(query).toLowerCase();
@@ -279,7 +277,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
         </div>
       ) : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span>}<span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item)}</span>}<span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );

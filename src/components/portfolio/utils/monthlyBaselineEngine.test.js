@@ -17,7 +17,10 @@ import {
   getChartComparisonPortfolios,
 } from "./portfolioCalculations.js";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
-import { formatUserFacingBaselineBlockReason } from "./baselineBlockReasonLabels.js";
+import {
+  formatUserFacingBaselineBlockReason,
+  formatUserFacingBaselineBlockReasons,
+} from "./baselineBlockReasonLabels.js";
 
 const BASE_SETTINGS = Object.freeze({
   startValue: 1200,
@@ -401,6 +404,66 @@ test("blocked and review-only metric sources fail closed", () => {
   }
 });
 
+test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
+  const assets = [
+    productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),
+    productionAppExportAsset({ ticker: "SCHD", targetWeight: 15 }),
+    productionAppExportAsset({ ticker: "BND", targetWeight: 15 }),
+    productionAppExportAsset({ ticker: "TLT", targetWeight: 15 }),
+    productionAppExportAsset({
+      ticker: "VNQ",
+      targetWeight: 15,
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({ ticker: "GLD", targetWeight: 10 }),
+    asset({
+      ticker: "CASH",
+      market: "CASH",
+      targetWeight: 10,
+      cagr: null,
+      selectedCagr: null,
+      dividendYield: null,
+      dataStatus: null,
+      metricsStatus: null,
+      reviewFlag: null,
+      overlayStatus: null,
+      productionPublishReady: false,
+      appExportApproved: false,
+      metricsSource: null,
+      sourceHash: null,
+      calculationPolicyVersion: null,
+      pipelineVersion: null,
+    }),
+  ];
+
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets,
+  });
+  const auditReasons = result.blockReasons.join("|");
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    auditReasons,
+    /unsupported_metric_status:VNQ\.reviewFlag=review_required/,
+  );
+  assert.match(
+    auditReasons,
+    /missing_metric_status:CASH\.dataStatus/,
+  );
+  assert.match(
+    auditReasons,
+    /metric_source_not_publish_approved:CASH\.productionPublishReady/,
+  );
+  assert.match(
+    auditReasons,
+    /missing_selected_cagr:CASH/,
+  );
+  assert.equal(assets[4].reviewFlag, "review_required");
+  assert.equal(assets[6].market, "CASH");
+  assert.equal(assets[6].selectedCagr, null);
+});
+
 test("explicit internal app-preview review source calculates while publish gates remain false", () => {
   const previewAsset = asset({
     ticker: "QQQ",
@@ -506,6 +569,38 @@ test("baseline block reasons are translated without exposing raw codes in user-f
     formatUserFacingBaselineBlockReason("missing_metric_lineage:QQQ.sourceHash"),
     "지표 출처 정보가 부족합니다.",
   );
+});
+
+test("user-facing baseline block reasons are deduplicated while audit reasons remain intact", () => {
+  const auditReasons = [
+    "missing_metric_status:QQQ.dataStatus",
+    "unsupported_metric_status:SPY.metricsStatus=review_required",
+    "missing_metric_lineage:QQQ.metricsSource",
+    "missing_metric_lineage:SPY.pipelineVersion",
+    "invalid_production_metric_approval:QQQ.overlayStatus",
+  ];
+  const labels = formatUserFacingBaselineBlockReasons(auditReasons);
+
+  assert.deepEqual(labels, [
+    "지표 계산 계약을 확인할 수 없습니다.",
+    "승인된 지표 상태를 확인할 수 없습니다.",
+    "지표 출처 정보가 부족합니다.",
+  ]);
+  assert.equal(auditReasons.length, 5);
+});
+
+test("verified production release evidence replaces persisted digest lineage", () => {
+  const approvedWithoutDigests = productionAppExportAsset({
+    sourceHash: "",
+    normalizedSeriesHash: "",
+  });
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [approvedWithoutDigests],
+  });
+
+  assert.equal(result.status, "ready");
+  assert.doesNotMatch(result.blockReasons.join("|"), /missing_metric_lineage/);
 });
 
 test("saved portfolio normalization preserves preview identity, nulls, policies, and false gates", () => {

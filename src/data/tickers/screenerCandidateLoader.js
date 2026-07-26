@@ -246,7 +246,11 @@ function createAppExportCandidate(baseCandidate, metricRow, manifest, release = 
   const distributionFields = resolveDistributionYieldFields(
     baseCandidate,
     metricRow.dividendYield,
+    "",
   );
+  const appExportSource = isProduction
+    ? "finple_production_app_export_step114_2zc"
+    : "finple_app_preview_export_step114_2z";
   return {
     ...baseCandidate,
     expectedCagr: metricRow.selectedCagr,
@@ -267,6 +271,7 @@ function createAppExportCandidate(baseCandidate, metricRow, manifest, release = 
     ...distributionFields,
     dividendStatus: metricRow.dividendStatus,
     dividendPolicy: metricRow.dividendStatus,
+    dividendSource: appExportSource,
     dataStatus: metricRow.dataStatus,
     metricsStatus: metricRow.dataStatus,
     reviewFlag: metricRow.reviewFlag,
@@ -276,9 +281,7 @@ function createAppExportCandidate(baseCandidate, metricRow, manifest, release = 
     priceUnavailable: rawMissing,
     metricBaseDate: metricRow.metricBaseDate || manifest.metricBaseDate,
     metricDataThroughMonth: manifest.metricDataThroughMonth,
-    metricsSource: isProduction
-      ? "finple_production_app_export_step114_2zc"
-      : "finple_app_preview_export_step114_2z",
+    metricsSource: appExportSource,
     sourceHash: metricRow.sourceHash || manifest.sourceCandidatePackageHash,
     rawSourceSha256: metricRow.rawSourceSha256 || "",
     normalizationVersion: metricRow.normalizationVersion || "",
@@ -300,9 +303,7 @@ function createAppExportCandidate(baseCandidate, metricRow, manifest, release = 
     metricMode: isProduction
       ? "production_app_export_price_return"
       : "candidate_app_preview_price_return",
-    dataSource: isProduction
-      ? "finple_production_app_export_step114_2zc"
-      : "finple_app_preview_export_step114_2z",
+    dataSource: appExportSource,
   };
 }
 
@@ -548,37 +549,114 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
   };
 }
 
-export function hydrateAssetFromScreenerCandidate(asset = {}) {
-  const candidate = findScreenerCandidateByTicker(asset?.ticker, asset?.market);
+const ACTIVE_CATALOG_PORTFOLIO_FIELDS = Object.freeze([
+  "displayTicker",
+  "providerSymbol",
+  "market",
+  "currency",
+  "quoteCurrency",
+  "assetType",
+  "cagr",
+  "beta",
+  "mdd",
+  "dividendYield",
+  "displayDividendYield",
+  "dividendPolicy",
+  "dividendSource",
+  "exposureType",
+  "distributionType",
+  "distributionFrequency",
+  "trailingDistributionYield",
+  "cashDistributionYieldTtm",
+  "distributionYieldPolicy",
+  "distributionCalculationStatus",
+  "reviewTag",
+  "reviewReason",
+  "priceCagr10y",
+  "rawPriceCagr10y",
+  "rollingCagr10yMedian",
+  "rollingCagr10yP25",
+  "rollingCagr10yP75",
+  "validRollingWindowCount10y",
+  "selectedCagr",
+  "cagrPolicy",
+  "selectedBeta",
+  "betaPolicy",
+  "selectedMdd",
+  "mddPolicy",
+  "dividendStatus",
+  "dataStatus",
+  "metricsStatus",
+  "reviewFlag",
+  "rawPriceCoverageStatus",
+  "priceUnavailable",
+  "metricBaseDate",
+  "metricDataThroughMonth",
+  "metricsSource",
+  "normalizationVersion",
+  "rollingMetricVersion",
+  "pipelineVersion",
+  "calculationPolicyVersion",
+  "overlayStatus",
+  "internalPreviewReviewOnly",
+  "previewLoaderEnabled",
+  "productionAppExportEnabled",
+  "productionReleaseContractVersion",
+  "productionReleaseApprovedAt",
+  "productionReleaseApprovedBy",
+  "productionPublishReady",
+  "appExportApproved",
+  "metricMode",
+  "dataSource",
+]);
+
+export function hydratePortfolioAssetFromActiveCatalog(
+  asset = {},
+  options = {},
+) {
+  const candidate = options.candidate ||
+    findScreenerCandidateByTicker(asset?.ticker, asset?.market);
   if (!candidate) return asset;
   const patch = createAssetPatchFromScreenerCandidate(candidate);
+  const catalogFields = Object.fromEntries(
+    ACTIVE_CATALOG_PORTFOLIO_FIELDS
+      .filter((field) => patch[field] !== undefined)
+      .map((field) => [field, patch[field]]),
+  );
   return {
     ...asset,
-    ...patch,
-    name: asset.name || patch.name,
-    quantity: asset.quantity ?? 0,
-    price: asset.price ?? 0,
-    priceMode: asset.priceMode || "manual",
-    cagr: patch.cagr !== undefined ? patch.cagr : asset.cagr,
-    beta: patch.beta !== undefined ? patch.beta : asset.beta,
-    mdd: patch.mdd !== undefined ? patch.mdd : asset.mdd,
+    ...catalogFields,
     dividendYield: isNonOrdinaryDistribution(patch)
       ? null
-      : patch.internalPreviewReviewOnly
-        ? patch.dividendYield
-        : patch.dividendYield ?? asset.dividendYield ?? null,
+      : patch.dividendYield,
     displayDividendYield: isNonOrdinaryDistribution(patch)
       ? ""
-      : patch.displayDividendYield || asset.displayDividendYield || "",
-    dividendPolicy: patch.dividendPolicy || asset.dividendPolicy || "",
-    dividendSource: patch.dividendSource || asset.dividendSource || "",
-    marketCap: patch.marketCap ?? asset.marketCap ?? null,
-    aum: patch.aum ?? asset.aum ?? null,
-    sizeMetric: patch.sizeMetric ?? asset.sizeMetric ?? null,
-    sizeSource: patch.sizeSource || asset.sizeSource || "",
-    reviewTag: patch.reviewTag || asset.reviewTag || "",
-    reviewReason: patch.reviewReason || asset.reviewReason || "",
+      : patch.displayDividendYield || "",
   };
+}
+
+export function hydratePortfolioFromActiveCatalog(portfolio = {}) {
+  if (!portfolio || typeof portfolio !== "object" || Array.isArray(portfolio)) {
+    return portfolio;
+  }
+  return {
+    ...portfolio,
+    assets: Array.isArray(portfolio.assets)
+      ? portfolio.assets.map((asset) =>
+          hydratePortfolioAssetFromActiveCatalog(asset)
+        )
+      : [],
+  };
+}
+
+export function hydratePortfolioListFromActiveCatalog(portfolioList = []) {
+  return Array.isArray(portfolioList)
+    ? portfolioList.map(hydratePortfolioFromActiveCatalog)
+    : [];
+}
+
+export function hydrateAssetFromScreenerCandidate(asset = {}) {
+  return hydratePortfolioAssetFromActiveCatalog(asset);
 }
 
 export function hydrateAssetForProductionFallback(asset = {}) {

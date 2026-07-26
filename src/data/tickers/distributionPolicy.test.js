@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   TRAILING_DISTRIBUTION_YIELD_POLICY,
   isNonOrdinaryDistribution,
+  resolveDividendYieldDisplay,
   resolveDistributionYieldFields,
 } from "./distributionPolicy.js";
 import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
@@ -89,6 +90,92 @@ test("QQQ and SPY keep ordinary dividends while GLD keeps confirmed zero distinc
   assert.equal(gld.displayDividendYield, "0.00%");
   assert.equal(gld.dividendStatus, "confirmed_zero");
   assert.notEqual(gld.dividendYield, null);
+});
+
+test("Screener and Step 1 share the explicit dividend display state contract", () => {
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "QQQ",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: 0.41,
+      dividendStatus: "confirmed_value",
+    }),
+    { kind: "confirmed_value", text: "0.41%" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "GLD",
+      distributionType: "none",
+      dividendYield: 0,
+      dividendStatus: "confirmed_zero",
+      displayDividendYield: "0.00%",
+      dividendPolicy: "no_dividend",
+    }),
+    { kind: "confirmed_zero", text: "0.00%" },
+  );
+
+  for (const dividendStatus of ["", "missing", "unconfirmed"]) {
+    assert.deepEqual(
+      resolveDividendYieldDisplay({
+        ticker: "MISS",
+        distributionType: "ordinary_cash_dividend",
+        dividendYield: null,
+        dividendStatus,
+      }),
+      { kind: "missing", text: "확인 중" },
+      dividendStatus || "empty status",
+    );
+  }
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "REVIEW",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: 2.5,
+      dividendStatus: "confirmed_value",
+      reviewFlag: "review_required",
+    }),
+    { kind: "review_required", text: "확인 필요" },
+  );
+
+  for (const [ticker, trailingDistributionYield, distributionFrequency] of [
+    ["AIPI", 34.98, "weekly"],
+    ["QYLG", 16.26, "monthly"],
+  ]) {
+    assert.deepEqual(
+      resolveDividendYieldDisplay({
+        ticker,
+        exposureType: ticker === "AIPI"
+          ? "single_stock_option_income"
+          : "index_covered_call_growth",
+        distributionType: "mixed_distribution",
+        distributionFrequency,
+        dividendYield: 0,
+        dividendStatus: "confirmed_zero",
+        trailingDistributionYield,
+      }),
+      { kind: "non_ordinary", text: null },
+      ticker,
+    );
+  }
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "CASH",
+      market: "CASH",
+      dividendYield: 0,
+    }),
+    { kind: "cash", text: "-" },
+  );
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "UNCONFIRMED-ZERO",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: 0,
+    }),
+    { kind: "missing", text: "확인 중" },
+  );
 });
 
 test("ordinary saved assets never replace dividendYield with trailing distribution fields", () => {

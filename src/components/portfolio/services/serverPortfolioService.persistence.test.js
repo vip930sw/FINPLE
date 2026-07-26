@@ -97,6 +97,35 @@ test("authoritative replace restores exact server settings and five assets", () 
   );
 });
 
+test("authoritative replace hydrates catalog fields without changing user portfolio values", () => {
+  installWindow();
+  const serverSnapshot = createQaAipiLifecycleSnapshot();
+  const result = importServerPortfoliosToBrowser(serverSnapshot, {
+    mode: "replace",
+    hydratePortfolio(portfolio) {
+      return {
+        ...portfolio,
+        assets: portfolio.assets.map((item) => ({
+          ...item,
+          dataStatus: "ready",
+          metricsStatus: "ready",
+          overlayStatus: "production_app_export_approved",
+        })),
+      };
+    },
+  });
+  const [restored] = getLocalPortfolioSnapshot().portfolioList;
+
+  assert.equal(result.totalCount, 1);
+  assert.equal(restored.name, "QA AIPI lifecycle");
+  assert.equal(restored.assets[0].quantity, 1);
+  assert.equal(restored.assets[0].price, 100);
+  assert.equal(restored.assets[0].targetEvaluationAmount, 15000000);
+  assert.equal(restored.assets[0].dataStatus, "ready");
+  assert.equal(restored.assets[0].metricsStatus, "ready");
+  assert.equal(restored.assets[0].overlayStatus, "production_app_export_approved");
+});
+
 test("authoritative empty replace stores [] and null active id without default recreation data", () => {
   const storage = installWindow();
   const result = importServerPortfoliosToBrowser(
