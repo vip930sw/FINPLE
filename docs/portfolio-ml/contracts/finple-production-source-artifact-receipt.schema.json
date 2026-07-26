@@ -36,7 +36,7 @@
       "const": "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
     },
     "exporterCommand": {
-      "const": "python -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576"
+      "const": "python -B -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576"
     },
     "exporterVersion": {
       "const": "finple-app-preview-export-v1-step114-2z"

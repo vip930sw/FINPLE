@@ -162,6 +162,10 @@ test("release and source receipt schemas match the conditional operator runbook"
     receiptSchema.properties.candidatePackageHash.const,
     "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276",
   );
+  assert.equal(
+    receiptSchema.properties.exporterCommand.const,
+    "python -B -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576",
+  );
   assert.equal(receiptSchema.properties.deterministicMatch.const, true);
   assert.equal(receiptSchema.properties.completeShardInventory.minItems, 64);
   assert.equal(receiptSchema.properties.completeShardInventory.maxItems, 64);
@@ -183,7 +187,8 @@ test("release and source receipt schemas match the conditional operator runbook"
     assert.match(runbook, new RegExp(field, "i"), field);
   }
   assert.match(runbook, /git -C \$Repo worktree add --detach \$SourceWorktree \$SourceGitSha/);
-  assert.match(runbook, /-m scripts\.recover_production_app_export_source/);
+  assert.match(runbook, /\$Python -B -m scripts\.recover_production_app_export_source/);
+  assert.match(runbook, /python -B -m scripts\.export_finple_app_preview/);
   for (const flag of [
     "--source-worktree",
     "--candidate-zip",
@@ -200,6 +205,11 @@ test("release and source receipt schemas match the conditional operator runbook"
   }
   assert.match(sourceRecovery, /def atomic_write_receipt\(/);
   assert.match(sourceRecovery, /def compare_artifacts\(/);
+  assert.match(sourceRecovery, /"PYTHONDONTWRITEBYTECODE": "1"/);
+  assert.match(
+    sourceRecovery,
+    /sys\.executable,\s*"-B",\s*"-m",\s*"scripts\.export_finple_app_preview"/,
+  );
   assert.match(sourceRecovery, /source_worktree_not_detached/);
   assert.match(sourceRecovery, /candidate_zip_sha256_mismatch/);
   assert.doesNotMatch(
@@ -213,6 +223,7 @@ test("release and source receipt schemas match the conditional operator runbook"
   assert.match(qaTemplate, /deterministicMatch=true/);
   assert.match(qaTemplate, /recover_production_app_export_source/);
   assert.match(qaTemplate, /same sanitized environment and no retry/);
+  assert.match(qaTemplate, /PYTHONDONTWRITEBYTECODE=1/);
   assert.match(qaTemplate, /failure stdout contains only safe status\/reason fields/);
   assert.match(qaTemplate, /no claim of byte identity with the historical protected Preview/);
 });

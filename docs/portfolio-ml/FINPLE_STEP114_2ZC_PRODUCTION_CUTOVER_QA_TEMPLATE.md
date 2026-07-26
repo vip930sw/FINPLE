@@ -12,6 +12,7 @@
 - [ ] exporter version:
 - [ ] `scripts.recover_production_app_export_source` preflight passed
 - [ ] Run A/B used the same sanitized environment and no retry
+- [ ] operator/exporter used `-B`; exporter forced `PYTHONDONTWRITEBYTECODE=1`
 - [ ] Run A ZIP SHA-256:
 - [ ] Run B ZIP SHA-256:
 - [ ] deterministicMatch=true

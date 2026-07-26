@@ -72,7 +72,7 @@ git -C $Repo worktree add --detach $SourceWorktree $SourceGitSha
 
 Push-Location -LiteralPath $Repo
 try {
-  $RecoveryResult = & $Python -m scripts.recover_production_app_export_source `
+  $RecoveryResult = & $Python -B -m scripts.recover_production_app_export_source `
     --source-worktree $SourceWorktree `
     --candidate-zip $CandidateZip `
     --run-a-dir $RunARoot `
@@ -96,6 +96,10 @@ finally {
 Run A/B 단발 실행, output boundary 검증, deterministic comparison, receipt schema
 검증과 atomic receipt write를 모두 수행한다. retry, 기존 output overwrite,
 release manifest 생성, provider/Colab/Drive/Candidate 계산 호출은 없다.
+operator와 exporter subprocess는 모두 `-B`를 사용하고 exporter sanitized
+environment는 ambient 값과 관계없이 `PYTHONDONTWRITEBYTECODE=1`을 강제한다.
+source worktree가 dirty해지면 파일을 삭제하거나 무시하지 않고 Run B 전에
+fail-closed한다.
 실패 stdout은 `status`, safe `reasonCode`, `receiptCreated=false`만 포함하며 raw
 bytes, digest 또는 absolute path를 출력하지 않는다.
 
@@ -145,7 +149,7 @@ receipt의 exact fields는 다음과 같다.
 `exporterCommand`에는 실제 로컬 경로를 제외한 다음 정규화 명령을 기록한다.
 
 ```text
-python -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576
+python -B -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576
 ```
 
 receipt는 `generatedAt` UTC timestamp와 승인된 `operatorId`를 포함하고

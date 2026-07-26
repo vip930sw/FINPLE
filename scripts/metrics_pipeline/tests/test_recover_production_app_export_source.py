@@ -8,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -29,12 +31,15 @@ from scripts.recover_production_app_export_source import (
     RecoveryDependencies,
     RecoveryError,
     SOURCE_GIT_MAIN_SHA,
+    _build_export_environment,
     _validate_fixed_bindings,
     atomic_write_receipt,
     build_parser,
     compare_artifacts,
+    exporter_argv,
     main,
     recover_production_app_export_source,
+    run_exporter_once,
     validate_receipt_contract,
 )
 from scripts.stage_app_preview_vercel import sha256_file
@@ -258,6 +263,89 @@ class ProductionSourceRecoveryTests(unittest.TestCase):
             },
         )
 
+    def test_export_environment_overrides_ambient_bytecode_setting(self) -> None:
+        with patch.dict(os.environ, {"PYTHONDONTWRITEBYTECODE": "0"}):
+            environment = _build_export_environment()
+        self.assertEqual(environment["PYTHONDONTWRITEBYTECODE"], "1")
+        self.assertEqual(environment["PYTHONHASHSEED"], "0")
+
+    def test_exporter_argv_and_receipt_command_pin_bytecode_prevention(self) -> None:
+        argv = exporter_argv(self.candidate_zip, self.run_a)
+        self.assertEqual(
+            argv[:4],
+            [
+                sys.executable,
+                "-B",
+                "-m",
+                "scripts.export_finple_app_preview",
+            ],
+        )
+        self.assertEqual(
+            EXPORTER_COMMAND,
+            "python -B -m scripts.export_finple_app_preview "
+            "--input-package <candidate-zip> --output-dir <empty-output> "
+            "--shard-count 64 --max-rows-per-shard 12000 "
+            "--target-shard-bytes 1048576",
+        )
+
+    def test_real_subprocess_module_import_creates_no_bytecode_and_keeps_git_clean(self) -> None:
+        source = self.temp / "real-subprocess-source"
+        module_directory = source / "scripts"
+        module_directory.mkdir(parents=True)
+        (module_directory / "__init__.py").write_text("", encoding="utf-8")
+        (module_directory / "export_finple_app_preview.py").write_text(
+            "import json\nprint(json.dumps({'status': 'ok'}))\n",
+            encoding="utf-8",
+        )
+        subprocess.run(
+            ["git", "init", str(source)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(source), "add", "scripts"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(source),
+                "-c",
+                "user.name=FINPLE Fixture",
+                "-c",
+                "user.email=fixture@finple.invalid",
+                "commit",
+                "-m",
+                "fixture",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        result = run_exporter_once(
+            "a",
+            source,
+            self.candidate_zip,
+            self.temp / "real-subprocess-output",
+            _build_export_environment(),
+        )
+
+        self.assertEqual(result, {"status": "ok"})
+        self.assertEqual(list(source.rglob("__pycache__")), [])
+        self.assertEqual(list(source.rglob("*.pyc")), [])
+        status = subprocess.run(
+            ["git", "-C", str(source), "status", "--porcelain=v1", "--untracked-files=all"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(status.stdout, "")
+
     def test_failure_stdout_contains_only_safe_status_fields(self) -> None:
         output = io.StringIO()
         with redirect_stdout(output):
@@ -378,6 +466,47 @@ class ProductionSourceRecoveryTests(unittest.TestCase):
         )
         self.assertEqual([call["runLabel"] for call in failing.calls], ["a"])
         self.assertFalse(self.run_b.joinpath("export.zip").exists())
+
+    def test_source_dirty_after_run_a_blocks_run_b_without_cleanup_or_receipt(self) -> None:
+        calls: list[str] = []
+        bytecode = (
+            self.source_worktree
+            / "scripts"
+            / "__pycache__"
+            / "export_finple_app_preview.fixture.pyc"
+        )
+
+        def dirty_exporter(
+            run_label: str,
+            _source_worktree: Path,
+            _candidate_zip: Path,
+            _output_dir: Path,
+            _environment: dict[str, str],
+        ) -> dict[str, object]:
+            calls.append(run_label)
+            bytecode.parent.mkdir(parents=True, exist_ok=True)
+            bytecode.write_bytes(b"synthetic bytecode")
+            return {"status": "ok"}
+
+        def observed_git_state(_source: Path) -> GitState:
+            status = (
+                "?? scripts/__pycache__/export_finple_app_preview.fixture.pyc\n"
+                if bytecode.exists()
+                else ""
+            )
+            return GitState(SOURCE_GIT_MAIN_SHA, True, status)
+
+        self.assert_blocked(
+            "source_worktree_dirty",
+            dependencies=self.dependencies(
+                exporter=dirty_exporter,
+                git_reader=observed_git_state,
+            ),
+        )
+        self.assertEqual(calls, ["a"])
+        self.assertTrue(bytecode.is_file())
+        self.assertEqual(list(self.run_b.iterdir()), [])
+        self.assertFalse(self.receipt.exists())
 
     def test_exporter_run_b_failure_does_not_approve_run_a(self) -> None:
         failing = FakeExporter(fail_label="b")
@@ -541,6 +670,10 @@ class ProductionSourceRecoveryTests(unittest.TestCase):
         self.assertEqual(
             self.exporter.calls[0]["environment"]["PYTHONHASHSEED"],
             "0",
+        )
+        self.assertEqual(
+            self.exporter.calls[0]["environment"]["PYTHONDONTWRITEBYTECODE"],
+            "1",
         )
         self.assertEqual(replace_spy.call_count, 1)
         self.assertTrue(self.receipt.is_file())

@@ -45,7 +45,7 @@ CANDIDATE_ZIP_SHA256 = "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e
 CANDIDATE_PACKAGE_HASH = "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
 EXPORTER_VERSION = "finple-app-preview-export-v1-step114-2z"
 EXPORTER_COMMAND = (
-    "python -m scripts.export_finple_app_preview "
+    "python -B -m scripts.export_finple_app_preview "
     "--input-package <candidate-zip> --output-dir <empty-output> "
     "--shard-count 64 --max-rows-per-shard 12000 "
     "--target-shard-bytes 1048576"
@@ -299,6 +299,7 @@ def _build_export_environment() -> dict[str, str]:
     }
     environment.update(
         {
+            "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONHASHSEED": "0",
             "PYTHONIOENCODING": "utf-8",
             "TZ": "UTC",
@@ -310,6 +311,7 @@ def _build_export_environment() -> dict[str, str]:
 def exporter_argv(candidate_zip: Path, output_dir: Path) -> list[str]:
     return [
         sys.executable,
+        "-B",
         "-m",
         "scripts.export_finple_app_preview",
         "--input-package",
