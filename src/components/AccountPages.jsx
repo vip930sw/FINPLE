@@ -5,7 +5,6 @@ import {
   createOrLoadDemoUser,
   fetchCurrentServerUser,
   fetchInquiryAttachmentStatus,
-  fetchServerPortfolios,
   fetchSupportInquiries,
   getFinpleAdminToken,
   getLocalPortfolioSnapshot,
@@ -1702,11 +1701,6 @@ function ServerStoragePanel({ planKey = "free", isEducationAccount = false }) {
       return;
     }
 
-    if (!snapshot.portfolioCount) {
-      setStatusMessage("업로드할 브라우저 포트폴리오가 없습니다.");
-      return;
-    }
-
     const confirmed = window.confirm(
       `현재 브라우저에 저장된 포트폴리오 ${snapshot.portfolioCount}개를 서버 DB로 동기화할까요?\n\nDB가 연결된 개발/운영 환경에서만 실행됩니다.`
     );
@@ -1737,14 +1731,12 @@ function ServerStoragePanel({ planKey = "free", isEducationAccount = false }) {
 
     setIsLoading(true);
     try {
-      const portfolios = serverPortfolios.length > 0 ? serverPortfolios : await fetchServerPortfolios();
+      const serverSnapshot = await listServerPortfolios();
+      const portfolios = Array.isArray(serverSnapshot?.portfolios)
+        ? serverSnapshot.portfolios
+        : [];
       setServerPortfolios(portfolios);
       setServerPortfolioCount(portfolios.length);
-
-      if (portfolios.length === 0) {
-        setStatusMessage("서버에 불러올 포트폴리오가 없습니다.");
-        return;
-      }
 
       const actionLabel = mode === "replace" ? "교체" : "병합";
       const confirmed = window.confirm(
@@ -1755,7 +1747,7 @@ function ServerStoragePanel({ planKey = "free", isEducationAccount = false }) {
 
       if (!confirmed) return;
 
-      const result = importServerPortfoliosToBrowser(portfolios, { mode });
+      const result = importServerPortfoliosToBrowser(serverSnapshot, { mode });
       setSnapshotVersion((value) => value + 1);
       setStatusMessage(
         `서버 데이터 ${actionLabel} 완료: ${result.importedCount}개 불러옴, 브라우저 총 ${result.totalCount}개`

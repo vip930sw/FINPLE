@@ -1,11 +1,20 @@
 import {
   readStoredMbtiProfile,
   restoreMbtiProfileFromPortfolios,
-} from "../utils/mbtiProfileStorage";
+} from "../utils/mbtiProfileStorage.js";
 import { normalizeFinpleApiBaseUrl } from "./apiBaseUrl.js";
+import {
+  normalizePortfolioPersistenceGlobalSettings,
+  normalizePortfolioPersistencePortfolio,
+  normalizePortfolioPersistenceSnapshot,
+} from "../utils/portfolioPersistenceContract.js";
+import {
+  readScopedPortfolioStorageItem,
+  writeScopedPortfolioStorageItem,
+} from "../utils/portfolioStorageScope.js";
 
 const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
+  import.meta?.env?.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
@@ -114,20 +123,27 @@ export async function fetchCurrentServerUser() {
 }
 
 export function getLocalPortfolioSnapshot() {
-  const portfolioList = readJson(PORTFOLIO_LIST_STORAGE_KEY, []);
-  const activePortfolioId = window.localStorage.getItem(ACTIVE_PORTFOLIO_STORAGE_KEY) || portfolioList?.[0]?.id || null;
-  const globalSettings = readJson(GLOBAL_SETTINGS_STORAGE_KEY, null);
+  const portfolioList = readScopedJson(PORTFOLIO_LIST_STORAGE_KEY, []);
+  const activePortfolioId =
+    readScopedPortfolioStorageItem(ACTIVE_PORTFOLIO_STORAGE_KEY) ||
+    portfolioList?.[0]?.id ||
+    null;
+  const globalSettings = readScopedJson(GLOBAL_SETTINGS_STORAGE_KEY, null);
   const activePortfolio = Array.isArray(portfolioList)
     ? portfolioList.find((portfolio) => portfolio.id === activePortfolioId) || portfolioList[0]
     : null;
+  const canonicalSnapshot = normalizePortfolioPersistenceSnapshot({
+    portfolioList,
+    activePortfolioId,
+    globalSettings,
+  });
 
   return {
+    ...canonicalSnapshot,
     source: "browser-local-storage",
-    portfolioList: Array.isArray(portfolioList) ? portfolioList : [],
-    portfolioCount: Array.isArray(portfolioList) ? portfolioList.length : 0,
-    activePortfolioId,
+    portfolioList: canonicalSnapshot.portfolios,
+    portfolioCount: canonicalSnapshot.portfolios.length,
     activePortfolioName: activePortfolio?.name || "",
-    globalSettings,
     mbtiProfile: readStoredMbtiProfile(),
     capturedAt: new Date().toISOString(),
   };
@@ -142,18 +158,15 @@ export async function listServerPortfolios() {
 }
 
 export async function syncLocalPortfoliosToServer(snapshot = getLocalPortfolioSnapshot()) {
-  const portfolioList = Array.isArray(snapshot.portfolioList) ? snapshot.portfolioList : [];
-
-  if (portfolioList.length === 0) {
-    throw new Error("동기화할 브라우저 포트폴리오가 없습니다.");
-  }
+  const canonicalSnapshot = normalizePortfolioPersistenceSnapshot(snapshot);
 
   return requestJson("/account/portfolios/sync-local", {
     method: "POST",
     body: JSON.stringify({
-      portfolioList,
-      activePortfolioId: snapshot.activePortfolioId,
-      globalSettings: snapshot.globalSettings,
+      schemaVersion: canonicalSnapshot.schemaVersion,
+      portfolioList: canonicalSnapshot.portfolios,
+      activePortfolioId: canonicalSnapshot.activePortfolioId,
+      globalSettings: canonicalSnapshot.globalSettings,
       mbtiProfile: snapshot.mbtiProfile || readStoredMbtiProfile(),
       importedFrom: snapshot.source || "browser-local-storage",
       importedAt: new Date().toISOString(),
@@ -164,6 +177,17 @@ export async function syncLocalPortfoliosToServer(snapshot = getLocalPortfolioSn
 export async function fetchServerPortfolios() {
   const response = await listServerPortfolios();
   return Array.isArray(response?.portfolios) ? response.portfolios : [];
+}
+
+export async function fetchServerPortfolioSnapshot() {
+  return listServerPortfolios();
+}
+
+export async function deleteServerPortfolio(portfolioId) {
+  if (!portfolioId) throw new Error("삭제할 포트폴리오 ID가 없습니다.");
+  return requestJson(`/account/portfolios/${encodeURIComponent(portfolioId)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function fetchInvestmentMbtiProfile() {
@@ -564,17 +588,28 @@ export async function deleteAdminEducationAccount(accountId) {
   );
 }
 
-export function importServerPortfoliosToBrowser(serverPortfolios = [], options = {}) {
+export function importServerPortfoliosToBrowser(serverInput = [], options = {}) {
   const mode = options.mode || "merge";
-  const normalizedServerPortfolios = Array.isArray(serverPortfolios)
-    ? serverPortfolios.map((portfolio, index) => normalizeServerPortfolioForLocal(portfolio, index))
-    : [];
+  const serverEnvelope = Array.isArray(serverInput)
+    ? { portfolios: serverInput }
+    : serverInput || {};
+  const canonicalSnapshot = normalizePortfolioPersistenceSnapshot({
+    portfolios: serverEnvelope.portfolios,
+    activePortfolioId: serverEnvelope.activePortfolioId,
+    globalSettings:
+      serverEnvelope.globalSettings ||
+      getLegacyGlobalSettings(serverEnvelope.portfolios?.[0]),
+  });
+  const allNormalizedServerPortfolios = canonicalSnapshot.portfolios.map(
+    (portfolio, index) => normalizeServerPortfolioForLocal(portfolio, index),
+  );
+  const maxPortfolios = Number(options.maxPortfolios);
+  const normalizedServerPortfolios =
+    Number.isFinite(maxPortfolios) && maxPortfolios >= 0
+      ? allNormalizedServerPortfolios.slice(0, maxPortfolios)
+      : allNormalizedServerPortfolios;
 
-  if (normalizedServerPortfolios.length === 0) {
-    throw new Error("불러올 서버 포트폴리오가 없습니다.");
-  }
-
-  const currentPortfolios = readJson(PORTFOLIO_LIST_STORAGE_KEY, []);
+  const currentPortfolios = readScopedJson(PORTFOLIO_LIST_STORAGE_KEY, []);
   const currentList = Array.isArray(currentPortfolios) ? currentPortfolios : [];
 
   let nextList;
@@ -608,24 +643,33 @@ export function importServerPortfoliosToBrowser(serverPortfolios = [], options =
     nextList = [...currentList, ...imported];
   }
 
-  window.localStorage.setItem(PORTFOLIO_LIST_STORAGE_KEY, JSON.stringify(nextList));
-  window.localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, nextList[0]?.id || "");
-  restoreMbtiProfileFromPortfolios(nextList, {
-    activePortfolioId: nextList[0]?.id || "",
-    source: "server-portfolio-import",
-  });
+  const requestedActiveId =
+    mode === "replace" ? canonicalSnapshot.activePortfolioId : nextList[0]?.id || null;
+  const nextActivePortfolioId = nextList.some(
+    (portfolio) => portfolio.id === requestedActiveId,
+  )
+    ? requestedActiveId
+    : nextList[0]?.id || null;
 
-  if (normalizedServerPortfolios[0]) {
-    const first = normalizedServerPortfolios[0];
-    const currentSettings = readJson(GLOBAL_SETTINGS_STORAGE_KEY, {});
-    const nextSettings = {
-      ...currentSettings,
-      monthlyCashFlow: currentSettings?.monthlyCashFlow ?? first.monthlyInvestment ?? 1000000,
-      years: currentSettings?.years ?? first.investmentYears ?? 10,
-      inflationRate: currentSettings?.inflationRate ?? first.inflationRate ?? 2.5,
-      dividendReinvest: currentSettings?.dividendReinvest ?? first.dividendReinvest ?? true,
-    };
-    window.localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
+  writeScopedPortfolioStorageItem(
+    PORTFOLIO_LIST_STORAGE_KEY,
+    JSON.stringify(nextList),
+  );
+  writeScopedPortfolioStorageItem(
+    ACTIVE_PORTFOLIO_STORAGE_KEY,
+    nextActivePortfolioId,
+  );
+  if (mode === "replace" || normalizedServerPortfolios.length > 0) {
+    writeScopedPortfolioStorageItem(
+      GLOBAL_SETTINGS_STORAGE_KEY,
+      JSON.stringify(canonicalSnapshot.globalSettings),
+    );
+  }
+  if (nextList.length > 0) {
+    restoreMbtiProfileFromPortfolios(nextList, {
+      activePortfolioId: nextActivePortfolioId || "",
+      source: "server-portfolio-import",
+    });
   }
 
   window.dispatchEvent(new Event("finple-local-storage-updated"));
@@ -634,46 +678,35 @@ export function importServerPortfoliosToBrowser(serverPortfolios = [], options =
     mode,
     importedCount: normalizedServerPortfolios.length,
     totalCount: nextList.length,
-    activePortfolioId: nextList[0]?.id || null,
+    activePortfolioId: nextActivePortfolioId,
+    globalSettings: canonicalSnapshot.globalSettings,
+    schemaVersion: canonicalSnapshot.schemaVersion,
   };
 }
 
-function normalizeServerPortfolioForLocal(portfolio, index = 0) {
-  const assets = Array.isArray(portfolio?.assets)
-    ? portfolio.assets.map((asset, assetIndex) => ({
-        id: asset.id || `${portfolio.id || "server"}-asset-${assetIndex}`,
-        ticker: asset.ticker || "",
-        name: asset.name || "",
-        quantity: Number(asset.quantity || 0),
-        price: Number(asset.price || 0),
-        currency: asset.currency || "KRW",
-        cagr: Number(asset.cagr || 0),
-        beta: Number(asset.beta || 0),
-        mdd: Number(asset.mdd || 0),
-        dividendYield: Number(asset.dividendYield ?? asset.dividend_yield ?? 0),
-        dataSource: asset.dataSource || asset.data_source || "server-db",
-        fetchedAt: asset.fetchedAt || asset.fetched_at || null,
-        sortOrder: Number(asset.sortOrder ?? asset.sort_order ?? assetIndex),
-      }))
-    : [];
-
+export function normalizeServerPortfolioForLocal(portfolio, index = 0) {
   return {
-    id: portfolio.id || `server-portfolio-${index + 1}`,
-    name: portfolio.name || `서버 포트폴리오 ${index + 1}`,
-    title: portfolio.name || `서버 포트폴리오 ${index + 1}`,
-    description: portfolio.description || "",
-    monthlyInvestment: Number(portfolio.monthlyInvestment ?? portfolio.monthly_investment ?? 1000000),
-    investmentYears: Number(portfolio.investmentYears ?? portfolio.investment_years ?? 10),
-    inflationRate: Number(portfolio.inflationRate ?? portfolio.inflation_rate ?? 2.5),
-    dividendReinvest: Boolean(portfolio.dividendReinvest ?? portfolio.dividend_reinvest ?? true),
-    assets,
-    mbti: portfolio.mbti || null,
+    ...normalizePortfolioPersistencePortfolio(portfolio, index),
     source: "server-db",
-    serverId: portfolio.id || null,
-    createdAt: portfolio.createdAt || portfolio.created_at || null,
-    updatedAt: portfolio.updatedAt || portfolio.updated_at || null,
-    sortOrder: Number(portfolio.sortOrder ?? portfolio.sort_order ?? index),
+    serverId: portfolio.serverId || portfolio.id || null,
   };
+}
+
+function getLegacyGlobalSettings(portfolio = {}) {
+  return normalizePortfolioPersistenceGlobalSettings({
+    startValue: portfolio?.startValue,
+    monthlyCashFlow:
+      portfolio?.monthlyCashFlow ??
+      portfolio?.monthlyInvestment ??
+      portfolio?.monthly_investment,
+    years:
+      portfolio?.years ??
+      portfolio?.investmentYears ??
+      portfolio?.investment_years,
+    inflationRate: portfolio?.inflationRate ?? portfolio?.inflation_rate,
+    dividendReinvest:
+      portfolio?.dividendReinvest ?? portfolio?.dividend_reinvest,
+  });
 }
 
 function makeUniquePortfolioName(baseName, existingNameSet) {
@@ -773,6 +806,17 @@ function readJson(key, fallback) {
 
   try {
     const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) return fallback;
+    return JSON.parse(rawValue);
+  } catch {
+    return fallback;
+  }
+}
+
+function readScopedJson(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const rawValue = readScopedPortfolioStorageItem(key);
     if (!rawValue) return fallback;
     return JSON.parse(rawValue);
   } catch {

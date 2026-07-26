@@ -25,6 +25,8 @@ import {
   normalizeAsset,
   normalizeGlobalSettings,
 } from "../utils/portfolioFactory";
+import { deletePortfolioState } from "../utils/portfolioLifecycle.js";
+import { writeScopedPortfolioStorageItem } from "../utils/portfolioStorageScope.js";
 
 import {
   calculatePortfolioResult,
@@ -98,6 +100,14 @@ function applyPortfolioPlanLimitToState(portfolioState) {
   const portfolioLimit = currentPlan?.limits?.portfolios;
   if (!portfolioState || !Array.isArray(portfolioState.portfolioList)) return portfolioState;
   if (!Number.isFinite(portfolioLimit)) return portfolioState;
+  if (portfolioState.portfolioList.length === 0) {
+    return {
+      ...portfolioState,
+      portfolioList: [],
+      activePortfolioId: null,
+      activePortfolio: null,
+    };
+  }
   const limit = Math.max(1, Number(portfolioLimit));
   if (portfolioState.portfolioList.length <= limit) return portfolioState;
   const activePortfolio = portfolioState.portfolioList.find((portfolio) => portfolio.id === portfolioState.activePortfolioId) || portfolioState.portfolioList[0];
@@ -147,7 +157,9 @@ export default function usePortfolioSimulator() {
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
   const [activePortfolioId, setActivePortfolioId] = useState(initialPortfolioState.activePortfolioId);
   const [settings, setSettings] = useState(initialPortfolioState.globalSettings || DEFAULT_SETTINGS);
-  const [assets, setAssets] = useState(() => cloneAssets(initialPortfolioState.activePortfolio.assets));
+  const [assets, setAssets] = useState(() =>
+    cloneAssets(initialPortfolioState.activePortfolio?.assets || [])
+  );
   const [targetWeightDrafts, setTargetWeightDrafts] = useState({});
   const [activeSimulatorTab, setActiveSimulatorTab] = useState("settings");
   const [isPortfolioDropdownOpen, setIsPortfolioDropdownOpen] = useState(false);
@@ -168,10 +180,10 @@ export default function usePortfolioSimulator() {
   const pendingTemplateAutoLookupRef = useRef(false);
   const backupFileInputRef = useRef(null);
 
-  useEffect(() => { localStorage.setItem(PORTFOLIO_LIST_STORAGE_KEY, JSON.stringify(portfolioList)); setLastLocalSaveAt(new Date().toISOString()); }, [portfolioList]);
-  useEffect(() => { localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, activePortfolioId); setLastLocalSaveAt(new Date().toISOString()); }, [activePortfolioId]);
+  useEffect(() => { writeScopedPortfolioStorageItem(PORTFOLIO_LIST_STORAGE_KEY, JSON.stringify(portfolioList)); setLastLocalSaveAt(new Date().toISOString()); }, [portfolioList]);
+  useEffect(() => { writeScopedPortfolioStorageItem(ACTIVE_PORTFOLIO_STORAGE_KEY, activePortfolioId || null); setLastLocalSaveAt(new Date().toISOString()); }, [activePortfolioId]);
   useEffect(() => { setPortfolioList((previousList) => previousList.map((portfolio) => portfolio.id === activePortfolioId ? { ...portfolio, assets, updatedAt: new Date().toISOString() } : portfolio)); }, [assets, activePortfolioId]);
-  useEffect(() => { localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings)); setLastLocalSaveAt(new Date().toISOString()); }, [settings]);
+  useEffect(() => { writeScopedPortfolioStorageItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings)); setLastLocalSaveAt(new Date().toISOString()); }, [settings]);
   useEffect(() => { if (!pendingTemplateAutoLookupRef.current) return; pendingTemplateAutoLookupRef.current = false; window.setTimeout(() => fetchAllAssetData(), 160); }, [assets]);
   useEffect(() => {
     let appliedPackageHash = "";
@@ -365,7 +377,7 @@ export default function usePortfolioSimulator() {
   function createPortfolioFromTemplate(templateKey = "default") { const templateMap = { default: DEFAULT_ASSETS, balanced: DEFAULT_ASSETS, stable: STABLE_ASSETS, growth: GROWTH_ASSETS, dividend: DIVIDEND_ASSETS, empty: EMPTY_ASSETS, goldDefense: GOLD_DEFENSE_ASSETS, reitIncome: REIT_INCOME_ASSETS, growthZero: GROWTH_ZERO_ASSETS, growthFocus: GROWTH_FOCUS_ASSETS, allWeather: ALL_WEATHER_ASSETS, highConviction: HIGH_CONVICTION_ASSETS }; const nameMap = { default: "기본 포트폴리오", balanced: "균형형 포트폴리오", stable: "안정형 포트폴리오", growth: "성장형 포트폴리오", dividend: "배당형 포트폴리오", empty: "빈 포트폴리오", goldDefense: "금 방어형 포트폴리오", reitIncome: "리츠 인컴형 포트폴리오", growthZero: "성장주 제로형 포트폴리오", growthFocus: "성장주 집중형 포트폴리오", allWeather: "올웨더형 포트폴리오", highConviction: "하이컨빅션형 포트폴리오" }; const nextAssets = templateMap[templateKey] || DEFAULT_ASSETS; const nextPortfolio = createPortfolio({ name: nameMap[templateKey] || "새 포트폴리오", assets: nextAssets, settings }); pendingTemplateAutoLookupRef.current = templateKey !== "empty"; setPortfolioList([nextPortfolio, ...portfolioList]); setActivePortfolioId(nextPortfolio.id); setAssets(cloneAssets(nextPortfolio.assets)); setTargetWeightDrafts({}); setIsNewPortfolioMenuOpen(false); setAssetLookupSummary(templateKey === "empty" ? "빈 포트폴리오를 생성했습니다." : "프리셋 포트폴리오를 생성했습니다. 자산 데이터를 자동 조회합니다."); }
   function duplicateActivePortfolio() { const duplicatedPortfolio = createPortfolio({ name: `${activePortfolio?.name || "포트폴리오"} 복사본`, assets, settings }); setPortfolioList([duplicatedPortfolio, ...portfolioList]); setActivePortfolioId(duplicatedPortfolio.id); setAssets(cloneAssets(duplicatedPortfolio.assets)); setTargetWeightDrafts({}); }
   function renameActivePortfolio(nextName) { setPortfolioList((previousList) => previousList.map((portfolio) => portfolio.id === activePortfolioId ? { ...portfolio, name: nextName, updatedAt: new Date().toISOString() } : portfolio)); }
-  function deleteActivePortfolio() { if (portfolioList.length <= 1) return; const nextPortfolioList = portfolioList.filter((portfolio) => portfolio.id !== activePortfolioId); const nextActivePortfolio = nextPortfolioList[0]; setPortfolioList(nextPortfolioList); setActivePortfolioId(nextActivePortfolio.id); setAssets(cloneAssets(nextActivePortfolio.assets)); setTargetWeightDrafts({}); }
+  function deleteActivePortfolio(portfolioId = activePortfolioId) { const nextState = deletePortfolioState(portfolioList, portfolioId); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio?.assets || [])); setTargetWeightDrafts({}); }
   function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS)); pendingTemplateAutoLookupRef.current = true; setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화했습니다. 자산 데이터를 자동 조회합니다."); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
   function changeSimulatorTab(nextTab) { setActiveSimulatorTab(normalizeSimulatorTab(nextTab)); }
@@ -373,7 +385,7 @@ export default function usePortfolioSimulator() {
   function selectPortfolioFromFloating(id) { selectPortfolio(id); }
   function downloadPortfolioBackup() { downloadJsonFile({ portfolioList, activePortfolioId, globalSettings: settings, appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, schemaVersion: FINPLE_BACKUP_SCHEMA_VERSION, exportedAt: new Date().toISOString() }, createBackupFileName(activePortfolio?.name)); }
   function openPortfolioBackupFile() { backupFileInputRef.current?.click(); }
-  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = applyPortfolioPlanLimitToState(loadPortfolioState(parsedData)); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio.assets)); setTargetWeightDrafts({}); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
+  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = applyPortfolioPlanLimitToState(loadPortfolioState(parsedData)); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio?.assets || [])); setTargetWeightDrafts({}); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
   function downloadReportText() { downloadTextFile(createPortfolioReportText({ activePortfolio, detailReport, settings, result, assets }), `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.txt`); }
   function saveReportPdf() { window.print(); }
   function printReport() { window.print(); }

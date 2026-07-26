@@ -85,7 +85,9 @@ test("existing saved portfolio create, select, delete, server, and backup wiring
 
   assert.match(panel, /savePortfoliosToServer/);
   assert.match(panel, /loadPortfoliosFromServer/);
-  assert.match(panel, /window\.localStorage\.setItem/);
+  assert.match(panel, /importServerPortfoliosToBrowser/);
+  assert.match(panel, /deletePortfolioWithServerSync/);
+  assert.match(panel, /portfolioEmptyState/);
   assert.match(panel, /downloadPortfolioBackup/);
   assert.match(panel, /restorePortfolioBackup/);
   assert.match(hook, /document\.getElementById\("saved-portfolios"\)/);

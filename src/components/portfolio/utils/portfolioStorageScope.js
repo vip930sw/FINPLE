@@ -1,9 +1,7 @@
-import {
-  ACTIVE_PORTFOLIO_STORAGE_KEY,
-  GLOBAL_SETTINGS_STORAGE_KEY,
-  LEGACY_STORAGE_KEY,
-  PORTFOLIO_LIST_STORAGE_KEY,
-} from "../constants";
+const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
+const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
+const LEGACY_STORAGE_KEY = "finple-portfolio-simulator";
+const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const STORAGE_KEYS = [

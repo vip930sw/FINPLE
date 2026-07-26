@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import { query, withTransaction } from "./database.js";
+import {
+  createPortfolioPersistenceStorageModel,
+  encodeEmptyPortfolioPersistenceSnapshot,
+  hydratePortfolioPersistenceRow,
+} from "../services/portfolioPersistenceModel.js";
 
 const DEFAULT_DEV_USER_ID =
   process.env.FINPLE_DEV_USER_ID || "00000000-0000-4000-8000-000000000001";
@@ -66,6 +71,22 @@ export async function listPortfolios(userId = DEFAULT_DEV_USER_ID) {
   return hydratePortfolios(portfolioResult.rows);
 }
 
+export async function getLatestPortfolioPersistenceEnvelope(userId = DEFAULT_DEV_USER_ID) {
+  await ensureUserExistsForRead(userId);
+
+  const result = await query(
+    `SELECT description
+       FROM portfolios
+      WHERE user_id = $1
+      ORDER BY updated_at DESC, created_at DESC
+      LIMIT 1`,
+    [userId],
+  );
+
+  if (result.rowCount === 0) return null;
+  return hydratePortfolioPersistenceRow(result.rows[0], []).__persistenceEnvelope || null;
+}
+
 export async function getPortfolio(portfolioId, userId = DEFAULT_DEV_USER_ID) {
   await ensureUserExistsForRead(userId);
 
@@ -105,7 +126,7 @@ export async function createPortfolio(input, userId = DEFAULT_DEV_USER_ID) {
         portfolioId,
         userId,
         normalized.name,
-        normalized.description,
+        normalized.encodedDescription,
         normalized.monthlyInvestment,
         normalized.investmentYears,
         normalized.inflationRate,
@@ -157,7 +178,7 @@ export async function updatePortfolio(portfolioId, input, userId = DEFAULT_DEV_U
         portfolioId,
         userId,
         normalized.name ?? current.name,
-        normalized.description ?? current.description,
+        normalized.encodedDescription ?? current.description,
         normalized.monthlyInvestment ?? current.monthly_investment,
         normalized.investmentYears ?? current.investment_years,
         normalized.inflationRate ?? current.inflation_rate,
@@ -188,12 +209,58 @@ export async function archivePortfolio(portfolioId, userId = DEFAULT_DEV_USER_ID
   );
 
   if (result.rowCount === 0) {
+    const archivedResult = await query(
+      `SELECT id
+         FROM portfolios
+        WHERE id = $1 AND user_id = $2 AND is_archived = TRUE`,
+      [portfolioId, userId],
+    );
+    if (archivedResult.rowCount > 0) {
+      return { ok: true, id: portfolioId, alreadyDeleted: true };
+    }
+
     const error = new Error("삭제할 포트폴리오를 찾지 못했습니다.");
     error.statusCode = 404;
     throw error;
   }
 
   return { ok: true, id: portfolioId };
+}
+
+export async function archiveAllPortfoliosWithSnapshot(
+  userId = DEFAULT_DEV_USER_ID,
+  snapshot = {},
+) {
+  return withTransaction(async (tx) => {
+    await ensureUserExistsForTransaction(tx, userId);
+    const archived = await tx(
+      `UPDATE portfolios
+          SET is_archived = TRUE, updated_at = NOW()
+        WHERE user_id = $1 AND is_archived = FALSE
+        RETURNING id`,
+      [userId],
+    );
+    const marker = encodeEmptyPortfolioPersistenceSnapshot(snapshot);
+    const markerResult = await tx(
+      `UPDATE portfolios
+          SET description = $2, updated_at = NOW()
+        WHERE id = (
+          SELECT id
+            FROM portfolios
+           WHERE user_id = $1
+           ORDER BY updated_at DESC, created_at DESC
+           LIMIT 1
+        )
+        RETURNING id`,
+      [userId, marker],
+    );
+
+    return {
+      ok: true,
+      archivedCount: archived.rowCount,
+      emptySnapshotPersisted: markerResult.rowCount > 0,
+    };
+  });
 }
 
 async function ensureUserExistsForTransaction(tx, userId) {
@@ -258,20 +325,24 @@ async function hydratePortfolios(portfolioRows, tx = query) {
     assetsByPortfolio.set(asset.portfolio_id, list);
   }
 
-  return portfolioRows.map((portfolio) => ({
-    ...mapPortfolio(portfolio),
-    assets: assetsByPortfolio.get(portfolio.id) || [],
-  }));
+  return portfolioRows.map((portfolio) =>
+    hydratePortfolioPersistenceRow(
+      portfolio,
+      assetsByPortfolio.get(portfolio.id) || [],
+    ),
+  );
 }
 
 function normalizePortfolioInput(input = {}, options = {}) {
   const conditions = input.commonConditions || input.conditions || {};
   const partial = Boolean(options.partial);
+  const persistence = createPortfolioPersistenceStorageModel(input);
 
   return {
     id: input.id,
     name: input.name || input.title || (partial ? undefined : "새 포트폴리오"),
     description: input.description ?? null,
+    encodedDescription: persistence.encodedDescription,
     monthlyInvestment: optionalNumber(
       input.monthlyInvestment ?? input.monthly_investment ?? conditions.monthlyInvestment,
       partial ? undefined : 0
@@ -332,10 +403,10 @@ function mapAsset(row) {
     quantity: Number(row.quantity || 0),
     price: Number(row.price || 0),
     currency: row.currency,
-    cagr: toNumber(row.cagr, 0),
-    beta: toNumber(row.beta, 0),
-    mdd: toNumber(row.mdd, 0),
-    dividendYield: toNumber(row.dividend_yield, 0),
+    cagr: toNullableNumber(row.cagr),
+    beta: toNullableNumber(row.beta),
+    mdd: toNullableNumber(row.mdd),
+    dividendYield: toNullableNumber(row.dividend_yield),
     dataSource: row.data_source,
     fetchedAt: row.fetched_at,
     sortOrder: Number(row.sort_order || 0),

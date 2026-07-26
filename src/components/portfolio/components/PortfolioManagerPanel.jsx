@@ -6,113 +6,16 @@ import {
   getStoredFinplePlan,
   getUpgradePromptText,
 } from "../config/planConfig";
-
-const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
-const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
-const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
-const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
-
-function getApiBaseUrl() {
-  const env = import.meta?.env || {};
-  const runtimeConfig =
-    typeof window !== "undefined" ? window.FINPLE_ASSET_DATA_CONFIG || {} : {};
-
-  return String(
-    runtimeConfig.apiBaseUrl || env.VITE_FINPLE_API_BASE_URL || DEFAULT_API_BASE_URL
-  ).replace(/\/+$/, "");
-}
-
-function readJsonStorage(key, fallback) {
-  if (typeof window === "undefined") return fallback;
-
-  try {
-    const rawValue = window.localStorage.getItem(key);
-    return rawValue ? JSON.parse(rawValue) : fallback;
-  } catch (error) {
-    return fallback;
-  }
-}
-
-function getServerRequestHeaders() {
-  const headers = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
-
-  if (typeof window !== "undefined") {
-    const userId = window.localStorage.getItem("finple-user-id");
-    if (userId) {
-      headers["x-finple-user-id"] = userId;
-    }
-  }
-
-  return headers;
-}
-
-async function readApiJson(response) {
-  try {
-    return await response.json();
-  } catch (error) {
-    return null;
-  }
-}
-
-function normalizeServerPortfolioForLocal(portfolio, index = 0) {
-  const assets = Array.isArray(portfolio?.assets)
-    ? portfolio.assets.map((asset, assetIndex) => ({
-        id: asset.id || `server-asset-${index}-${assetIndex}`,
-        ticker: asset.ticker || "",
-        name: asset.name || asset.ticker || "",
-        market: asset.market || "US",
-        currency: asset.currency || "KRW",
-        quantity: Number(asset.quantity || 0),
-        price: Number(asset.price || 0),
-        cagr: Number(asset.cagr || 0),
-        beta: Number(asset.beta || 0),
-        mdd: Number(asset.mdd || 0),
-        dividendYield: Number(asset.dividendYield || 0),
-        priceMode: asset.priceMode || "manual",
-        metricMode: asset.metricMode || "manual",
-        dataSource: asset.dataSource || "server-db",
-        cacheMode: asset.cacheMode || null,
-        rawPrice:
-          asset.rawPrice === null || asset.rawPrice === undefined
-            ? null
-            : Number(asset.rawPrice),
-        rawCurrency: asset.rawCurrency || null,
-        exchangeRate:
-          asset.exchangeRate === null || asset.exchangeRate === undefined
-            ? null
-            : Number(asset.exchangeRate),
-        lastUpdatedAt: asset.lastUpdatedAt || asset.fetchedAt || null,
-      }))
-    : [];
-
-  return {
-    id: portfolio.id || `server-portfolio-${index}`,
-    name: portfolio.name || `서버 포트폴리오 ${index + 1}`,
-    settings: {
-      monthlyCashFlow: Number(portfolio.monthlyInvestment || 1000000),
-      years: Number(portfolio.investmentYears || 10),
-      inflationRate: Number(portfolio.inflationRate || 2.5),
-      dividendReinvest:
-        portfolio.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),
-    },
-    assets,
-    updatedAt: portfolio.updatedAt || portfolio.createdAt || new Date().toISOString(),
-  };
-}
-
-function getGlobalSettingsFromServerPortfolio(portfolio) {
-  return {
-    monthlyCashFlow: Number(portfolio?.monthlyInvestment || 1000000),
-    years: Number(portfolio?.investmentYears || 10),
-    inflationRate: Number(portfolio?.inflationRate || 2.5),
-    dividendReinvest:
-      portfolio?.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),
-  };
-}
+import {
+  getLocalPortfolioSnapshot,
+  importServerPortfoliosToBrowser,
+  listServerPortfolios,
+  syncLocalPortfoliosToServer,
+} from "../services/serverPortfolioService.js";
+import {
+  canCreatePortfolio,
+  deletePortfolioWithServerSync,
+} from "../utils/portfolioLifecycle.js";
 
 function getCurrentPlanPortfolioLimit() {
   const planKey = getStoredFinplePlan();
@@ -120,16 +23,6 @@ function getCurrentPlanPortfolioLimit() {
   const portfolioLimit = currentPlan?.limits?.portfolios;
 
   return Number.isFinite(portfolioLimit) ? Math.max(1, Number(portfolioLimit)) : Infinity;
-}
-
-function applyPortfolioLimit(portfolioList) {
-  const portfolioLimit = getCurrentPlanPortfolioLimit();
-
-  if (!Number.isFinite(portfolioLimit)) {
-    return portfolioList;
-  }
-
-  return portfolioList.slice(0, portfolioLimit);
 }
 
 function openPricingPage() {
@@ -196,7 +89,7 @@ export default function PortfolioManagerPanel({
   const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
   const portfolioLimit = getCurrentPlanPortfolioLimit();
   const isPortfolioLimitReached =
-    Number.isFinite(portfolioLimit) && Array.isArray(portfolioList) && portfolioList.length >= portfolioLimit;
+    !canCreatePortfolio(portfolioList?.length || 0, portfolioLimit);
 
   function handleNewPortfolioButtonClick() {
     if (isPortfolioLimitReached) {
@@ -219,6 +112,7 @@ export default function PortfolioManagerPanel({
   }
 
   function handleDuplicateActivePortfolio() {
+    if (!activePortfolio) return;
     if (isPortfolioLimitReached) {
       setIsNewPortfolioMenuOpen(false);
       showPortfolioLimitNotice();
@@ -230,37 +124,18 @@ export default function PortfolioManagerPanel({
 
   async function savePortfoliosToServer() {
     if (isServerSyncLoading) return;
-
-    const localPortfolioList = readJsonStorage(
-      PORTFOLIO_LIST_STORAGE_KEY,
-      Array.isArray(portfolioList) ? portfolioList : []
-    );
-    const globalSettings = readJsonStorage(GLOBAL_SETTINGS_STORAGE_KEY, {});
-
-    if (!Array.isArray(localPortfolioList) || localPortfolioList.length === 0) {
-      window.alert("저장할 포트폴리오가 없습니다.");
-      return;
-    }
+    const localSnapshot = getLocalPortfolioSnapshot();
+    const localPortfolioList = Array.isArray(portfolioList) ? portfolioList : [];
 
     setIsServerSyncLoading(true);
     setServerSyncStatus("서버에 포트폴리오를 저장하는 중입니다. 첫 요청은 잠시 걸릴 수 있습니다...");
 
     try {
-      const response = await fetch(`${getApiBaseUrl()}/account/portfolios/sync-local`, {
-        method: "POST",
-        headers: getServerRequestHeaders(),
-        body: JSON.stringify({
-          portfolioList: localPortfolioList,
-          activePortfolioId,
-          globalSettings,
-        }),
+      const payload = await syncLocalPortfoliosToServer({
+        ...localSnapshot,
+        portfolioList: localPortfolioList,
+        activePortfolioId,
       });
-
-      const payload = await readApiJson(response);
-
-      if (!response.ok || payload?.ok === false) {
-        throw new Error(payload?.message || "서버 저장에 실패했습니다.");
-      }
 
       setServerSyncStatus(
         payload?.message ||
@@ -288,54 +163,58 @@ export default function PortfolioManagerPanel({
     setServerSyncStatus("서버 포트폴리오를 불러오는 중입니다. 첫 요청은 잠시 걸릴 수 있습니다...");
 
     try {
-      const response = await fetch(`${getApiBaseUrl()}/account/portfolios`, {
-        method: "GET",
-        headers: getServerRequestHeaders(),
+      const payload = await listServerPortfolios();
+      const serverPortfolios = Array.isArray(payload?.portfolios) ? payload.portfolios : [];
+      const result = importServerPortfoliosToBrowser(payload, {
+        mode: "replace",
+        maxPortfolios: portfolioLimit,
       });
-
-      const payload = await readApiJson(response);
-
-      if (!response.ok || payload?.ok === false) {
-        throw new Error(payload?.message || "서버 포트폴리오를 불러오지 못했습니다.");
-      }
-
-      const serverPortfolios = Array.isArray(payload?.portfolios)
-        ? payload.portfolios
-        : [];
-
-      if (serverPortfolios.length === 0) {
-        setServerSyncStatus("서버에 저장된 포트폴리오가 없습니다.");
-        window.alert("서버에 저장된 포트폴리오가 없습니다. 먼저 서버 저장을 실행해주세요.");
-        return;
-      }
-
-      const normalizedServerPortfolioList = serverPortfolios.map(normalizeServerPortfolioForLocal);
-      const nextPortfolioList = applyPortfolioLimit(normalizedServerPortfolioList);
-      const nextActivePortfolioId =
-        nextPortfolioList.find((portfolio) => portfolio.id === activePortfolioId)?.id ||
-        nextPortfolioList[0].id;
-      const nextGlobalSettings = getGlobalSettingsFromServerPortfolio(serverPortfolios[0]);
-
-      window.localStorage.setItem(
-        PORTFOLIO_LIST_STORAGE_KEY,
-        JSON.stringify(nextPortfolioList)
-      );
-      window.localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, nextActivePortfolioId);
-      window.localStorage.setItem(
-        GLOBAL_SETTINGS_STORAGE_KEY,
-        JSON.stringify(nextGlobalSettings)
-      );
-
-      const limitedCount = normalizedServerPortfolioList.length - nextPortfolioList.length;
+      const limitedCount = serverPortfolios.length - result.totalCount;
       setServerSyncStatus(
         limitedCount > 0
-          ? `서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오. 현재 요금제 제한으로 ${limitedCount}개는 제외했습니다.`
-          : `서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오`
+          ? `서버 불러오기 완료: ${result.totalCount}개 포트폴리오. 현재 요금제 제한으로 ${limitedCount}개는 제외했습니다.`
+          : `서버 불러오기 완료: ${result.totalCount}개 포트폴리오`
       );
       window.alert("서버 포트폴리오를 불러왔습니다. 화면을 새로고침합니다.");
       window.location.reload();
     } catch (error) {
       const friendlyMessage = getFriendlyServerSyncErrorMessage(error, "서버 불러오기");
+      setServerSyncStatus(friendlyMessage);
+      window.alert(friendlyMessage);
+    } finally {
+      setIsServerSyncLoading(false);
+    }
+  }
+
+  async function handleDeleteActivePortfolio() {
+    if (isServerSyncLoading || !activePortfolio) return;
+    const confirmed = window.confirm(
+      `"${activePortfolio.name}" 포트폴리오를 삭제할까요? 서버 저장 목록에서도 삭제됩니다.`,
+    );
+    if (!confirmed) return;
+
+    const snapshot = getLocalPortfolioSnapshot();
+
+    setIsServerSyncLoading(true);
+    setServerSyncStatus("서버에서 포트폴리오를 삭제하는 중입니다...");
+    try {
+      const nextState = await deletePortfolioWithServerSync({
+        portfolioList,
+        portfolioId: activePortfolio.id,
+        snapshot,
+        syncSnapshot: syncLocalPortfoliosToServer,
+      });
+      deleteActivePortfolio(activePortfolio.id);
+      setServerSyncStatus(
+        nextState.portfolioList.length === 0
+          ? "포트폴리오를 삭제했습니다. 현재 저장된 포트폴리오가 없습니다."
+          : "포트폴리오를 삭제했습니다.",
+      );
+    } catch (error) {
+      const friendlyMessage = getFriendlyServerSyncErrorMessage(
+        error,
+        "포트폴리오 삭제",
+      );
       setServerSyncStatus(friendlyMessage);
       window.alert(friendlyMessage);
     } finally {
@@ -416,7 +295,7 @@ export default function PortfolioManagerPanel({
                 <span>티커와 수량을 직접 입력</span>
               </button>
 
-              <button onClick={handleDuplicateActivePortfolio}>
+              <button onClick={handleDuplicateActivePortfolio} disabled={!activePortfolio}>
                 <strong>현재 포트폴리오 복제</strong>
                 <span>현재 자산 구성을 그대로 복사</span>
               </button>
@@ -441,19 +320,33 @@ export default function PortfolioManagerPanel({
         ))}
       </div>
 
-      <div className="activePortfolioEditor">
-        <div>
-          <p>현재 포트폴리오 이름</p>
-          <input
-            value={activePortfolio?.name || ""}
-            onChange={(e) => renameActivePortfolio(e.target.value)}
-          />
-        </div>
+      {activePortfolio ? (
+        <div className="activePortfolioEditor">
+          <div>
+            <p>현재 포트폴리오 이름</p>
+            <input
+              value={activePortfolio.name || ""}
+              onChange={(e) => renameActivePortfolio(e.target.value)}
+            />
+          </div>
 
-        <button className="deletePortfolioButton" onClick={deleteActivePortfolio}>
-          현재 포트폴리오 삭제
-        </button>
-      </div>
+          <button
+            className="deletePortfolioButton"
+            onClick={handleDeleteActivePortfolio}
+            disabled={isServerSyncLoading}
+          >
+            현재 포트폴리오 삭제
+          </button>
+        </div>
+      ) : (
+        <div className="portfolioEmptyState" role="status">
+          <strong>저장된 포트폴리오가 없습니다.</strong>
+          <span>새 포트폴리오를 만들어 자산과 설정을 저장할 수 있습니다.</span>
+          <button type="button" onClick={() => handleCreatePortfolioFromTemplate("empty")}>
+            새 포트폴리오 만들기
+          </button>
+        </div>
+      )}
 
       <div className="portfolioDataStatusPanel">
         <div>

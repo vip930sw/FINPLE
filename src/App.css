@@ -4784,6 +4784,31 @@ nav {
   white-space: nowrap;
 }
 
+.portfolioEmptyState {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 22px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.portfolioEmptyState strong {
+  color: #0f172a;
+}
+
+.portfolioEmptyState button {
+  margin-top: 4px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 900;
+}
+
 .portfolioComparePanel {
   margin: 0 0 28px;
 }
