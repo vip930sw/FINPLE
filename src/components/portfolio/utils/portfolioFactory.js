@@ -62,26 +62,35 @@ export function cloneAssets(assets) {
 export function createPortfolio({
   id = createId(),
   name = "새 포트폴리오",
+  description = "",
   settings = DEFAULT_SETTINGS,
   assets = DEFAULT_ASSETS,
 } = {}) {
+  const now = new Date().toISOString();
   return {
     id,
     name,
+    description,
     settings: { ...DEFAULT_SETTINGS, ...settings },
     assets: cloneAssets(assets),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
+    sortOrder: 0,
   };
 }
 export function normalizePortfolio(portfolio, index = 0) {
     return {
       id: portfolio.id || createId(),
       name: portfolio.name || `포트폴리오 ${index + 1}`,
+      description: portfolio.description || "",
       settings: normalizeGlobalSettings(portfolio.settings || DEFAULT_SETTINGS),
       assets: cloneAssets(
-        Array.isArray(portfolio.assets) ? portfolio.assets : DEFAULT_ASSETS
+        Array.isArray(portfolio.assets) ? portfolio.assets : []
       ),
+      createdAt: portfolio.createdAt || null,
       updatedAt: portfolio.updatedAt || new Date().toISOString(),
+      sortOrder: Number(portfolio.sortOrder ?? index),
+      serverId: portfolio.serverId || null,
     };
   }
 export function normalizePortfolioList(portfolioList) {
@@ -152,16 +161,31 @@ export function ensureMinimumPortfolios(portfolioList) {
 
     return createDefaultPortfolioList();
   }
-export function loadPortfolioState() {
+export function loadPortfolioState(snapshot = null) {
   try {
-    const savedList = readScopedPortfolioStorageItem(PORTFOLIO_LIST_STORAGE_KEY);
-    const savedActiveId = readScopedPortfolioStorageItem(ACTIVE_PORTFOLIO_STORAGE_KEY);
+    const hasSnapshot = snapshot && typeof snapshot === "object";
+    const savedList = hasSnapshot
+      ? JSON.stringify(snapshot.portfolioList ?? snapshot.portfolios ?? [])
+      : readScopedPortfolioStorageItem(PORTFOLIO_LIST_STORAGE_KEY);
+    const savedActiveId = hasSnapshot
+      ? snapshot.activePortfolioId || null
+      : readScopedPortfolioStorageItem(ACTIVE_PORTFOLIO_STORAGE_KEY);
 
     if (savedList) {
       const parsedList = JSON.parse(savedList);
 
-      if (Array.isArray(parsedList) && parsedList.length > 0) {
-        const normalizedList = ensureMinimumPortfolios(parsedList);
+      if (Array.isArray(parsedList)) {
+        const normalizedList = normalizePortfolioList(parsedList);
+        if (normalizedList.length === 0) {
+          return {
+            portfolioList: [],
+            activePortfolioId: null,
+            activePortfolio: null,
+            globalSettings: hasSnapshot
+              ? normalizeGlobalSettings(snapshot.globalSettings || {})
+              : loadGlobalSettings(),
+          };
+        }
 
         const activePortfolio =
           normalizedList.find((portfolio) => portfolio.id === savedActiveId) ||
@@ -171,12 +195,16 @@ export function loadPortfolioState() {
             portfolioList: normalizedList,
             activePortfolioId: activePortfolio.id,
             activePortfolio,
-            globalSettings: loadGlobalSettings(),
+            globalSettings: hasSnapshot
+              ? normalizeGlobalSettings(snapshot.globalSettings || {})
+              : loadGlobalSettings(),
           };
       }
     }
 
-    const legacySavedData = readScopedPortfolioStorageItem(LEGACY_STORAGE_KEY);
+    const legacySavedData = hasSnapshot
+      ? null
+      : readScopedPortfolioStorageItem(LEGACY_STORAGE_KEY);
 
     if (legacySavedData) {
       const parsedLegacyData = JSON.parse(legacySavedData);

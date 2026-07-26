@@ -75,15 +75,18 @@ function intersectMonths(seriesMaps) {
   );
 }
 
-export function buildAppPreviewScenarioResult({
+export function buildAppExportScenarioResult({
   activePortfolio = {},
   assets = [],
   settings = {},
   rowsByIdentity = {},
   manifest = {},
+  release = null,
+  runtimeMode = "internal_preview_review_only",
   simulationCount = 500,
   randomSeed = 1142,
 } = {}) {
+  const isProduction = runtimeMode === "production_app_export_ready" && Boolean(release);
   const activeAssets = (Array.isArray(assets) ? assets : [])
     .filter((asset) => identityForAsset(asset))
     .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
@@ -153,7 +156,7 @@ export function buildAppPreviewScenarioResult({
   });
   return {
     ...result,
-    internalPreviewContext: {
+    ...(isProduction ? {} : { internalPreviewContext: {
       reviewOnly: true,
       portfolioId: activePortfolio.id || "",
       portfolioName: activePortfolio.name || "",
@@ -167,8 +170,36 @@ export function buildAppPreviewScenarioResult({
       gapsForwardFilled: false,
       productionPublishReady: false,
       appExportApproved: false,
-    },
-    productionPublishReady: false,
-    appExportApproved: false,
+    } }),
+    ...(isProduction ? { productionAppExportContext: {
+      reviewOnly: false,
+      portfolioId: activePortfolio.id || "",
+      portfolioName: activePortfolio.name || "",
+      identities,
+      universeVersion: release.universeVersion,
+      releaseContractVersion: release.contractVersion,
+      sourceAppExportSha256: release.sourceAppExportSha256,
+      metricDataThroughMonth: release.metricDataThroughMonth,
+      commonObservedMonthCount: commonMonths.length,
+      contiguousObservedMonthCount: contiguousMonths.length,
+      commonDataStartMonth: contiguousMonths[0] || null,
+      commonDataEndMonth: contiguousMonths.at(-1) || null,
+      gapsForwardFilled: false,
+      productionPublishReady: true,
+      appExportApproved: true,
+      scenarioContextProviderEligible: false,
+      providerPayloadExcluded: true,
+    } } : {}),
+    productionPublishReady: isProduction,
+    appExportApproved: isProduction,
+    scenarioContextProviderEligible: false,
   };
+}
+
+export function buildAppPreviewScenarioResult(options = {}) {
+  return buildAppExportScenarioResult({
+    ...options,
+    runtimeMode: "internal_preview_review_only",
+    release: null,
+  });
 }

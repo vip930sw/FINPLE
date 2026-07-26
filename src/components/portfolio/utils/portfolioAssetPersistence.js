@@ -10,7 +10,11 @@ function normalizeNullableNumber(value, fallback = null) {
 }
 
 function normalizeMetricNumber(asset, field) {
-  const fallback = asset?.internalPreviewReviewOnly === true ? null : 0;
+  const fallback =
+    asset?.internalPreviewReviewOnly === true ||
+    asset?.productionAppExportEnabled === true
+      ? null
+      : 0;
   return normalizeNullableNumber(asset?.[field], fallback);
 }
 
@@ -72,6 +76,10 @@ export function normalizePersistedMetricFields(asset = {}) {
     overlayStatus: asset.overlayStatus || "",
     internalPreviewReviewOnly: asset.internalPreviewReviewOnly === true,
     previewLoaderEnabled: asset.previewLoaderEnabled === true,
+    productionAppExportEnabled: asset.productionAppExportEnabled === true,
+    productionReleaseContractVersion: asset.productionReleaseContractVersion || "",
+    productionReleaseApprovedAt: asset.productionReleaseApprovedAt || "",
+    productionReleaseApprovedBy: asset.productionReleaseApprovedBy || "",
     productionPublishReady:
       asset.productionPublishReady === undefined ? undefined : asset.productionPublishReady === true,
     appExportApproved:

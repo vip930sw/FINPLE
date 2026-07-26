@@ -3,18 +3,27 @@ import { createHash } from "node:crypto";
 import express from "express";
 
 import {
+  archiveAllPortfoliosWithSnapshot,
   archivePortfolio,
   createPortfolio,
   getDefaultUserId,
+  getLatestPortfolioPersistenceEnvelope,
   getPortfolio,
   listPortfolios,
   updatePortfolio,
 } from "../db/portfolioRepository.js";
+import { createPortfolioApiSnapshot } from "../services/portfolioPersistenceModel.js";
 
 const router = express.Router();
 
 function getRequestUserId(request) {
   return request.header("x-finple-user-id") || getDefaultUserId();
+}
+
+function toPublicPortfolio(portfolio) {
+  if (!portfolio) return portfolio;
+  const { __persistenceEnvelope, ...publicPortfolio } = portfolio;
+  return publicPortfolio;
 }
 
 const UUID_PATTERN =
@@ -38,7 +47,13 @@ function stableUuidFromString(value) {
   ].join("-");
 }
 
-function normalizeLocalPortfolioForSync(portfolio, userId, index, globalSettings = {}) {
+export function normalizeLocalPortfolioForSync(
+  portfolio,
+  userId,
+  index,
+  globalSettings = {},
+  activePortfolioId = null,
+) {
   const localPortfolioKey =
     portfolio?.id || portfolio?.localId || portfolio?.name || portfolio?.title || `portfolio-${index}`;
   const portfolioId = isUuid(portfolio?.id)
@@ -61,6 +76,9 @@ function normalizeLocalPortfolioForSync(portfolio, userId, index, globalSettings
   return {
     ...portfolio,
     id: portfolioId,
+    persistencePortfolio: portfolio,
+    globalSettings,
+    activePortfolioId,
     assets,
     sortOrder: Number(portfolio?.sortOrder ?? index),
     commonConditions: {
@@ -68,6 +86,7 @@ function normalizeLocalPortfolioForSync(portfolio, userId, index, globalSettings
       investmentYears: globalSettings.years,
       inflationRate: globalSettings.inflationRate,
       dividendReinvest: globalSettings.dividendReinvest,
+      startValue: globalSettings.startValue,
     },
   };
 }
@@ -76,12 +95,17 @@ router.get("/", async (request, response, next) => {
   try {
     const userId = getRequestUserId(request);
     const portfolios = await listPortfolios(userId);
+    const fallbackEnvelope =
+      portfolios.length === 0
+        ? await getLatestPortfolioPersistenceEnvelope(userId)
+        : null;
+    const snapshot = createPortfolioApiSnapshot(portfolios, fallbackEnvelope);
 
     response.json({
       ok: true,
       source: "server-db",
       userId,
-      portfolios,
+      ...snapshot,
     });
   } catch (error) {
     next(error);
@@ -96,7 +120,7 @@ router.post("/", async (request, response, next) => {
     response.status(201).json({
       ok: true,
       source: "server-db",
-      portfolio,
+      portfolio: toPublicPortfolio(portfolio),
     });
   } catch (error) {
     next(error);
@@ -113,9 +137,20 @@ router.post("/sync-local", async (request, response, next) => {
     const globalSettings = request.body?.globalSettings || {};
 
     if (portfolioList.length === 0) {
-      response.status(400).json({
-        ok: false,
-        message: "동기화할 포트폴리오 목록이 없습니다.",
+      const emptyResult = await archiveAllPortfoliosWithSnapshot(userId, {
+        globalSettings,
+      });
+      response.json({
+        ok: true,
+        source: "server-db",
+        schemaVersion: request.body?.schemaVersion || 3,
+        syncedCount: 0,
+        archivedStaleCount: emptyResult.archivedCount,
+        errorCount: 0,
+        activePortfolioId: null,
+        globalSettings,
+        portfolios: [],
+        message: "서버 포트폴리오 목록을 빈 상태로 동기화했습니다.",
       });
       return;
     }
@@ -124,7 +159,13 @@ router.post("/sync-local", async (request, response, next) => {
 
     for (let index = 0; index < portfolioList.length; index += 1) {
       const originalPortfolio = portfolioList[index];
-      const payload = normalizeLocalPortfolioForSync(originalPortfolio, userId, index, globalSettings);
+      const payload = normalizeLocalPortfolioForSync(
+        originalPortfolio,
+        userId,
+        index,
+        globalSettings,
+        request.body?.activePortfolioId || null,
+      );
 
       try {
         let syncedPortfolio;
@@ -140,11 +181,11 @@ router.post("/sync-local", async (request, response, next) => {
         }
 
         results.push({
-          id: syncedPortfolio.id,
+          id: syncedPortfolio.serverId || syncedPortfolio.id,
           localId: originalPortfolio?.id,
           name: syncedPortfolio.name,
           status: "synced",
-          portfolio: syncedPortfolio,
+          portfolio: toPublicPortfolio(syncedPortfolio),
         });
       } catch (error) {
         results.push({
@@ -162,23 +203,26 @@ router.post("/sync-local", async (request, response, next) => {
         .filter((result) => result.status === "synced" && result.id)
         .map((result) => result.id)
     );
+    const syncErrorCount = results.filter(
+      (result) => result.status === "error",
+    ).length;
 
     let archivedStaleCount = 0;
 
-    if (syncedPortfolioIds.size > 0) {
+    if (syncedPortfolioIds.size > 0 && syncErrorCount === 0) {
       const currentServerPortfolios = await listPortfolios(userId);
       const stalePortfolios = currentServerPortfolios.filter(
-        (portfolio) => !syncedPortfolioIds.has(portfolio.id)
+        (portfolio) => !syncedPortfolioIds.has(portfolio.serverId || portfolio.id)
       );
 
       for (const stalePortfolio of stalePortfolios) {
-        await archivePortfolio(stalePortfolio.id, userId);
+        await archivePortfolio(stalePortfolio.serverId || stalePortfolio.id, userId);
         archivedStaleCount += 1;
       }
     }
 
     const syncedCount = results.filter((result) => result.status === "synced").length;
-    const errorCount = results.filter((result) => result.status === "error").length;
+    const errorCount = syncErrorCount;
 
     const errorMessages = results
       .filter((result) => result.status === "error")
@@ -196,6 +240,9 @@ router.post("/sync-local", async (request, response, next) => {
           ? `브라우저 포트폴리오를 서버 DB에 동기화했습니다. 오래된 서버 포트폴리오 ${archivedStaleCount}개를 정리했습니다.`
           : "브라우저 포트폴리오를 서버 DB에 동기화했습니다.",
       results,
+      schemaVersion: request.body?.schemaVersion || 3,
+      activePortfolioId: request.body?.activePortfolioId || null,
+      globalSettings,
     });
   } catch (error) {
     next(error);
@@ -210,7 +257,7 @@ router.get("/:portfolioId", async (request, response, next) => {
     response.json({
       ok: true,
       source: "server-db",
-      portfolio,
+      portfolio: toPublicPortfolio(portfolio),
     });
   } catch (error) {
     next(error);
@@ -225,7 +272,7 @@ router.put("/:portfolioId", async (request, response, next) => {
     response.json({
       ok: true,
       source: "server-db",
-      portfolio,
+      portfolio: toPublicPortfolio(portfolio),
     });
   } catch (error) {
     next(error);

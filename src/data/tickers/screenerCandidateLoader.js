@@ -1,5 +1,4 @@
 import finpleAppCandidates6000Csv from "./finple_app_candidates_6000_balanced_v1.csv?raw";
-import finpleAppCandidatesV2Csv from "./finple_app_candidates_v2.csv?raw";
 import {
   applyScreenerCandidateOverlays,
   isPriceMetricsAppReadyCandidate,
@@ -8,6 +7,10 @@ import {
   isAppPreviewRuntimeEnabled,
   loadAppPreviewCatalog,
 } from "./appPreviewDataSource";
+import {
+  isProductionAppExportConfigured,
+  loadProductionAppExportCatalog,
+} from "./productionAppExportDataSource";
 import {
   isNonOrdinaryDistribution,
   resolveDistributionYieldFields,
@@ -160,7 +163,25 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
 
 export const RAW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv);
 export const RAW_SCREENER_CANDIDATE_COUNT = RAW_SCREENER_CANDIDATES.length;
-export const APP_PREVIEW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidatesV2Csv);
+let canonicalV2CandidatesPromise = null;
+
+export async function loadCanonicalV2ScreenerCandidates() {
+  if (!canonicalV2CandidatesPromise) {
+    canonicalV2CandidatesPromise = import("./finple_app_candidates_v2.csv?raw")
+      .then((module) => loadScreenerCandidatesFromCsv(module.default))
+      .then((candidates) => {
+        if (candidates.length !== 6029) {
+          throw new TypeError("canonical v2 candidate count must be 6029");
+        }
+        return candidates;
+      })
+      .catch((error) => {
+        canonicalV2CandidatesPromise = null;
+        throw error;
+      });
+  }
+  return canonicalV2CandidatesPromise;
+}
 
 export const ALL_SCREENER_CANDIDATES = applyScreenerCandidateOverlays(
   RAW_SCREENER_CANDIDATES.filter(isPriceMetricsAppReadyCandidate)
@@ -173,20 +194,30 @@ export const US_EXPANSION_CANDIDATES = US_EXTRA_CANDIDATES;
 export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "ETF");
 export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "stock");
 
-let activeScreenerCandidates = ALL_SCREENER_CANDIDATES;
+export const PRODUCTION_APP_EXPORT_LOADING_STATUS = "production_app_export_loading";
+
+const productionAppExportConfiguredAtStartup = isProductionAppExportConfigured();
+let activeScreenerCandidates = productionAppExportConfiguredAtStartup
+  ? []
+  : ALL_SCREENER_CANDIDATES;
 let activeScreenerCandidateMap = new Map(
   activeScreenerCandidates.map((candidate) => [
     `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`,
     candidate,
   ]),
 );
-let appPreviewState = {
-  enabled: false,
-  status: "production_fallback",
+let appExportState = {
+  enabled: productionAppExportConfiguredAtStartup,
+  status: productionAppExportConfiguredAtStartup
+    ? PRODUCTION_APP_EXPORT_LOADING_STATUS
+    : "production_v1_fallback",
   manifest: null,
+  release: null,
   error: null,
+  operationalReasonCode: "",
 };
 let appPreviewLoadPromise = null;
+let productionAppExportLoadPromise = null;
 const appPreviewSubscribers = new Set();
 
 function notifyAppPreviewSubscribers() {
@@ -194,7 +225,23 @@ function notifyAppPreviewSubscribers() {
   appPreviewSubscribers.forEach((subscriber) => subscriber(snapshot));
 }
 
-function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
+function beginProductionAppExportLoading() {
+  activeScreenerCandidates = [];
+  activeScreenerCandidateMap = new Map();
+  appExportState = {
+    enabled: true,
+    status: PRODUCTION_APP_EXPORT_LOADING_STATUS,
+    manifest: null,
+    release: null,
+    error: null,
+    operationalReasonCode: "",
+  };
+  notifyAppPreviewSubscribers();
+  return getScreenerCandidateSnapshot();
+}
+
+function createAppExportCandidate(baseCandidate, metricRow, manifest, release = null) {
+  const isProduction = Boolean(release);
   const rawMissing = metricRow.rawPriceCoverageStatus === "missing";
   const distributionFields = resolveDistributionYieldFields(
     baseCandidate,
@@ -229,7 +276,9 @@ function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
     priceUnavailable: rawMissing,
     metricBaseDate: metricRow.metricBaseDate || manifest.metricBaseDate,
     metricDataThroughMonth: manifest.metricDataThroughMonth,
-    metricsSource: "finple_app_preview_export_step114_2z",
+    metricsSource: isProduction
+      ? "finple_production_app_export_step114_2zc"
+      : "finple_app_preview_export_step114_2z",
     sourceHash: metricRow.sourceHash || manifest.sourceCandidatePackageHash,
     rawSourceSha256: metricRow.rawSourceSha256 || "",
     normalizationVersion: metricRow.normalizationVersion || "",
@@ -237,29 +286,39 @@ function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
     rollingMetricVersion: metricRow.rollingMetricVersion || "",
     pipelineVersion: manifest.pipelineVersion || "",
     calculationPolicyVersion: manifest.calculationPolicyVersion || "",
-    overlayStatus: "internal_preview_review_only",
-    internalPreviewReviewOnly: true,
-    previewLoaderEnabled: true,
-    productionPublishReady: false,
-    appExportApproved: false,
-    metricMode: "candidate_app_preview_price_return",
-    dataSource: "finple_app_preview_export_step114_2z",
+    overlayStatus: isProduction
+      ? "production_app_export_approved"
+      : "internal_preview_review_only",
+    internalPreviewReviewOnly: !isProduction,
+    previewLoaderEnabled: !isProduction,
+    productionAppExportEnabled: isProduction,
+    productionPublishReady: isProduction,
+    appExportApproved: isProduction,
+    productionReleaseContractVersion: release?.contractVersion || "",
+    productionReleaseApprovedAt: release?.approvedAt || "",
+    productionReleaseApprovedBy: release?.approvedBy || "",
+    metricMode: isProduction
+      ? "production_app_export_price_return"
+      : "candidate_app_preview_price_return",
+    dataSource: isProduction
+      ? "finple_production_app_export_step114_2zc"
+      : "finple_app_preview_export_step114_2z",
   };
 }
 
-function activateAppPreviewCatalog(catalog) {
+async function activateAppExportCatalog(catalog, release = null) {
   const metricMap = new Map(
     catalog.overlay.rows.map((row) => [
       `${normalizeMarket(row.market)}:${normalizeTicker(row.ticker)}`,
       row,
     ]),
   );
-  const canonicalCandidates =
-    catalog.manifest.assetCount === APP_PREVIEW_SCREENER_CANDIDATES.length
-      ? APP_PREVIEW_SCREENER_CANDIDATES
-      : catalog.manifest.assetCount === RAW_SCREENER_CANDIDATES.length
-        ? RAW_SCREENER_CANDIDATES
-        : null;
+  const manifest = catalog.manifest || catalog.sourceManifest;
+  const canonicalCandidates = manifest.assetCount === 6029
+    ? await loadCanonicalV2ScreenerCandidates()
+    : manifest.assetCount === RAW_SCREENER_CANDIDATES.length
+      ? RAW_SCREENER_CANDIDATES
+      : null;
   if (!canonicalCandidates) {
     throw new TypeError("app preview manifest does not match a supported canonical universe");
   }
@@ -267,10 +326,10 @@ function activateAppPreviewCatalog(catalog) {
     const key = `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`;
     const metricRow = metricMap.get(key);
     if (!metricRow) throw new TypeError(`app preview metric identity missing: ${key}`);
-    return createAppPreviewCandidate(candidate, metricRow, catalog.manifest);
+    return createAppExportCandidate(candidate, metricRow, manifest, release);
   });
-  if (nextCandidates.length !== catalog.manifest.assetCount ||
-      metricMap.size !== catalog.manifest.assetCount) {
+  if (nextCandidates.length !== manifest.assetCount ||
+      metricMap.size !== manifest.assetCount) {
     throw new TypeError("app preview candidate reconciliation must match manifest assetCount");
   }
   activeScreenerCandidates = nextCandidates;
@@ -280,11 +339,13 @@ function activateAppPreviewCatalog(catalog) {
       candidate,
     ]),
   );
-  appPreviewState = {
+  appExportState = {
     enabled: true,
-    status: "internal_preview_review_only",
-    manifest: catalog.manifest,
+    status: release ? "production_app_export_ready" : "internal_preview_review_only",
+    manifest,
+    release,
     error: null,
+    operationalReasonCode: "",
   };
   notifyAppPreviewSubscribers();
   return getScreenerCandidateSnapshot();
@@ -294,13 +355,15 @@ export async function loadScreenerAppPreview(options = {}) {
   if (!isAppPreviewRuntimeEnabled(options)) return getScreenerCandidateSnapshot();
   if (!appPreviewLoadPromise || options.disableCache === true) {
     appPreviewLoadPromise = loadAppPreviewCatalog(options)
-      .then(activateAppPreviewCatalog)
+      .then((catalog) => activateAppExportCatalog(catalog))
       .catch((error) => {
-        appPreviewState = {
+        appExportState = {
           enabled: true,
           status: "preview_load_error",
           manifest: null,
+          release: null,
           error: error?.message || String(error),
+          operationalReasonCode: "preview_load_error",
         };
         notifyAppPreviewSubscribers();
         appPreviewLoadPromise = null;
@@ -310,12 +373,70 @@ export async function loadScreenerAppPreview(options = {}) {
   return appPreviewLoadPromise;
 }
 
+export function activateProductionAppExportFallback(
+  reasonCode = "production_app_export_validation_failed",
+) {
+  const safeReasonCode = /^production_[a-z0-9_]+$/.test(String(reasonCode || ""))
+    ? String(reasonCode)
+    : "production_app_export_validation_failed";
+  activeScreenerCandidates = ALL_SCREENER_CANDIDATES;
+  activeScreenerCandidateMap = new Map(
+    activeScreenerCandidates.map((candidate) => [
+      `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`,
+      candidate,
+    ]),
+  );
+  appExportState = {
+    enabled: true,
+    status: "production_v1_fallback",
+    manifest: null,
+    release: null,
+    error: null,
+    operationalReasonCode: safeReasonCode,
+  };
+  console.warn(`[FINPLE production app-export fallback] ${safeReasonCode}`);
+  notifyAppPreviewSubscribers();
+  return getScreenerCandidateSnapshot();
+}
+
+export async function loadScreenerProductionAppExport(options = {}) {
+  if (!isProductionAppExportConfigured(options)) return getScreenerCandidateSnapshot();
+  const shouldStartLoad =
+    !productionAppExportLoadPromise ||
+    (options.disableCache === true &&
+      appExportState.status !== PRODUCTION_APP_EXPORT_LOADING_STATUS);
+  if (shouldStartLoad) {
+    if (appExportState.status !== PRODUCTION_APP_EXPORT_LOADING_STATUS ||
+        activeScreenerCandidates.length !== 0) {
+      beginProductionAppExportLoading();
+    }
+    productionAppExportLoadPromise = loadProductionAppExportCatalog(options)
+      .then((catalog) => activateAppExportCatalog(catalog, catalog.release))
+      .catch((error) => {
+        productionAppExportLoadPromise = null;
+        activateProductionAppExportFallback(
+          error?.code || "production_app_export_validation_failed",
+        );
+        return getScreenerCandidateSnapshot();
+      });
+  }
+  return productionAppExportLoadPromise;
+}
+
+export async function loadScreenerCandidateRuntime(options = {}) {
+  if (isProductionAppExportConfigured(options)) {
+    return loadScreenerProductionAppExport(options);
+  }
+  return loadScreenerAppPreview(options);
+}
+
 export function getScreenerCandidateSnapshot() {
   return {
     candidates: activeScreenerCandidates,
     usCandidates: activeScreenerCandidates.filter((candidate) => candidate.market === "US"),
     krCandidates: activeScreenerCandidates.filter((candidate) => candidate.market === "KR"),
-    preview: { ...appPreviewState },
+    preview: { ...appExportState },
+    productionAppExport: { ...appExportState },
   };
 }
 
@@ -418,6 +539,10 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     overlayStatus: candidate.overlayStatus,
     internalPreviewReviewOnly: candidate.internalPreviewReviewOnly,
     previewLoaderEnabled: candidate.previewLoaderEnabled,
+    productionAppExportEnabled: candidate.productionAppExportEnabled,
+    productionReleaseContractVersion: candidate.productionReleaseContractVersion,
+    productionReleaseApprovedAt: candidate.productionReleaseApprovedAt,
+    productionReleaseApprovedBy: candidate.productionReleaseApprovedBy,
     productionPublishReady: candidate.productionPublishReady,
     appExportApproved: candidate.appExportApproved,
   };
@@ -453,6 +578,48 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     sizeSource: patch.sizeSource || asset.sizeSource || "",
     reviewTag: patch.reviewTag || asset.reviewTag || "",
     reviewReason: patch.reviewReason || asset.reviewReason || "",
+  };
+}
+
+export function hydrateAssetForProductionFallback(asset = {}) {
+  const isProductionAsset =
+    asset?.productionAppExportEnabled === true ||
+    asset?.dataSource === "finple_production_app_export_step114_2zc";
+  if (!isProductionAsset) return hydrateAssetFromScreenerCandidate(asset);
+  const fallbackBase = {
+    ...asset,
+    cagr: null,
+    beta: null,
+    mdd: null,
+    selectedCagr: null,
+    selectedBeta: null,
+    selectedMdd: null,
+    priceCagr10y: null,
+    rawPriceCagr10y: null,
+    rollingCagr10yMedian: null,
+    rollingCagr10yP25: null,
+    rollingCagr10yP75: null,
+    validRollingWindowCount10y: null,
+    productionAppExportEnabled: false,
+    productionReleaseContractVersion: "",
+    productionReleaseApprovedAt: "",
+    productionReleaseApprovedBy: "",
+    productionPublishReady: false,
+    appExportApproved: false,
+    overlayStatus: "production_v1_fallback",
+    metricMode: "production_v1_fallback",
+    dataSource: "finple_app_candidates_6000_balanced_v1",
+  };
+  const candidate = findScreenerCandidateByTicker(asset?.ticker, asset?.market);
+  const fallbackAsset = candidate
+    ? hydrateAssetFromScreenerCandidate(fallbackBase)
+    : fallbackBase;
+  return {
+    ...fallbackAsset,
+    productionAppExportEnabled: false,
+    productionReleaseContractVersion: "",
+    productionReleaseApprovedAt: "",
+    productionReleaseApprovedBy: "",
   };
 }
 

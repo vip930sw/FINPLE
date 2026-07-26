@@ -17,6 +17,7 @@ import {
   getChartComparisonPortfolios,
 } from "./portfolioCalculations.js";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
+import { formatUserFacingBaselineBlockReason } from "./baselineBlockReasonLabels.js";
 
 const BASE_SETTINGS = Object.freeze({
   startValue: 1200,
@@ -75,6 +76,27 @@ function legacyMayLoaderAsset(overrides = {}) {
     legacyMayAppReadyProviderMetricsSource: providerMetricsSource,
     ...overrides,
   };
+}
+
+function productionAppExportAsset(overrides = {}) {
+  return asset({
+    ticker: "QQQ",
+    cagr: 17.11,
+    selectedCagr: 17.11,
+    overlayStatus: "production_app_export_approved",
+    productionAppExportEnabled: true,
+    productionPublishReady: true,
+    appExportApproved: true,
+    productionReleaseContractVersion:
+      "finple-production-app-export-release-v1-step114-2zc",
+    productionReleaseApprovedAt: "2026-07-26T02:03:18Z",
+    productionReleaseApprovedBy: "vip930sw",
+    metricsSource: "finple_production_app_export_step114_2zc",
+    dataSource: "finple_production_app_export_step114_2zc",
+    calculationPolicyVersion: "metrics-calculation-policy-2026-06-26",
+    pipelineVersion: "metrics-v3.0-step114-2d",
+    ...overrides,
+  });
 }
 
 function assertClose(actual, expected, epsilon = 1e-6) {
@@ -424,6 +446,66 @@ test("explicit internal app-preview review source calculates while publish gates
     });
     assert.equal(blocked.status, "blocked");
   }
+});
+
+test("Production app-export metrics require the complete release approval evidence", () => {
+  const ready = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [productionAppExportAsset()],
+  });
+  assert.equal(ready.status, "ready");
+  assert.equal(ready.expectedCagr, 17.11);
+
+  const invalidCases = [
+    { productionAppExportEnabled: false },
+    { productionPublishReady: false },
+    { appExportApproved: false },
+    { overlayStatus: "app_ready" },
+    { productionReleaseContractVersion: "wrong-release-contract" },
+    { productionReleaseApprovedAt: "2026-07-26 02:03:18" },
+    { productionReleaseApprovedAt: "2026-02-31T02:03:18Z" },
+    { productionReleaseApprovedBy: "" },
+    { metricsSource: "forged_source" },
+    { dataSource: "forged_source" },
+    { calculationPolicyVersion: "wrong-policy" },
+    { pipelineVersion: "wrong-pipeline" },
+  ];
+  invalidCases.forEach((overrides, index) => {
+    const blocked = buildMonthlyBaselineProjection({
+      settings: BASE_SETTINGS,
+      assets: [productionAppExportAsset({ ticker: `BAD${index}`, ...overrides })],
+    });
+    assert.equal(blocked.status, "blocked", JSON.stringify(overrides));
+  });
+
+  const statusOnly = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [asset({ overlayStatus: "production_app_export_approved" })],
+  });
+  assert.equal(statusOnly.status, "blocked");
+  assert.match(
+    statusOnly.blockReasons.join("|"),
+    /invalid_production_metric_approval/,
+  );
+});
+
+test("baseline block reasons are translated without exposing raw codes in user-facing copy", () => {
+  assert.equal(
+    formatUserFacingBaselineBlockReason(
+      "unsupported_metric_status:QQQ.overlayStatus=forged",
+    ),
+    "승인된 지표 상태를 확인할 수 없습니다.",
+  );
+  assert.equal(
+    formatUserFacingBaselineBlockReason(
+      "unsupported_distribution_calculation_policy:AIPI.option_income",
+    ),
+    "이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다.",
+  );
+  assert.equal(
+    formatUserFacingBaselineBlockReason("missing_metric_lineage:QQQ.sourceHash"),
+    "지표 출처 정보가 부족합니다.",
+  );
 });
 
 test("saved portfolio normalization preserves preview identity, nulls, policies, and false gates", () => {

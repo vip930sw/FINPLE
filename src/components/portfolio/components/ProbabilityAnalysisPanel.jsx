@@ -102,6 +102,7 @@ export default function ProbabilityAnalysisPanel({
   expectedOutputHash = null,
   enableFixtureReview = false,
   enableInternalPreviewReview = false,
+  enableProductionAppExport = false,
   fixtureBaselineResult = null,
   scenarioLoadStatus = "idle",
   scenarioLoadError = "",
@@ -117,6 +118,7 @@ export default function ProbabilityAnalysisPanel({
     expectedOutputHash,
     enableFixtureReview,
     enableInternalPreviewReview,
+    enableProductionAppExport,
   });
   const isReady = isProbabilityViewModelReady(viewModel);
 
@@ -131,8 +133,8 @@ export default function ProbabilityAnalysisPanel({
           </p>
         </div>
         <div className="probabilityFixtureBadge">
-          <span>{enableInternalPreviewReview ? "internal preview" : enableFixtureReview ? "fixture review" : "idle"}</span>
-          <strong>{enableInternalPreviewReview ? "review-only data" : enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
+          <span>{enableProductionAppExport ? "production data" : enableInternalPreviewReview ? "internal preview" : enableFixtureReview ? "fixture review" : "idle"}</span>
+          <strong>{enableProductionAppExport ? "verified 6,029 app export" : enableInternalPreviewReview ? "review-only data" : enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
         </div>
       </div>
 
@@ -143,7 +145,7 @@ export default function ProbabilityAnalysisPanel({
       ) : null}
       {["error", "unavailable"].includes(scenarioLoadStatus) ? (
         <section className="probabilityStatusPanel probabilityStatus-error" aria-live="polite">
-          <div><strong>내부 Preview 시나리오를 계산할 수 없습니다.</strong><p>{scenarioLoadError || "월별 수익률 입력을 확인해주세요."}</p></div>
+          <div><strong>확률분석을 사용할 수 없습니다.</strong><p>{scenarioLoadError || "월별 수익률 입력을 확인해주세요."}</p></div>
         </section>
       ) : null}
 
@@ -184,7 +186,7 @@ export default function ProbabilityAnalysisPanel({
           <section className="probabilityReadyNotice" aria-label="확률분석 검증 상태">
             <BarChart3 size={20} aria-hidden="true" />
             <div>
-              <strong>{enableInternalPreviewReview ? "Internal Preview review-only 월수익률 확률 밴드" : "검증된 fixture-safe 확률 밴드"}</strong>
+              <strong>{enableProductionAppExport ? "Production monthly-return 확률 밴드" : enableInternalPreviewReview ? "Internal Preview review-only 월수익률 확률 밴드" : "검증된 fixture-safe 확률 밴드"}</strong>
               <p>
                 P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은
                 동일 analysis identity가 확인된 경우에만 함께 표시됩니다.

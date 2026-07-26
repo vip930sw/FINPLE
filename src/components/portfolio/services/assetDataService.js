@@ -201,6 +201,10 @@ function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
         "overlayStatus",
         "internalPreviewReviewOnly",
         "previewLoaderEnabled",
+        "productionAppExportEnabled",
+        "productionReleaseContractVersion",
+        "productionReleaseApprovedAt",
+        "productionReleaseApprovedBy",
         "productionPublishReady",
         "appExportApproved",
       ].map((field) => [field, patch[field]])
@@ -229,10 +233,16 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
     currency: assetData.currency || csvData.currency,
     quoteCurrency: assetData.quoteCurrency || csvData.quoteCurrency,
     assetType: assetData.assetType || csvData.assetType,
-    cagr: csvData.internalPreviewReviewOnly ? csvData.cagr : csvData.cagr ?? assetData.cagr,
-    beta: csvData.internalPreviewReviewOnly ? csvData.beta : csvData.beta ?? assetData.beta,
-    mdd: csvData.internalPreviewReviewOnly ? csvData.mdd : csvData.mdd ?? assetData.mdd,
-    dividendYield: csvData.internalPreviewReviewOnly
+    cagr: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+      ? csvData.cagr
+      : csvData.cagr ?? assetData.cagr,
+    beta: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+      ? csvData.beta
+      : csvData.beta ?? assetData.beta,
+    mdd: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+      ? csvData.mdd
+      : csvData.mdd ?? assetData.mdd,
+    dividendYield: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
       ? csvData.dividendYield
       : csvData.dividendYield ?? assetData.dividendYield,
     displayDividendYield: csvData.displayDividendYield || assetData.displayDividendYield || "",
@@ -273,6 +283,10 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
         "overlayStatus",
         "internalPreviewReviewOnly",
         "previewLoaderEnabled",
+        "productionAppExportEnabled",
+        "productionReleaseContractVersion",
+        "productionReleaseApprovedAt",
+        "productionReleaseApprovedBy",
         "productionPublishReady",
         "appExportApproved",
       ].map((field) => [field, csvData[field]])

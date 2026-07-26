@@ -5,6 +5,7 @@ import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
 } from "../../../data/tickers/distributionPolicy";
+import { formatUserFacingBaselineBlockReason } from "../utils/baselineBlockReasonLabels";
 
 function MetricTooltip({ label, children }) {
   return (
@@ -174,10 +175,14 @@ export default function DetailPanel({
             <h4>계산 보류</h4>
             <span>준비된 지표만 순위와 차트, 상세 분석에 포함됩니다.</span>
           </div>
-          {safeAssets.some((asset) => asset?.internalPreviewReviewOnly) &&
+          {safeAssets.some((asset) =>
+            asset?.internalPreviewReviewOnly || asset?.productionAppExportEnabled
+          ) &&
           safeArray(safeResult.blockReasons).length > 0 ? (
-            <ul aria-label="Internal Preview 계산 보류 사유">
-              {safeResult.blockReasons.map((reason) => <li key={reason}>{reason}</li>)}
+            <ul aria-label="지표 계약 계산 보류 사유">
+              {safeResult.blockReasons.map((reason) => (
+                <li key={reason}>{formatUserFacingBaselineBlockReason(reason)}</li>
+              ))}
             </ul>
           ) : null}
         </div>

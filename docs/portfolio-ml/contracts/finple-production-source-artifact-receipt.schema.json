@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://finple.co.kr/contracts/finple-production-source-artifact-receipt.schema.json",
+  "title": "FINPLE Production Source Artifact Determinism Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceGitMainSha",
+    "candidateZipSha256",
+    "candidatePackageHash",
+    "exporterCommand",
+    "exporterVersion",
+    "runAZipSha256",
+    "runBZipSha256",
+    "sourceManifestSha256",
+    "metricsOverlaySha256",
+    "monthlyIndexSha256",
+    "completeShardInventory",
+    "completeFileInventoryHash",
+    "generatedAt",
+    "operatorId",
+    "deterministicMatch"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "sourceGitMainSha": {
+      "const": "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef"
+    },
+    "candidateZipSha256": {
+      "const": "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e"
+    },
+    "candidatePackageHash": {
+      "const": "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
+    },
+    "exporterCommand": {
+      "const": "python -B -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576"
+    },
+    "exporterVersion": {
+      "const": "finple-app-preview-export-v1-step114-2z"
+    },
+    "runAZipSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "runBZipSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sourceManifestSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "metricsOverlaySha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "monthlyIndexSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "completeShardInventory": {
+      "type": "array",
+      "minItems": 64,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/shardRecord"
+      }
+    },
+    "completeFileInventoryHash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "operatorId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "deterministicMatch": {
+      "const": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "shardRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shardId",
+        "path",
+        "assetCount",
+        "rowCount",
+        "sha256",
+        "sizeBytes"
+      ],
+      "properties": {
+        "shardId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$"
+        },
+        "assetCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rowCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}
