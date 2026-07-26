@@ -23,6 +23,17 @@ function toNullableNumber(value) {
   return Number.isFinite(numberValue) ? numberValue : null;
 }
 
+function normalizeDividendState(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isCashDisplayAsset(asset = {}) {
+  return (
+    normalizeDividendState(asset.ticker) === "cash" ||
+    normalizeDividendState(asset.market) === "cash"
+  );
+}
+
 export function isNonOrdinaryDistribution(asset = {}) {
   const distributionType = String(asset.distributionType || "").trim().toLowerCase();
   const exposureType = String(asset.exposureType || "").trim().toLowerCase();
@@ -30,6 +41,62 @@ export function isNonOrdinaryDistribution(asset = {}) {
     !ORDINARY_DISTRIBUTION_TYPES.has(distributionType) ||
     OPTION_DISTRIBUTION_EXPOSURE_TYPES.has(exposureType)
   );
+}
+
+export function resolveDividendYieldDisplay(asset = {}) {
+  if (isNonOrdinaryDistribution(asset)) {
+    return { kind: "non_ordinary", text: null };
+  }
+
+  const dividendStatus = normalizeDividendState(asset.dividendStatus);
+  const dividendPolicy = normalizeDividendState(asset.dividendPolicy);
+  const reviewTag = normalizeDividendState(asset.reviewTag);
+  const reviewFlag = normalizeDividendState(asset.reviewFlag);
+  const displayValue = String(asset.displayDividendYield || "").trim();
+  const numericYield = toNullableNumber(asset.dividendYield);
+
+  if (dividendStatus === "confirmed_zero") {
+    return { kind: "confirmed_zero", text: "0.00%" };
+  }
+
+  if (
+    dividendStatus === "review_required" ||
+    dividendPolicy === "review_required" ||
+    reviewTag === "review_required" ||
+    reviewFlag === "review_required"
+  ) {
+    return { kind: "review_required", text: "확인 필요" };
+  }
+
+  if (isCashDisplayAsset(asset)) {
+    if (displayValue && displayValue !== "0.00%") {
+      return { kind: "cash", text: displayValue };
+    }
+    if (dividendPolicy === "no_dividend" || numericYield === 0) {
+      return { kind: "cash", text: "-" };
+    }
+    if (numericYield !== null && numericYield > 0) {
+      return { kind: "cash", text: `${numericYield.toFixed(2)}%` };
+    }
+    return { kind: "cash", text: "확인 중" };
+  }
+
+  if (["missing", "unconfirmed", "pending", "unknown"].includes(dividendStatus)) {
+    return { kind: "missing", text: "확인 중" };
+  }
+
+  if (dividendPolicy === "no_dividend") {
+    return { kind: "no_dividend", text: "-" };
+  }
+
+  if (numericYield !== null && numericYield > 0) {
+    return {
+      kind: dividendStatus === "confirmed_value" ? "confirmed_value" : "legacy_value",
+      text: `${numericYield.toFixed(2)}%`,
+    };
+  }
+
+  return { kind: "missing", text: "확인 중" };
 }
 
 export function resolveDistributionYieldFields(

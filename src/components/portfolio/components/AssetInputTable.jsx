@@ -1,3 +1,5 @@
+import { resolveDividendYieldDisplay } from "../../../data/tickers/distributionPolicy";
+
 function isLookupRequiredAsset(asset, emptyRow) {
   const ticker = String(asset?.ticker || "").trim();
   const price = Number(asset?.price || 0);
@@ -165,19 +167,19 @@ function MetricTextValue({ value, formatDecimal }) {
   return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
 }
 
-function DividendYieldTextValue({ asset, formatDecimal }) {
-  const displayValue = String(asset?.displayDividendYield || "").trim();
-  const policy = String(asset?.dividendPolicy || "").trim();
-
-  if (displayValue) {
-    const normalizedDisplayValue = displayValue === "0.00%" || policy === "no_dividend" ? "-" : displayValue;
-    return <span className="assetTextValue numberTextValue">{normalizedDisplayValue}</span>;
+function DividendYieldTextValue({ asset }) {
+  const display = resolveDividendYieldDisplay(asset);
+  if (display.kind === "non_ordinary") {
+    return <span className="assetTextValue numberTextValue pendingMetricText">분배 별도</span>;
   }
-  if (policy === "no_dividend") return <span className="assetTextValue numberTextValue">-</span>;
-  if (policy === "review_required") return <span className="assetTextValue numberTextValue pendingMetricText">확인 필요</span>;
-  if (asset?.dividendYield === null || asset?.dividendYield === undefined || asset?.dividendYield === "") return <span className="assetTextValue numberTextValue pendingMetricText">확인 중</span>;
-  if (Number(asset?.dividendYield) === 0) return <span className="assetTextValue numberTextValue">-</span>;
-  return <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />;
+  const pendingClass = ["missing", "review_required"].includes(display.kind)
+    ? " pendingMetricText"
+    : "";
+  return (
+    <span className={`assetTextValue numberTextValue${pendingClass}`}>
+      {display.text}
+    </span>
+  );
 }
 
 export default function AssetInputTable({
@@ -336,7 +338,7 @@ export default function AssetInputTable({
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={cagrDisplayValue} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue asset={asset} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue asset={asset} />}</td>
               </tr>
             );
           })}
