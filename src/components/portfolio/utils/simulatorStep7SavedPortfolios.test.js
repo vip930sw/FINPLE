@@ -115,6 +115,29 @@ test("Step 1 owns the shared creation menu and Step 7 stays management-only", ()
   assert.match(hook, /FINPLE_BACKUP_VERSION/);
 });
 
+test("new portfolio disclosure keeps native buttons and restores the active trigger", () => {
+  const menu = readSource("src/components/portfolio/components/NewPortfolioMenu.jsx");
+  const appCss = readSource("src/App.css");
+
+  assert.doesNotMatch(menu, /role="menu(?:item)?"/);
+  assert.match(menu, /aria-expanded=\{isOpen && menuSurface === "primary"\}/);
+  assert.match(menu, /aria-controls=\{primaryMenuId\}/);
+  assert.match(menu, /aria-expanded=\{isOpen && menuSurface === "floating"\}/);
+  assert.match(menu, /aria-controls=\{floatingMenuId\}/);
+  assert.match(menu, /ref=\{primaryTriggerRef\}/);
+  assert.match(menu, /ref=\{floatingTriggerRef\}/);
+  assert.match(menu, /activeSurface === "floating" \? floatingTriggerRef : primaryTriggerRef/);
+  assert.match(menu, /event\.key !== "Escape"/);
+  assert.match(menu, /document\.addEventListener\("pointerdown", handlePointerDown\)/);
+  assert.match(menu, /activeWrapRef\.current\?\.contains\(event\.target\)/);
+  assert.match(menu, /window\.requestAnimationFrame\(\(\) => activeTriggerRef\.current\?\.focus\(\)\)/);
+  assert.doesNotMatch(menu, /ArrowUp|ArrowDown|event\.key === "Home"|event\.key === "End"|roving/i);
+  assert.match(
+    appCss,
+    /@media screen and \(max-width: 1180px\)[\s\S]*\.floatingNewPortfolioMenuWrap\s*\{[\s\S]*display: none/,
+  );
+});
+
 test("both navigations expose the same active-state accessibility pattern", () => {
   const tabNav = readSource("src/components/portfolio/components/SimulatorTabNav.jsx");
   const personalPage = readSource("src/components/PersonalPage.jsx");

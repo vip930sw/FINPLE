@@ -404,6 +404,66 @@ test("blocked and review-only metric sources fail closed", () => {
   }
 });
 
+test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
+  const assets = [
+    productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),
+    productionAppExportAsset({ ticker: "SCHD", targetWeight: 15 }),
+    productionAppExportAsset({ ticker: "BND", targetWeight: 15 }),
+    productionAppExportAsset({ ticker: "TLT", targetWeight: 15 }),
+    productionAppExportAsset({
+      ticker: "VNQ",
+      targetWeight: 15,
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({ ticker: "GLD", targetWeight: 10 }),
+    asset({
+      ticker: "CASH",
+      market: "CASH",
+      targetWeight: 10,
+      cagr: null,
+      selectedCagr: null,
+      dividendYield: null,
+      dataStatus: null,
+      metricsStatus: null,
+      reviewFlag: null,
+      overlayStatus: null,
+      productionPublishReady: false,
+      appExportApproved: false,
+      metricsSource: null,
+      sourceHash: null,
+      calculationPolicyVersion: null,
+      pipelineVersion: null,
+    }),
+  ];
+
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets,
+  });
+  const auditReasons = result.blockReasons.join("|");
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    auditReasons,
+    /unsupported_metric_status:VNQ\.reviewFlag=review_required/,
+  );
+  assert.match(
+    auditReasons,
+    /missing_metric_status:CASH\.dataStatus/,
+  );
+  assert.match(
+    auditReasons,
+    /metric_source_not_publish_approved:CASH\.productionPublishReady/,
+  );
+  assert.match(
+    auditReasons,
+    /missing_selected_cagr:CASH/,
+  );
+  assert.equal(assets[4].reviewFlag, "review_required");
+  assert.equal(assets[6].market, "CASH");
+  assert.equal(assets[6].selectedCagr, null);
+});
+
 test("explicit internal app-preview review source calculates while publish gates remain false", () => {
   const previewAsset = asset({
     ticker: "QQQ",

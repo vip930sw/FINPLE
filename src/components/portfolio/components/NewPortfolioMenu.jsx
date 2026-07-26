@@ -49,6 +49,9 @@ export default function NewPortfolioMenu({
   enableDesktopFloatingRepeat = false,
 }) {
   const primaryWrapRef = useRef(null);
+  const primaryTriggerRef = useRef(null);
+  const floatingWrapRef = useRef(null);
+  const floatingTriggerRef = useRef(null);
   const [menuSurface, setMenuSurface] = useState("primary");
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
   const portfolioLimit = getCurrentPlanPortfolioLimit();
@@ -70,6 +73,39 @@ export default function NewPortfolioMenu({
     observer.observe(target);
     return () => observer.disconnect();
   }, [enableDesktopFloatingRepeat]);
+
+  useEffect(() => {
+    if (!isOpen || typeof document === "undefined") return undefined;
+    const activeSurface = menuSurface;
+    const activeWrapRef =
+      activeSurface === "floating" ? floatingWrapRef : primaryWrapRef;
+    const activeTriggerRef =
+      activeSurface === "floating" ? floatingTriggerRef : primaryTriggerRef;
+
+    function closeAndRestoreFocus() {
+      setIsOpen(false);
+      window.requestAnimationFrame(() => activeTriggerRef.current?.focus());
+    }
+
+    function handleKeyDown(event) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndRestoreFocus();
+    }
+
+    function handlePointerDown(event) {
+      if (activeWrapRef.current?.contains(event.target)) return;
+      closeAndRestoreFocus();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isOpen, menuSurface, setIsOpen]);
 
   function openMenu(surface) {
     if (isPortfolioLimitReached) {
@@ -102,12 +138,11 @@ export default function NewPortfolioMenu({
 
   function renderMenu(id) {
     return (
-      <div id={id} className="newPortfolioMenu" role="menu">
+      <div id={id} className="newPortfolioMenu">
         {TEMPLATE_OPTIONS.map(([key, title, description]) => (
           <button
             key={key}
             type="button"
-            role="menuitem"
             onClick={() => createFromTemplate(key)}
           >
             <strong>{title}</strong>
@@ -116,7 +151,6 @@ export default function NewPortfolioMenu({
         ))}
         <button
           type="button"
-          role="menuitem"
           onClick={duplicateCurrent}
           disabled={!activePortfolio}
         >
@@ -134,6 +168,7 @@ export default function NewPortfolioMenu({
     <>
       <div ref={primaryWrapRef} className="newPortfolioMenuWrap step1NewPortfolioMenu">
         <button
+          ref={primaryTriggerRef}
           type="button"
           className="newPortfolioButton"
           onClick={() => openMenu("primary")}
@@ -146,8 +181,9 @@ export default function NewPortfolioMenu({
       </div>
 
       {enableDesktopFloatingRepeat && !isPrimaryVisible ? (
-        <div className="floatingNewPortfolioMenuWrap">
+        <div ref={floatingWrapRef} className="floatingNewPortfolioMenuWrap">
           <button
+            ref={floatingTriggerRef}
             type="button"
             className="floatingNewPortfolioButton"
             onClick={() => openMenu("floating")}
