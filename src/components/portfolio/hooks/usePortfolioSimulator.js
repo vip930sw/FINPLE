@@ -66,6 +66,7 @@ import {
   hydrateAssetForProductionFallback,
   hydrateAssetFromScreenerCandidate,
   loadScreenerCandidateRuntime,
+  PRODUCTION_APP_EXPORT_LOADING_STATUS,
   subscribeScreenerCandidateSnapshot,
 } from "../../../data/tickers/screenerCandidateLoader";
 import { loadMonthlyReturnsForIdentities } from "../../../data/tickers/appPreviewDataSource";
@@ -114,6 +115,32 @@ function preserveNullableNumber(value, fallback = null) { if (value === null || 
 function getAssetActualValue(asset = {}) { const value = Number(asset.quantity || 0) * Number(asset.price || 0); return Number.isFinite(value) && value > 0 ? value : 0; }
 function getAssetPlannedValue(asset = {}) { const value = Number(asset.targetEvaluationAmount || 0); return Number.isFinite(value) && value > 0 ? value : 0; }
 function getAssetWeightValue(asset = {}) { return getAssetPlannedValue(asset) || getAssetActualValue(asset); }
+function createProductionCatalogLoadingResult(settings = {}) {
+  return {
+    status: "loading",
+    ready: false,
+    blockReasons: [],
+    settings,
+    yearlyContribution: null,
+    totalAssetValue: null,
+    simulationStartValue: null,
+    expectedCagr: null,
+    expectedDividendYield: null,
+    expectedBeta: null,
+    simpleMdd: null,
+    expectedCalmar: null,
+    expectedAnnualDividend: null,
+    performanceRows: [],
+    futureValue: null,
+    inflationAdjustedFutureValue: null,
+    monthlyBaselinePoints: [],
+    step3BlockedState: {
+      status: "loading",
+      operatorAction: "wait_for_verified_production_catalog",
+      userFacingState: "production_catalog_loading",
+    },
+  };
+}
 
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
@@ -150,6 +177,10 @@ export default function usePortfolioSimulator() {
     let appliedPackageHash = "";
     function applySnapshot(snapshot) {
       setScreenerCandidateSnapshot(snapshot);
+      if (snapshot.preview.status === PRODUCTION_APP_EXPORT_LOADING_STATUS) {
+        setAssetLookupSummary("검증된 자산 지표를 불러오는 중입니다.");
+        return;
+      }
       if (snapshot.preview.status === "production_v1_fallback" &&
           snapshot.preview.operationalReasonCode) {
         setPortfolioList((previousList) => previousList.map((portfolio) => ({
@@ -195,15 +226,23 @@ export default function usePortfolioSimulator() {
     return unsubscribe;
   }, []);
 
-  const result = calculatePortfolioResult(settings, assets);
+  const isProductionCatalogLoading =
+    screenerCandidateSnapshot.preview.status === PRODUCTION_APP_EXPORT_LOADING_STATUS;
+  const result = isProductionCatalogLoading
+    ? createProductionCatalogLoadingResult(settings)
+    : calculatePortfolioResult(settings, assets);
   const { yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue } = result;
-  const comparisonPortfolios = createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings);
+  const comparisonPortfolios = isProductionCatalogLoading
+    ? []
+    : createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings);
   const rankedComparisonPortfolios = createRankedComparisonPortfolios(comparisonPortfolios);
   const insightComparisonPortfolios = createInsightComparisonPortfolios(rankedComparisonPortfolios);
   const chartComparisonPortfolios = getChartComparisonPortfolios(insightComparisonPortfolios);
   const activePortfolio = getActivePortfolioById(portfolioList, activePortfolioId);
   const detailPortfolio = getDetailPortfolioById(rankedComparisonPortfolios, activePortfolioId);
-  const detailReport = activePortfolio
+  const detailReport = isProductionCatalogLoading
+    ? null
+    : activePortfolio
     ? getPortfolioDetailReport({ ...activePortfolio, assets, result }, rankedComparisonPortfolios)
     : detailPortfolio
       ? getPortfolioDetailReport(detailPortfolio, rankedComparisonPortfolios)

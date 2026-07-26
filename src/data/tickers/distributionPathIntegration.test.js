@@ -265,7 +265,11 @@ test("metric overlay follows the public App Preview path through save/reload and
       assert.match(report, /예상 MDD: -/);
       assert.match(report, /예상 일반 배당률: -/);
       assert.match(report, /예상 연배당금: -/);
-      assert.match(report, /unsupported_distribution_calculation_policy/);
+      assert.match(
+        report,
+        /이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다\./,
+      );
+      assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
       assert.match(report, /최근 12개월 분배율 34\.98%/);
       assert.match(report, /주간 분배/);
       assert.match(report, /일반 배당수익률·총수익률과 다름/);

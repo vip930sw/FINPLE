@@ -5,6 +5,7 @@ import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
 } from "../../../data/tickers/distributionPolicy";
+import { formatUserFacingBaselineBlockReason } from "../utils/baselineBlockReasonLabels";
 
 function MetricTooltip({ label, children }) {
   return (
@@ -179,7 +180,9 @@ export default function DetailPanel({
           ) &&
           safeArray(safeResult.blockReasons).length > 0 ? (
             <ul aria-label="지표 계약 계산 보류 사유">
-              {safeResult.blockReasons.map((reason) => <li key={reason}>{reason}</li>)}
+              {safeResult.blockReasons.map((reason) => (
+                <li key={reason}>{formatUserFacingBaselineBlockReason(reason)}</li>
+              ))}
             </ul>
           ) : null}
         </div>

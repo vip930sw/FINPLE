@@ -26,6 +26,9 @@ test("Production loader stays separate from Preview and keeps v1 as atomic fallb
   );
   assert.match(loader, /import\("\.\/finple_app_candidates_v2\.csv\?raw"\)/);
   assert.doesNotMatch(loader, /^import finpleAppCandidatesV2Csv/m);
+  assert.match(loader, /PRODUCTION_APP_EXPORT_LOADING_STATUS = "production_app_export_loading"/);
+  assert.match(loader, /productionAppExportConfiguredAtStartup\s*\?\s*\[\]\s*:\s*ALL_SCREENER_CANDIDATES/);
+  assert.match(loader, /beginProductionAppExportLoading/);
   assert.match(loader, /status: "production_v1_fallback"/);
   assert.match(loader, /activeScreenerCandidates = ALL_SCREENER_CANDIDATES/);
   assert.match(loader, /production_app_export_ready/);
@@ -33,6 +36,36 @@ test("Production loader stays separate from Preview and keeps v1 as atomic fallb
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_RELEASE_SHA256/);
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_SOURCE_SHA256/);
   assert.doesNotMatch(production, /VITE_FINPLE_APP_PREVIEW_ENABLED/);
+});
+
+test("Production initialization hides v1 metrics and holds Screener and Simulator actions", () => {
+  const screener = read("src/components/ScreenerPage.jsx");
+  const simulator = read("src/components/PortfolioSimulator.jsx");
+  const hook = read("src/components/portfolio/hooks/usePortfolioSimulator.js");
+  const styles = read("src/App.css");
+  assert.match(screener, /검증된 자산 지표를 불러오는 중입니다\./);
+  assert.match(screener, /aria-live="polite"/);
+  assert.match(screener, /disabled=\{isLoading\}/);
+  assert.match(simulator, /productionCatalogLoadingPanel/);
+  assert.match(simulator, /포트폴리오 계산을 보류합니다\./);
+  assert.match(hook, /createProductionCatalogLoadingResult/);
+  assert.match(hook, /isProductionCatalogLoading\s*\?\s*createProductionCatalogLoadingResult/);
+  assert.match(styles, /@media \(max-width: 480px\)/);
+});
+
+test("user-facing baseline reasons do not expose raw approval codes", () => {
+  const labels = read("src/components/portfolio/utils/baselineBlockReasonLabels.js");
+  const detail = read("src/components/portfolio/components/DetailPanel.jsx");
+  const compare = read("src/components/portfolio/components/ComparePanel.jsx");
+  for (const copy of [
+    "승인된 지표 상태를 확인할 수 없습니다.",
+    "이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다.",
+    "지표 출처 정보가 부족합니다.",
+  ]) {
+    assert.match(labels, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(detail, /formatUserFacingBaselineBlockReason/);
+  assert.match(compare, /formatUserFacingBaselineBlockReason/);
 });
 
 test("fixed Production release bindings and exact counts are fail-closed", () => {

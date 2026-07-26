@@ -194,7 +194,12 @@ export const US_EXPANSION_CANDIDATES = US_EXTRA_CANDIDATES;
 export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "ETF");
 export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "stock");
 
-let activeScreenerCandidates = ALL_SCREENER_CANDIDATES;
+export const PRODUCTION_APP_EXPORT_LOADING_STATUS = "production_app_export_loading";
+
+const productionAppExportConfiguredAtStartup = isProductionAppExportConfigured();
+let activeScreenerCandidates = productionAppExportConfiguredAtStartup
+  ? []
+  : ALL_SCREENER_CANDIDATES;
 let activeScreenerCandidateMap = new Map(
   activeScreenerCandidates.map((candidate) => [
     `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`,
@@ -202,8 +207,10 @@ let activeScreenerCandidateMap = new Map(
   ]),
 );
 let appExportState = {
-  enabled: false,
-  status: "production_v1_fallback",
+  enabled: productionAppExportConfiguredAtStartup,
+  status: productionAppExportConfiguredAtStartup
+    ? PRODUCTION_APP_EXPORT_LOADING_STATUS
+    : "production_v1_fallback",
   manifest: null,
   release: null,
   error: null,
@@ -216,6 +223,21 @@ const appPreviewSubscribers = new Set();
 function notifyAppPreviewSubscribers() {
   const snapshot = getScreenerCandidateSnapshot();
   appPreviewSubscribers.forEach((subscriber) => subscriber(snapshot));
+}
+
+function beginProductionAppExportLoading() {
+  activeScreenerCandidates = [];
+  activeScreenerCandidateMap = new Map();
+  appExportState = {
+    enabled: true,
+    status: PRODUCTION_APP_EXPORT_LOADING_STATUS,
+    manifest: null,
+    release: null,
+    error: null,
+    operationalReasonCode: "",
+  };
+  notifyAppPreviewSubscribers();
+  return getScreenerCandidateSnapshot();
 }
 
 function createAppExportCandidate(baseCandidate, metricRow, manifest, release = null) {
@@ -379,7 +401,15 @@ export function activateProductionAppExportFallback(
 
 export async function loadScreenerProductionAppExport(options = {}) {
   if (!isProductionAppExportConfigured(options)) return getScreenerCandidateSnapshot();
-  if (!productionAppExportLoadPromise || options.disableCache === true) {
+  const shouldStartLoad =
+    !productionAppExportLoadPromise ||
+    (options.disableCache === true &&
+      appExportState.status !== PRODUCTION_APP_EXPORT_LOADING_STATUS);
+  if (shouldStartLoad) {
+    if (appExportState.status !== PRODUCTION_APP_EXPORT_LOADING_STATUS ||
+        activeScreenerCandidates.length !== 0) {
+      beginProductionAppExportLoading();
+    }
     productionAppExportLoadPromise = loadProductionAppExportCatalog(options)
       .then((catalog) => activateAppExportCatalog(catalog, catalog.release))
       .catch((error) => {

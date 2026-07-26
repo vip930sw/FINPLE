@@ -1,4 +1,5 @@
 import PortfolioCompareLineChart from "./PortfolioCompareLineChart";
+import { formatUserFacingBaselineBlockReason } from "../utils/baselineBlockReasonLabels";
 
 function getCompactPortfolioName(name) {
   return String(name || "포트폴리오")
@@ -116,7 +117,9 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 ) &&
                 portfolio.result?.status === "blocked" ? (
                   <ul aria-label={`${portfolio.name} 지표 계약 계산 보류 사유`}>
-                    {(portfolio.result.blockReasons || []).map((reason) => <li key={reason}>{reason}</li>)}
+                    {(portfolio.result.blockReasons || []).map((reason) => (
+                      <li key={reason}>{formatUserFacingBaselineBlockReason(reason)}</li>
+                    ))}
                   </ul>
                 ) : null}
               </div>

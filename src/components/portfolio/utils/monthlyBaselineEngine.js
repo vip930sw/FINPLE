@@ -14,6 +14,10 @@ const APPROVED_PIPELINE_VERSIONS = new Set([
   "legacy-may-app-ready-loader-v1",
   LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION,
 ]);
+const PRODUCTION_APP_EXPORT_OVERLAY_STATUS = "production_app_export_approved";
+const PRODUCTION_APP_EXPORT_RELEASE_CONTRACT_VERSION =
+  "finple-production-app-export-release-v1-step114-2zc";
+const PRODUCTION_APP_EXPORT_SOURCE = "finple_production_app_export_step114_2zc";
 
 const LEGACY_MAY_APP_READY_SOURCES = new Map([
   [
@@ -62,6 +66,15 @@ function isBlank(value) {
 
 function normalizeStatus(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function isValidUtcTimestamp(value) {
+  const timestamp = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(timestamp)) {
+    return false;
+  }
+  const parsed = Date.parse(timestamp);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString().replace(".000Z", "Z") === timestamp;
 }
 
 function addBlockReason(reasons, code, detail = "") {
@@ -187,6 +200,57 @@ function validatePublishApproval(metadata, reasons, ticker) {
   }
   if (appExportApproved !== true) {
     addBlockReason(reasons, "metric_source_not_publish_approved", `${ticker}.appExportApproved`);
+  }
+}
+
+function validateProductionAppExportApproval(metadata, reasons, ticker) {
+  const overlayStatus = normalizeStatus(metadata.overlayStatus);
+  const hasProductionEvidence =
+    overlayStatus === PRODUCTION_APP_EXPORT_OVERLAY_STATUS ||
+    metadata.productionAppExportEnabled === true ||
+    String(metadata.metricsSource || "").trim() === PRODUCTION_APP_EXPORT_SOURCE ||
+    String(metadata.dataSource || "").trim() === PRODUCTION_APP_EXPORT_SOURCE;
+  if (!hasProductionEvidence) return;
+  if (overlayStatus !== PRODUCTION_APP_EXPORT_OVERLAY_STATUS) {
+    addBlockReason(reasons, "invalid_production_metric_approval", `${ticker}.overlayStatus`);
+  }
+
+  const exactBooleanFields = [
+    "productionAppExportEnabled",
+    "productionPublishReady",
+    "appExportApproved",
+  ];
+  exactBooleanFields.forEach((field) => {
+    if (metadata[field] !== true) {
+      addBlockReason(reasons, "invalid_production_metric_approval", `${ticker}.${field}`);
+    }
+  });
+
+  if (metadata.productionReleaseContractVersion !== PRODUCTION_APP_EXPORT_RELEASE_CONTRACT_VERSION) {
+    addBlockReason(
+      reasons,
+      "invalid_production_metric_approval",
+      `${ticker}.productionReleaseContractVersion`,
+    );
+  }
+  if (isBlank(metadata.productionReleaseApprovedBy)) {
+    addBlockReason(
+      reasons,
+      "invalid_production_metric_approval",
+      `${ticker}.productionReleaseApprovedBy`,
+    );
+  }
+  if (!isValidUtcTimestamp(metadata.productionReleaseApprovedAt)) {
+    addBlockReason(
+      reasons,
+      "invalid_production_metric_approval",
+      `${ticker}.productionReleaseApprovedAt`,
+    );
+  }
+  for (const field of ["metricsSource", "dataSource"]) {
+    if (String(metadata[field] || "").trim() !== PRODUCTION_APP_EXPORT_SOURCE) {
+      addBlockReason(reasons, "invalid_production_metric_approval", `${ticker}.${field}`);
+    }
   }
 }
 
@@ -324,10 +388,16 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
   validateReadyStatus(
     metadata,
     "overlayStatus",
-    new Set(["app_ready", "ready", "internal_preview_review_only"]),
+    new Set([
+      "app_ready",
+      "ready",
+      "internal_preview_review_only",
+      PRODUCTION_APP_EXPORT_OVERLAY_STATUS,
+    ]),
     reasons,
     ticker,
   );
+  validateProductionAppExportApproval(metadata, reasons, ticker);
   validatePublishApproval(metadata, reasons, ticker);
   validateRequiredLineage(metadata, reasons, ticker);
 
@@ -404,6 +474,10 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
       mddPolicy: asset.mddPolicy || "",
       betaPolicy: asset.betaPolicy || "",
       internalPreviewReviewOnly: parseBooleanLike(asset.internalPreviewReviewOnly) === true,
+      productionAppExportEnabled: asset.productionAppExportEnabled === true,
+      productionReleaseContractVersion: asset.productionReleaseContractVersion || "",
+      productionReleaseApprovedAt: asset.productionReleaseApprovedAt || "",
+      productionReleaseApprovedBy: asset.productionReleaseApprovedBy || "",
       productionPublishReady: parseBooleanLike(asset.productionPublishReady),
       appExportApproved: parseBooleanLike(asset.appExportApproved),
     },

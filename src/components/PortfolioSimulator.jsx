@@ -16,6 +16,7 @@ import {
   normalizeSimulatorTab,
 } from "./portfolio/utils/simulatorNavigation";
 import { buildSimulatorAiScenarioContext } from "./portfolio/utils/aiScenarioInterpretationContext";
+import { PRODUCTION_APP_EXPORT_LOADING_STATUS } from "../data/tickers/screenerCandidateLoader";
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange, scenarioContextInputs = null } = props || {};
@@ -99,6 +100,8 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   } = usePortfolioSimulator();
 
   const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
+  const isProductionCatalogLoading =
+    screenerCandidateSnapshot?.preview?.status === PRODUCTION_APP_EXPORT_LOADING_STATUS;
   const scenarioInterpretationContext = useMemo(
     () => buildSimulatorAiScenarioContext(scenarioContextInputs),
     [scenarioContextInputs]
@@ -215,7 +218,22 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         changeSimulatorTab={handleSimulatorTabChange}
       />
 
-      {effectiveActiveSimulatorTab === "compare" && (
+      {isProductionCatalogLoading ? (
+        <section
+          className="productionCatalogLoadingPanel"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className="productionCatalogLoadingIndicator" aria-hidden="true" />
+          <div>
+            <strong>검증된 자산 지표를 불러오는 중입니다.</strong>
+            <p>자산 지표 검증이 끝날 때까지 포트폴리오 계산을 보류합니다.</p>
+          </div>
+        </section>
+      ) : null}
+
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "compare" && (
         <div id="compare" className="simulatorTabAnchor">
           <ComparePanel
             insightComparisonPortfolios={insightComparisonPortfolios}
@@ -224,7 +242,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "settings" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "settings" && (
         <div id="settings" className="simulatorTabAnchor">
           <SettingsPanel
             settings={settings}
@@ -263,7 +281,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "detail" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "detail" && (
         <div id="detail" className="simulatorTabAnchor">
           <DetailPanel
             activePortfolio={activePortfolio}
@@ -294,7 +312,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "probability" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "probability" && (
         <div id="probability-analysis" className="simulatorTabAnchor">
           <ProbabilityAnalysisPanel
             activePortfolio={activePortfolio}
@@ -315,7 +333,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "shock" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "shock" && (
         <div id="external-shock-analysis" className="simulatorTabAnchor">
           <ExternalShockAnalysisPanel
             activePortfolio={activePortfolio}
@@ -327,7 +345,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "ai" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "ai" && (
         <div id="ai-analysis" className="simulatorTabAnchor">
           <AiAnalysisPanel
             activePortfolio={activePortfolio}
@@ -342,7 +360,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {effectiveActiveSimulatorTab === "saved" && (
+      {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "saved" && (
         <div id="saved-portfolios" className="portfolioAnchor simulatorTabAnchor">
           <PortfolioManagerPanel
             portfolioList={portfolioList}
@@ -365,7 +383,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {shouldShowFloatingPortfolioDropdown ? (
+      {!isProductionCatalogLoading && shouldShowFloatingPortfolioDropdown ? (
         <FloatingPortfolioDropdown
           activePortfolio={activePortfolio}
           portfolioList={portfolioList}

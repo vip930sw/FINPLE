@@ -4,8 +4,17 @@ import test from "node:test";
 import { createServer } from "vite";
 
 import { sha256Hex } from "../../utils/sha256.js";
-import { buildMonthlyBaselineProjection } from "../../components/portfolio/utils/monthlyBaselineEngine.js";
+import {
+  buildMonthlyBaselineProjection,
+  buildStep2MonthlyBaselineComparison,
+  buildStep3MonthlyBaselineDetail,
+} from "../../components/portfolio/utils/monthlyBaselineEngine.js";
 import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
+import {
+  createInsightComparisonPortfolios,
+  createRankedComparisonPortfolios,
+  getChartComparisonPortfolios,
+} from "../../components/portfolio/utils/portfolioCalculations.js";
 import {
   PRODUCTION_CANDIDATE_PACKAGE_HASH,
   PRODUCTION_CANDIDATE_ZIP_SHA256,
@@ -91,6 +100,8 @@ function makeFixture() {
     ["US:QYLG", 16.26],
     ["US:QQQ", 0.41],
     ["US:SPY", 1.01],
+    ["US:VOO", 1.18],
+    ["KR:069500", 1.52],
     ["US:GLD", 0],
   ]);
   const rows = identities.map((identity) => {
@@ -375,6 +386,33 @@ test("missing monthly identity is unavailable without zero fill or proxy request
   assert.deepEqual(result.requestedShardPaths, []);
 });
 
+test("build-time configured Production starts with an empty loading snapshot, never v1 metrics", async () => {
+  const envKey = "VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED";
+  const previous = process.env[envKey];
+  process.env[envKey] = "true";
+  const vite = await createServer({
+    root: process.cwd(),
+    appType: "custom",
+    logLevel: "silent",
+    server: { middlewareMode: true },
+  });
+  try {
+    const loader = await vite.ssrLoadModule(
+      "/src/data/tickers/screenerCandidateLoader.js?configured-initial-state",
+    );
+    const snapshot = loader.getScreenerCandidateSnapshot();
+    assert.equal(snapshot.preview.status, "production_app_export_loading");
+    assert.equal(snapshot.preview.enabled, true);
+    assert.equal(snapshot.candidates.length, 0);
+    assert.equal(snapshot.usCandidates.length, 0);
+    assert.equal(snapshot.krCandidates.length, 0);
+  } finally {
+    await vite.close();
+    if (previous === undefined) delete process.env[envKey];
+    else process.env[envKey] = previous;
+  }
+});
+
 test("production loader applies RM and distribution policy through saved hydration then atomically falls back", async () => {
   const vite = await createServer({
     root: process.cwd(),
@@ -385,9 +423,38 @@ test("production loader applies RM and distribution policy through saved hydrati
   try {
     const fixture = makeFixture();
     const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
-    const snapshot = await loader.loadScreenerProductionAppExport(options(fixture));
+    const portfolioFactory = await vite.ssrLoadModule(
+      "/src/components/portfolio/utils/portfolioFactory.js",
+    );
+    const unconfigured = loader.getScreenerCandidateSnapshot();
+    assert.equal(unconfigured.preview.status, "production_v1_fallback");
+    assert.equal(unconfigured.preview.operationalReasonCode, "");
+    assert.equal(unconfigured.candidates.length, loader.ALL_SCREENER_CANDIDATES.length);
+
+    const transitions = [];
+    const unsubscribe = loader.subscribeScreenerCandidateSnapshot((nextSnapshot) => {
+      transitions.push({
+        status: nextSnapshot.preview.status,
+        candidateCount: nextSnapshot.candidates.length,
+      });
+    });
+    const productionOptions = options(fixture);
+    const firstLoad = loader.loadScreenerProductionAppExport(productionOptions);
+    const duplicateLoad = loader.loadScreenerProductionAppExport(productionOptions);
+    const loading = loader.getScreenerCandidateSnapshot();
+    assert.equal(loading.preview.status, "production_app_export_loading");
+    assert.equal(loading.candidates.length, 0);
+    assert.equal(loading.usCandidates.length, 0);
+    assert.equal(loading.krCandidates.length, 0);
+    const [snapshot, duplicateSnapshot] = await Promise.all([firstLoad, duplicateLoad]);
+    unsubscribe();
+    assert.deepEqual(duplicateSnapshot, snapshot);
     assert.equal(snapshot.preview.status, "production_app_export_ready");
     assert.equal(snapshot.candidates.length, 6029);
+    assert.deepEqual(transitions, [
+      { status: "production_app_export_loading", candidateCount: 0 },
+      { status: "production_app_export_ready", candidateCount: 6029 },
+    ]);
     const expectations = new Map([
       ["QQQ", { market: "US", cagr: 17.11, dividendYield: 0.41 }],
       ["SPY", { market: "US", cagr: 8, dividendYield: 1.01 }],
@@ -399,6 +466,7 @@ test("production loader applies RM and distribution policy through saved hydrati
       ["TSLP", { market: "US", distributionYield: 28.11 }],
       ["QYLG", { market: "US", distributionYield: 16.26 }],
     ]);
+    const savedAssets = new Map();
     for (const [ticker, expected] of expectations) {
       const candidate = loader.findScreenerCandidateByTicker(ticker, expected.market);
       assert.ok(candidate, ticker);
@@ -411,7 +479,11 @@ test("production loader applies RM and distribution policy through saved hydrati
         targetWeight: 100,
       });
       const parsed = JSON.parse(JSON.stringify(hydrated));
-      const saved = { ...parsed, ...normalizePersistedMetricFields(parsed) };
+      const saved = portfolioFactory.normalizeAsset(
+        { ...parsed, ...normalizePersistedMetricFields(parsed) },
+        savedAssets.size,
+      );
+      savedAssets.set(ticker, saved);
       assert.equal(saved.productionAppExportEnabled, true, ticker);
       assert.equal(saved.productionPublishReady, true, ticker);
       assert.equal(saved.appExportApproved, true, ticker);
@@ -442,11 +514,73 @@ test("production loader applies RM and distribution policy through saved hydrati
       } else if (expected.dividendYield !== undefined) {
         assert.equal(saved.dividendYield, expected.dividendYield, ticker);
       }
+      if (expected.distributionYield === undefined) {
+        const ordinaryBaseline = buildMonthlyBaselineProjection({
+          settings: {
+            startValue: 100,
+            monthlyCashFlow: 0,
+            years: 1,
+            inflationRate: 0,
+            dividendReinvest: true,
+          },
+          assets: [saved],
+        });
+        assert.equal(ordinaryBaseline.status, "ready", ticker);
+        assert.equal(ordinaryBaseline.assets[0].annualPriceCagr, expected.cagr ?? 8, ticker);
+      }
       if (ticker === "GLD") assert.equal(saved.dividendStatus, "confirmed_zero");
       if (ticker === "QYLG") {
         assert.equal(saved.exposureType, "index_covered_call_growth");
       }
     }
+
+    const ordinaryMixedAssets = ["QQQ", "SPY", "VOO", "069500", "GLD"]
+      .map((ticker) => savedAssets.get(ticker));
+    const baselineSettings = {
+      startValue: 500,
+      monthlyCashFlow: 10,
+      years: 1,
+      inflationRate: 2,
+      dividendReinvest: true,
+    };
+    const mixedBaseline = buildMonthlyBaselineProjection({
+      settings: baselineSettings,
+      assets: ordinaryMixedAssets,
+    });
+    assert.equal(mixedBaseline.status, "ready");
+    assert.equal(savedAssets.get("QQQ").selectedCagr, 17.11);
+    assert.equal(savedAssets.get("GLD").dividendStatus, "confirmed_zero");
+
+    const comparison = buildStep2MonthlyBaselineComparison({
+      portfolios: [{
+        id: "production-ordinary",
+        name: "Production ordinary",
+        assets: ordinaryMixedAssets,
+      }],
+      activePortfolioId: "production-ordinary",
+      assets: ordinaryMixedAssets,
+      settings: baselineSettings,
+    });
+    assert.equal(comparison.length, 1);
+    assert.equal(comparison[0].result.status, "ready");
+    assert.ok(comparison[0].result.monthlyBaselinePoints.length > 1);
+    assert.ok(Number.isFinite(comparison[0].result.futureValue));
+    const chartInput = getChartComparisonPortfolios(
+      createInsightComparisonPortfolios(
+        createRankedComparisonPortfolios(comparison),
+      ),
+    );
+    assert.equal(chartInput.length, 1);
+    assert.equal(chartInput[0].result.status, "ready");
+    assert.ok(chartInput[0].result.monthlyBaselinePoints.length > 1);
+
+    const detail = buildStep3MonthlyBaselineDetail({
+      portfolio: { id: "production-ordinary", assets: ordinaryMixedAssets },
+      settings: baselineSettings,
+      assets: ordinaryMixedAssets,
+    });
+    assert.equal(detail.status, "ready");
+    assert.ok(detail.performanceRows.length > 0);
 
     const fallback = await loader.loadScreenerProductionAppExport({
       ...options(fixture),
