@@ -2,6 +2,8 @@ import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
 
 export const PORTFOLIO_PERSISTENCE_SCHEMA_VERSION = 3;
 export const PORTFOLIO_PERSISTENCE_ENVELOPE_PREFIX = "FINPLE_PORTFOLIO_V3:";
+export const PORTFOLIO_PERSISTENCE_ALIAS_CONFLICT_REASON =
+  "portfolio_persistence_alias_conflict";
 
 const DEFAULT_GLOBAL_SETTINGS = Object.freeze({
   startValue: 0,
@@ -83,8 +85,73 @@ export function normalizePortfolioPersistencePortfolio(portfolio = {}, index = 0
   };
 }
 
+function stableJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(stableJsonValue);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  return Object.keys(value)
+    .sort()
+    .reduce((result, key) => {
+      result[key] = stableJsonValue(value[key]);
+      return result;
+    }, {});
+}
+
+function normalizedPortfolioListsMatch(left, right) {
+  const normalizedLeft = left.map(normalizePortfolioPersistencePortfolio);
+  const normalizedRight = right.map(normalizePortfolioPersistencePortfolio);
+  return (
+    JSON.stringify(stableJsonValue(normalizedLeft)) ===
+    JSON.stringify(stableJsonValue(normalizedRight))
+  );
+}
+
+export function detectPortfolioPersistenceAliasConflict(snapshot = {}) {
+  const source = safeObject(snapshot);
+  if (
+    !Array.isArray(source.portfolios) ||
+    !Array.isArray(source.portfolioList) ||
+    normalizedPortfolioListsMatch(source.portfolios, source.portfolioList)
+  ) {
+    return null;
+  }
+
+  return {
+    reason: PORTFOLIO_PERSISTENCE_ALIAS_CONFLICT_REASON,
+    canonicalPortfolioCount: source.portfolios.length,
+    legacyPortfolioCount: source.portfolioList.length,
+  };
+}
+
+export function createCanonicalPortfolioPersistenceSyncSnapshot(
+  snapshot = {},
+  { portfolios = [], activePortfolioId = null } = {},
+) {
+  const source = safeObject(snapshot);
+  const envelope = { ...source };
+  delete envelope.portfolios;
+  delete envelope.portfolioList;
+  delete envelope.activePortfolioId;
+
+  return {
+    ...envelope,
+    portfolios: Array.isArray(portfolios) ? portfolios : [],
+    activePortfolioId: activePortfolioId || null,
+  };
+}
+
 export function normalizePortfolioPersistenceSnapshot(snapshot = {}) {
   const source = safeObject(snapshot);
+  const aliasConflict = detectPortfolioPersistenceAliasConflict(source);
+  if (aliasConflict) {
+    const error = new Error(aliasConflict.reason);
+    error.code = aliasConflict.reason;
+    error.aliasConflict = aliasConflict;
+    throw error;
+  }
   const sourcePortfolios = Array.isArray(source.portfolios)
     ? source.portfolios
     : Array.isArray(source.portfolioList)

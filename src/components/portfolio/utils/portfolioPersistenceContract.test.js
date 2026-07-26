@@ -3,7 +3,10 @@ import test from "node:test";
 import { createServer } from "vite";
 
 import {
+  createCanonicalPortfolioPersistenceSyncSnapshot,
+  detectPortfolioPersistenceAliasConflict,
   normalizePortfolioPersistenceSnapshot,
+  PORTFOLIO_PERSISTENCE_ALIAS_CONFLICT_REASON,
   PORTFOLIO_PERSISTENCE_SCHEMA_VERSION,
 } from "./portfolioPersistenceContract.js";
 import {
@@ -192,6 +195,61 @@ test("missing metric values remain null while confirmed zero remains numeric zer
   assert.equal(aipi.dividendYield, null);
   assert.equal(gld.dividendYield, 0);
   assert.notEqual(aipi.dividendYield, gld.dividendYield);
+});
+
+test("canonical and identical legacy aliases normalize without ambiguity", () => {
+  const snapshot = createQaAipiLifecycleSnapshot();
+  const input = {
+    ...snapshot,
+    portfolioList: snapshot.portfolios,
+  };
+
+  assert.equal(detectPortfolioPersistenceAliasConflict(input), null);
+  assert.deepEqual(
+    normalizePortfolioPersistenceSnapshot(input).portfolios,
+    snapshot.portfolios,
+  );
+});
+
+test("conflicting persistence aliases fail closed instead of selecting stale portfolios", () => {
+  const snapshot = createQaAipiLifecycleSnapshot();
+  const input = {
+    ...snapshot,
+    portfolioList: [],
+  };
+
+  assert.deepEqual(detectPortfolioPersistenceAliasConflict(input), {
+    reason: PORTFOLIO_PERSISTENCE_ALIAS_CONFLICT_REASON,
+    canonicalPortfolioCount: 1,
+    legacyPortfolioCount: 0,
+  });
+  assert.throws(
+    () => normalizePortfolioPersistenceSnapshot(input),
+    (error) =>
+      error?.code === PORTFOLIO_PERSISTENCE_ALIAS_CONFLICT_REASON &&
+      error?.aliasConflict?.legacyPortfolioCount === 0,
+  );
+});
+
+test("canonical sync helper strips all aliases and preserves envelope fields", () => {
+  const snapshot = createQaAipiLifecycleSnapshot();
+  const canonical = createCanonicalPortfolioPersistenceSyncSnapshot(
+    {
+      ...snapshot,
+      portfolioList: snapshot.portfolios,
+      source: "browser-local-storage",
+    },
+    {
+      portfolios: [],
+      activePortfolioId: null,
+    },
+  );
+
+  assert.deepEqual(canonical.portfolios, []);
+  assert.equal(Object.hasOwn(canonical, "portfolioList"), false);
+  assert.equal(canonical.activePortfolioId, null);
+  assert.deepEqual(canonical.globalSettings, QA_GLOBAL_SETTINGS);
+  assert.equal(canonical.source, "browser-local-storage");
 });
 
 test("browser loadPortfolioState hydrates the exact server snapshot without recreating defaults", async () => {

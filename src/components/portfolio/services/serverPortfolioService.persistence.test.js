@@ -4,7 +4,10 @@ import test from "node:test";
 import {
   getLocalPortfolioSnapshot,
   importServerPortfoliosToBrowser,
+  syncLocalPortfoliosToServer,
 } from "./serverPortfolioService.js";
+import { deletePortfolioWithServerSync } from "../utils/portfolioLifecycle.js";
+import { createPortfolioApiSnapshot } from "../../../../server/src/services/portfolioPersistenceModel.js";
 
 const QA_GLOBAL_SETTINGS = {
   startValue: 73500000,
@@ -112,4 +115,66 @@ test("authoritative empty replace stores [] and null active id without default r
   assert.equal(storage.getItem("finple-active-portfolio-id"), null);
   assert.deepEqual(getLocalPortfolioSnapshot().portfolioList, []);
   assert.equal(getLocalPortfolioSnapshot().activePortfolioId, null);
+});
+
+test("canonical frontend deletion reaches the server transport as authoritative empty state", async () => {
+  const storage = installWindow();
+  storage.setItem(
+    "finple-trial-auth-user",
+    JSON.stringify({ id: "qa-user", email: "redacted@example.invalid" }),
+  );
+  window.FINPLE_ASSET_DATA_CONFIG.apiBaseUrl = "https://qa.invalid/api";
+
+  const stalePortfolio = {
+    id: "qa-aipi-lifecycle",
+    name: "QA AIPI lifecycle",
+    assets: [{ id: "qa-aipi", market: "US", ticker: "AIPI" }],
+  };
+  const snapshot = {
+    schemaVersion: 3,
+    portfolios: [stalePortfolio],
+    portfolioList: [stalePortfolio],
+    activePortfolioId: stalePortfolio.id,
+    globalSettings: QA_GLOBAL_SETTINGS,
+  };
+  let serverPortfolios = [stalePortfolio];
+  let archivedStaleCount = 0;
+  let requestBody = null;
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (_url, options) => {
+    requestBody = JSON.parse(options.body);
+    if (requestBody.portfolioList.length === 0) {
+      archivedStaleCount = serverPortfolios.length;
+      serverPortfolios = [];
+    }
+    return {
+      ok: true,
+      async json() {
+        return {
+          ok: true,
+          archivedStaleCount,
+          ...createPortfolioApiSnapshot(serverPortfolios),
+        };
+      },
+    };
+  };
+
+  try {
+    const result = await deletePortfolioWithServerSync({
+      portfolioList: snapshot.portfolioList,
+      portfolioId: stalePortfolio.id,
+      snapshot,
+      syncSnapshot: syncLocalPortfoliosToServer,
+    });
+
+    assert.deepEqual(result.portfolioList, []);
+    assert.deepEqual(requestBody.portfolioList, []);
+    assert.equal(requestBody.activePortfolioId, null);
+    assert.deepEqual(requestBody.globalSettings, QA_GLOBAL_SETTINGS);
+    assert.equal(archivedStaleCount, 1);
+    assert.deepEqual(createPortfolioApiSnapshot(serverPortfolios).portfolios, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

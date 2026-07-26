@@ -1,3 +1,5 @@
+import { createCanonicalPortfolioPersistenceSyncSnapshot } from "./portfolioPersistenceContract.js";
+
 export function deletePortfolioState(portfolioList = [], portfolioId = null) {
   const currentList = Array.isArray(portfolioList) ? portfolioList : [];
   const nextPortfolioList = currentList.filter(
@@ -28,10 +30,11 @@ export async function deletePortfolioWithServerSync({
     throw new Error("portfolio_delete_sync_required");
   }
   const nextState = deletePortfolioState(portfolioList, portfolioId);
-  await syncSnapshot({
-    ...snapshot,
-    portfolioList: nextState.portfolioList,
-    activePortfolioId: nextState.activePortfolioId,
-  });
+  await syncSnapshot(
+    createCanonicalPortfolioPersistenceSyncSnapshot(snapshot, {
+      portfolios: nextState.portfolioList,
+      activePortfolioId: nextState.activePortfolioId,
+    }),
+  );
   return nextState;
 }
