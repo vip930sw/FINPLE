@@ -4,7 +4,7 @@ import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
 } from "../../../data/tickers/distributionPolicy.js";
-import { formatUserFacingBaselineBlockReason } from "./baselineBlockReasonLabels.js";
+import { formatUserFacingBaselineBlockReasons } from "./baselineBlockReasonLabels.js";
 
 function formatNullablePercent(value, digits = 2) {
   if (value === null || value === undefined || value === "") return "-";
@@ -45,7 +45,7 @@ function createBlockReasonLines(result, blocked) {
     "",
     "차단 사유",
     ...(reasons.length > 0
-      ? reasons.map((reason) => `- ${formatUserFacingBaselineBlockReason(reason)}`)
+      ? formatUserFacingBaselineBlockReasons(reasons).map((reason) => `- ${reason}`)
       : ["- 확인 필요"]),
   ];
 }

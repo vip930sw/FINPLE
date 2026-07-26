@@ -12,6 +12,88 @@
   box-sizing: border-box;
 }
 
+/* Step 114-2ZD: Step 1 portfolio creation */
+.step1PortfolioHeader {
+  position: relative;
+}
+
+.step1PortfolioHeaderCopy {
+  min-width: 0;
+}
+
+.step1NewPortfolioMenu {
+  flex: 0 0 auto;
+}
+
+.step1NewPortfolioMenu .newPortfolioMenu {
+  right: 0;
+  left: auto;
+  max-height: min(68vh, 620px);
+  overflow-y: auto;
+}
+
+.floatingNewPortfolioMenuWrap {
+  position: fixed;
+  right: 28px;
+  bottom: 164px;
+  z-index: 41;
+}
+
+.floatingNewPortfolioButton {
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 11px 15px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+
+.floatingNewPortfolioMenuWrap .newPortfolioMenu {
+  top: auto;
+  right: 0;
+  bottom: calc(100% + 10px);
+  max-height: min(64vh, 560px);
+  overflow-y: auto;
+}
+
+.srOnly {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media screen and (max-width: 1180px) {
+  .floatingNewPortfolioMenuWrap {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 820px) {
+  .step1PortfolioHeader {
+    display: grid;
+    gap: 16px;
+  }
+
+  .step1NewPortfolioMenu,
+  .step1NewPortfolioMenu .newPortfolioButton {
+    width: 100%;
+  }
+
+  .step1NewPortfolioMenu .newPortfolioMenu {
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+}
+
 .productionCatalogLoadingPanel {
   display: flex;
   align-items: center;

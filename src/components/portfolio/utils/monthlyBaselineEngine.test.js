@@ -17,7 +17,10 @@ import {
   getChartComparisonPortfolios,
 } from "./portfolioCalculations.js";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
-import { formatUserFacingBaselineBlockReason } from "./baselineBlockReasonLabels.js";
+import {
+  formatUserFacingBaselineBlockReason,
+  formatUserFacingBaselineBlockReasons,
+} from "./baselineBlockReasonLabels.js";
 
 const BASE_SETTINGS = Object.freeze({
   startValue: 1200,
@@ -506,6 +509,38 @@ test("baseline block reasons are translated without exposing raw codes in user-f
     formatUserFacingBaselineBlockReason("missing_metric_lineage:QQQ.sourceHash"),
     "지표 출처 정보가 부족합니다.",
   );
+});
+
+test("user-facing baseline block reasons are deduplicated while audit reasons remain intact", () => {
+  const auditReasons = [
+    "missing_metric_status:QQQ.dataStatus",
+    "unsupported_metric_status:SPY.metricsStatus=review_required",
+    "missing_metric_lineage:QQQ.metricsSource",
+    "missing_metric_lineage:SPY.pipelineVersion",
+    "invalid_production_metric_approval:QQQ.overlayStatus",
+  ];
+  const labels = formatUserFacingBaselineBlockReasons(auditReasons);
+
+  assert.deepEqual(labels, [
+    "지표 계산 계약을 확인할 수 없습니다.",
+    "승인된 지표 상태를 확인할 수 없습니다.",
+    "지표 출처 정보가 부족합니다.",
+  ]);
+  assert.equal(auditReasons.length, 5);
+});
+
+test("verified production release evidence replaces persisted digest lineage", () => {
+  const approvedWithoutDigests = productionAppExportAsset({
+    sourceHash: "",
+    normalizedSeriesHash: "",
+  });
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [approvedWithoutDigests],
+  });
+
+  assert.equal(result.status, "ready");
+  assert.doesNotMatch(result.blockReasons.join("|"), /missing_metric_lineage/);
 });
 
 test("saved portfolio normalization preserves preview identity, nulls, policies, and false gates", () => {

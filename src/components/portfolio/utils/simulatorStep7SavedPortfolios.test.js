@@ -72,24 +72,45 @@ test("saved portfolios render once and only inside the Step 7 branch", () => {
   assert.doesNotMatch(source, /<div id="portfolio" className="portfolioAnchor">/);
 });
 
-test("existing saved portfolio create, select, delete, server, and backup wiring remains reachable", () => {
+test("Step 1 owns the shared creation menu and Step 7 stays management-only", () => {
   const simulator = readSource("src/components/PortfolioSimulator.jsx");
   const panel = readSource("src/components/portfolio/components/PortfolioManagerPanel.jsx");
+  const settings = readSource("src/components/portfolio/components/SettingsPanel.jsx");
+  const menu = readSource("src/components/portfolio/components/NewPortfolioMenu.jsx");
   const hook = readSource("src/components/portfolio/hooks/usePortfolioSimulator.js");
+  const appCss = readSource("src/App.css");
 
   for (const prop of [
-    "createPortfolioFromTemplate", "duplicateActivePortfolio", "selectPortfolio",
-    "renameActivePortfolio", "deleteActivePortfolio", "downloadPortfolioBackup",
+    "selectPortfolio", "renameActivePortfolio", "deleteActivePortfolio", "downloadPortfolioBackup",
     "openPortfolioBackupFile", "restorePortfolioBackup",
   ]) assert.match(simulator, new RegExp(`${prop}=\\{${prop}\\}`));
 
+  assert.match(settings, /<NewPortfolioMenu/);
+  assert.match(settings, /portfolioCreationEvent/);
+  assert.match(settings, /aria-live="polite"/);
+  assert.match(settings, /firstSettingInputRef\.current\?\.focus/);
+  assert.match(menu, /createPortfolioFromTemplate/);
+  assert.match(menu, /duplicateActivePortfolio/);
+  assert.match(menu, /canCreatePortfolio/);
+  assert.match(menu, /IntersectionObserver/);
+  assert.match(appCss, /\.floatingNewPortfolioMenuWrap/);
+  assert.match(
+    appCss,
+    /@media screen and \(max-width: 1180px\)[\s\S]*\.floatingNewPortfolioMenuWrap[\s\S]*display: none/,
+  );
+
+  assert.doesNotMatch(panel, /newPortfolioMenu|createPortfolioFromTemplate|duplicateActivePortfolio/);
   assert.match(panel, /savePortfoliosToServer/);
   assert.match(panel, /loadPortfoliosFromServer/);
   assert.match(panel, /importServerPortfoliosToBrowser/);
   assert.match(panel, /deletePortfolioWithServerSync/);
   assert.match(panel, /portfolioEmptyState/);
+  assert.match(panel, /onClick=\{goToStepOne\}/);
+  assert.match(panel, /Step 1로 이동/);
   assert.match(panel, /downloadPortfolioBackup/);
   assert.match(panel, /restorePortfolioBackup/);
+  assert.match(hook, /changeSimulatorTab\("settings"\)/);
+  assert.match(hook, /setPortfolioCreationEvent/);
   assert.match(hook, /document\.getElementById\("saved-portfolios"\)/);
   assert.match(hook, /FINPLE_BACKUP_VERSION/);
 });

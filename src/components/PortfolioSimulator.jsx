@@ -42,6 +42,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     setIsPortfolioDropdownOpen,
     isNewPortfolioMenuOpen,
     setIsNewPortfolioMenuOpen,
+    portfolioCreationEvent,
     backupFileInputRef,
     result,
     yearlyContribution,
@@ -74,6 +75,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     selectPortfolio,
     createPortfolioFromTemplate,
     duplicateActivePortfolio,
+    hydratePortfolioFromActiveCatalog,
     downloadPortfolioBackup,
     openPortfolioBackupFile,
     restorePortfolioBackup,
@@ -87,7 +89,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     resetActivePortfolioAssets,
     resetGlobalSettings,
     changeSimulatorTab,
-    scrollToPortfolioTop,
     selectPortfolioFromFloating,
     formatNumber,
     formatDecimal,
@@ -245,6 +246,13 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "settings" && (
         <div id="settings" className="simulatorTabAnchor">
           <SettingsPanel
+            portfolioList={portfolioList}
+            activePortfolio={activePortfolio}
+            isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
+            setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
+            createPortfolioFromTemplate={createPortfolioFromTemplate}
+            duplicateActivePortfolio={duplicateActivePortfolio}
+            portfolioCreationEvent={portfolioCreationEvent}
             settings={settings}
             totalAssetValue={totalAssetValue}
             simulationStartValue={simulationStartValue}
@@ -366,10 +374,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             portfolioList={portfolioList}
             activePortfolioId={activePortfolioId}
             activePortfolio={activePortfolio}
-            isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
-            setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
-            createPortfolioFromTemplate={createPortfolioFromTemplate}
-            duplicateActivePortfolio={duplicateActivePortfolio}
             selectPortfolio={selectPortfolio}
             renameActivePortfolio={renameActivePortfolio}
             deleteActivePortfolio={deleteActivePortfolio}
@@ -378,7 +382,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             backupFileInputRef={backupFileInputRef}
             restorePortfolioBackup={restorePortfolioBackup}
             dataManagementSummary={dataManagementSummary}
-            scrollToPortfolioTop={scrollToPortfolioTop}
+            hydratePortfolio={hydratePortfolioFromActiveCatalog}
+            goToStepOne={() =>
+              handleSimulatorTabChange("settings", { userInitiated: true })
+            }
           />
         </div>
       )}

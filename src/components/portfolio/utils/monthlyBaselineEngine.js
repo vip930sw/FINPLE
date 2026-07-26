@@ -153,12 +153,37 @@ function validateReadyStatus(metadata, field, allowedValues, reasons, ticker) {
   }
 }
 
+function hasVerifiedCatalogLineageEvidence(metadata = {}) {
+  const productionEvidence =
+    metadata.productionAppExportEnabled === true &&
+    metadata.productionPublishReady === true &&
+    metadata.appExportApproved === true &&
+    normalizeStatus(metadata.overlayStatus) === PRODUCTION_APP_EXPORT_OVERLAY_STATUS &&
+    metadata.productionReleaseContractVersion ===
+      PRODUCTION_APP_EXPORT_RELEASE_CONTRACT_VERSION &&
+    !isBlank(metadata.productionReleaseApprovedBy) &&
+    isValidUtcTimestamp(metadata.productionReleaseApprovedAt) &&
+    String(metadata.metricsSource || "").trim() === PRODUCTION_APP_EXPORT_SOURCE &&
+    String(metadata.dataSource || "").trim() === PRODUCTION_APP_EXPORT_SOURCE;
+  const internalPreviewEvidence =
+    parseBooleanLike(metadata.internalPreviewReviewOnly) === true &&
+    parseBooleanLike(metadata.previewLoaderEnabled) === true &&
+    parseBooleanLike(metadata.productionPublishReady) === false &&
+    parseBooleanLike(metadata.appExportApproved) === false &&
+    normalizeStatus(metadata.overlayStatus) === "internal_preview_review_only";
+  return productionEvidence || internalPreviewEvidence;
+}
+
 function validateRequiredLineage(metadata, reasons, ticker) {
   for (const field of ["metricBaseDate", "metricsSource", "calculationPolicyVersion", "pipelineVersion"]) {
     if (isBlank(metadata[field])) addBlockReason(reasons, "missing_metric_lineage", `${ticker}.${field}`);
   }
 
-  if (isBlank(metadata.sourceHash) && isBlank(metadata.normalizedSeriesHash)) {
+  if (
+    isBlank(metadata.sourceHash) &&
+    isBlank(metadata.normalizedSeriesHash) &&
+    !hasVerifiedCatalogLineageEvidence(metadata)
+  ) {
     addBlockReason(reasons, "missing_metric_lineage", `${ticker}.sourceHash_or_normalizedSeriesHash`);
   }
 

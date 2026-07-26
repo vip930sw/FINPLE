@@ -600,8 +600,13 @@ export function importServerPortfoliosToBrowser(serverInput = [], options = {}) 
       serverEnvelope.globalSettings ||
       getLegacyGlobalSettings(serverEnvelope.portfolios?.[0]),
   });
+  const hydratePortfolio =
+    typeof options.hydratePortfolio === "function"
+      ? options.hydratePortfolio
+      : (portfolio) => portfolio;
   const allNormalizedServerPortfolios = canonicalSnapshot.portfolios.map(
-    (portfolio, index) => normalizeServerPortfolioForLocal(portfolio, index),
+    (portfolio, index) =>
+      hydratePortfolio(normalizeServerPortfolioForLocal(portfolio, index)),
   );
   const maxPortfolios = Number(options.maxPortfolios);
   const normalizedServerPortfolios =
