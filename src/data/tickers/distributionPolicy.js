@@ -77,9 +77,7 @@ export function resolveDividendYieldDisplay(asset = {}) {
     return { kind: "cash", text: "확인 중" };
   }
 
-  if (
-    ["", "missing", "unconfirmed", "pending", "unknown"].includes(dividendStatus)
-  ) {
+  if (["missing", "unconfirmed", "pending", "unknown"].includes(dividendStatus)) {
     return { kind: "missing", text: "확인 중" };
   }
 
@@ -88,6 +86,14 @@ export function resolveDividendYieldDisplay(asset = {}) {
       kind: "confirmed_value",
       text: `${numericYield.toFixed(2)}%`,
     };
+  }
+
+  if (dividendStatus === "confirmed_value") {
+    return { kind: "missing", text: "확인 중" };
+  }
+
+  if (dividendPolicy === "no_dividend") {
+    return { kind: "no_dividend", text: "-" };
   }
 
   return { kind: "missing", text: "확인 중" };

@@ -9334,17 +9334,17 @@ nav {
   font-size: 10px !important;
 }
 
-.tickerResultMetaGrid.compact .tickerResultAnalysisStatus.ready {
+.tickerResultMetaGrid.compact .tickerResultMetricReviewStatus.ready {
   background: #ecfdf5;
   color: #047857;
 }
 
-.tickerResultMetaGrid.compact .tickerResultAnalysisStatus.review_required {
+.tickerResultMetaGrid.compact .tickerResultMetricReviewStatus.review_required {
   background: #fff7ed;
   color: #c2410c;
 }
 
-.tickerResultMetaGrid.compact .tickerResultAnalysisStatus.pending {
+.tickerResultMetaGrid.compact .tickerResultMetricReviewStatus.pending {
   background: #f1f5f9;
   color: #64748b;
 }

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveAnalysisReadinessDisplay } from "./analysisReadinessPolicy.js";
+import { resolveMetricReviewDisplay } from "./metricReviewPolicy.js";
 
-test("analysis readiness is independent from confirmed ordinary dividend state", () => {
+test("metric review status is independent from confirmed ordinary dividend state", () => {
   for (const fixture of [
     {
       ticker: "TQQQ",
@@ -31,21 +31,21 @@ test("analysis readiness is independent from confirmed ordinary dividend state",
     },
   ]) {
     assert.deepEqual(
-      resolveAnalysisReadinessDisplay(fixture),
+      resolveMetricReviewDisplay(fixture),
       { kind: "review_required", text: "분석 지표 검토 필요" },
       fixture.ticker,
     );
   }
 });
 
-test("analysis readiness reports ready only when all three metric states are approved", () => {
+test("metric review reports completion only when all three metric states are approved", () => {
   assert.deepEqual(
-    resolveAnalysisReadinessDisplay({
+    resolveMetricReviewDisplay({
       dataStatus: "ready",
       metricsStatus: "ready",
       reviewFlag: "none",
     }),
-    { kind: "ready", text: "분석 가능" },
+    { kind: "ready", text: "지표 검토 완료" },
   );
 
   for (const fixture of [
@@ -55,8 +55,8 @@ test("analysis readiness reports ready only when all three metric states are app
     { dataStatus: "ready", metricsStatus: "review_only", reviewFlag: "none" },
   ]) {
     assert.deepEqual(
-      resolveAnalysisReadinessDisplay(fixture),
-      { kind: "pending", text: "분석 준비 확인 중" },
+      resolveMetricReviewDisplay(fixture),
+      { kind: "pending", text: "지표 상태 확인 중" },
     );
   }
 });

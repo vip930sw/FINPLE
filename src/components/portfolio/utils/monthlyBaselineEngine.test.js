@@ -443,6 +443,42 @@ test("Screener display separation does not change review-required baseline gates
   }
 });
 
+test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings", () => {
+  for (const fixture of [
+    productionAppExportAsset({
+      ticker: "AIPI",
+      dividendYield: null,
+      dividendStatus: "missing",
+      exposureType: "single_stock_option_income",
+      distributionType: "mixed_distribution",
+      distributionFrequency: "weekly",
+      trailingDistributionYield: 34.98,
+    }),
+    productionAppExportAsset({
+      ticker: "QYLG",
+      dividendYield: null,
+      dividendStatus: "missing",
+      exposureType: "index_covered_call_growth",
+      distributionType: "mixed_distribution",
+      distributionFrequency: "monthly",
+      trailingDistributionYield: 16.26,
+    }),
+  ]) {
+    for (const dividendReinvest of [true, false]) {
+      const result = buildMonthlyBaselineProjection({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        assets: [fixture],
+      });
+      assert.equal(result.status, "blocked", `${fixture.ticker}:${dividendReinvest}`);
+      assert.match(
+        result.blockReasons.join("|"),
+        new RegExp(`unsupported_distribution_calculation_policy:${fixture.ticker}\\.`),
+        `${fixture.ticker}:${dividendReinvest}`,
+      );
+    }
+  }
+});
+
 test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
   const assets = [
     productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),

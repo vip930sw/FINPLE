@@ -6,7 +6,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 
-test("Screener cards render dividend and analysis readiness as separate facts", async () => {
+test("Screener cards render dividend and metric review status as separate facts", async () => {
   const vite = await createServer({
     root: fileURLToPath(new URL("../..", import.meta.url)),
     appType: "custom",
@@ -56,7 +56,7 @@ test("Screener cards render dividend and analysis readiness as separate facts", 
       {
         ticker: "GLD",
         expectedDividend: "배당 0.00%",
-        expectedAnalysis: "분석 가능",
+        expectedMetricReview: "지표 검토 완료",
         item: {
           dividendYield: 0,
           dividendStatus: "confirmed_zero",
@@ -68,10 +68,42 @@ test("Screener cards render dividend and analysis readiness as separate facts", 
       {
         ticker: "SCHD",
         expectedDividend: "배당 3.30%",
-        expectedAnalysis: "분석 가능",
+        expectedMetricReview: "지표 검토 완료",
         item: {
           dividendYield: 3.30,
           dividendStatus: "confirmed_value",
+          dataStatus: "ready",
+          metricsStatus: "ready",
+          reviewFlag: "none",
+        },
+      },
+      {
+        ticker: "AIPI",
+        expectedDistribution: "최근 12개월 분배율 34.98%",
+        expectedMetricReview: "지표 검토 완료",
+        item: {
+          exposureType: "single_stock_option_income",
+          distributionType: "mixed_distribution",
+          distributionFrequency: "weekly",
+          dividendYield: null,
+          dividendStatus: "missing",
+          trailingDistributionYield: 34.98,
+          dataStatus: "ready",
+          metricsStatus: "ready",
+          reviewFlag: "none",
+        },
+      },
+      {
+        ticker: "QYLG",
+        expectedDistribution: "최근 12개월 분배율 16.26%",
+        expectedMetricReview: "지표 검토 완료",
+        item: {
+          exposureType: "index_covered_call_growth",
+          distributionType: "mixed_distribution",
+          distributionFrequency: "monthly",
+          dividendYield: null,
+          dividendStatus: "missing",
+          trailingDistributionYield: 16.26,
           dataStatus: "ready",
           metricsStatus: "ready",
           reviewFlag: "none",
@@ -103,10 +135,16 @@ test("Screener cards render dividend and analysis readiness as separate facts", 
           onAdd: () => {},
         }),
       );
-      assert.match(html, new RegExp(fixture.expectedDividend), fixture.ticker);
+      if (fixture.expectedDividend) {
+        assert.match(html, new RegExp(fixture.expectedDividend), fixture.ticker);
+      } else {
+        assert.match(html, new RegExp(fixture.expectedDistribution), fixture.ticker);
+        assert.doesNotMatch(html, /<span>배당 /, fixture.ticker);
+      }
+      assert.doesNotMatch(html, /분석 가능/, fixture.ticker);
       assert.match(
         html,
-        new RegExp(fixture.expectedAnalysis || "분석 지표 검토 필요"),
+        new RegExp(fixture.expectedMetricReview || "분석 지표 검토 필요"),
         fixture.ticker,
       );
     }

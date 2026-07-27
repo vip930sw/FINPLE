@@ -166,7 +166,30 @@ test("Screener and Step 1 share the explicit dividend-only display state contrac
       distributionType: "ordinary_cash_dividend",
       dividendYield: 0,
       dividendStatus: "confirmed_value",
+      dividendPolicy: "no_dividend",
       reviewFlag: "review_required",
+    }),
+    { kind: "missing", text: "확인 중" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "NO-DIVIDEND",
+      distributionType: "none",
+      dividendYield: null,
+      dividendStatus: "",
+      dividendPolicy: "no_dividend",
+    }),
+    { kind: "no_dividend", text: "-" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "MISSING-NO-DIVIDEND",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: null,
+      dividendStatus: "missing",
+      dividendPolicy: "no_dividend",
     }),
     { kind: "missing", text: "확인 중" },
   );

@@ -12,7 +12,7 @@ import {
   isNonOrdinaryDistribution,
   resolveDividendYieldDisplay,
 } from "../data/tickers/distributionPolicy";
-import { resolveAnalysisReadinessDisplay } from "../data/tickers/analysisReadinessPolicy";
+import { resolveMetricReviewDisplay } from "../data/tickers/metricReviewPolicy";
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
@@ -260,7 +260,7 @@ function getPageNumbers(currentPage, totalPages) {
 
 export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const cardClassName = ["tickerResultCard", isAdded ? "added" : "", item.market === "KR" ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
-  const analysisReadiness = resolveAnalysisReadinessDisplay(item);
+  const metricReview = resolveMetricReviewDisplay(item);
   return (
     <article className={cardClassName}>
       <div className="tickerResultMain">
@@ -279,7 +279,7 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
         </div>
       ) : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item)}</span>}<span className={`tickerResultAnalysisStatus ${analysisReadiness.kind}`}>{analysisReadiness.text}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item)}</span>}<span className={`tickerResultMetricReviewStatus ${metricReview.kind}`}>{metricReview.text}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
