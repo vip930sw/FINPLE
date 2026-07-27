@@ -404,6 +404,81 @@ test("blocked and review-only metric sources fail closed", () => {
   }
 });
 
+test("Screener display separation does not change review-required baseline gates", () => {
+  for (const fixture of [
+    productionAppExportAsset({
+      ticker: "TQQQ",
+      dividendYield: 0.47,
+      dividendStatus: "confirmed_value",
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({
+      ticker: "SOXL",
+      dividendYield: 0,
+      dividendStatus: "confirmed_value",
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({
+      ticker: "069500",
+      market: "KR",
+      dividendYield: 0.46,
+      dividendStatus: "confirmed_value",
+      dataStatus: "review_required",
+      metricsStatus: "review_required",
+      reviewFlag: "review_required",
+    }),
+  ]) {
+    for (const dividendReinvest of [true, false]) {
+      const result = buildMonthlyBaselineProjection({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        assets: [fixture],
+      });
+      assert.equal(result.status, "blocked", `${fixture.ticker}:${dividendReinvest}`);
+      assert.match(
+        result.blockReasons.join("|"),
+        new RegExp(`unsupported_metric_status:${fixture.ticker}\\.`),
+        `${fixture.ticker}:${dividendReinvest}`,
+      );
+    }
+  }
+});
+
+test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings", () => {
+  for (const fixture of [
+    productionAppExportAsset({
+      ticker: "AIPI",
+      dividendYield: null,
+      dividendStatus: "missing",
+      exposureType: "single_stock_option_income",
+      distributionType: "mixed_distribution",
+      distributionFrequency: "weekly",
+      trailingDistributionYield: 34.98,
+    }),
+    productionAppExportAsset({
+      ticker: "QYLG",
+      dividendYield: null,
+      dividendStatus: "missing",
+      exposureType: "index_covered_call_growth",
+      distributionType: "mixed_distribution",
+      distributionFrequency: "monthly",
+      trailingDistributionYield: 16.26,
+    }),
+  ]) {
+    for (const dividendReinvest of [true, false]) {
+      const result = buildMonthlyBaselineProjection({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        assets: [fixture],
+      });
+      assert.equal(result.status, "blocked", `${fixture.ticker}:${dividendReinvest}`);
+      assert.match(
+        result.blockReasons.join("|"),
+        new RegExp(`unsupported_distribution_calculation_policy:${fixture.ticker}\\.`),
+        `${fixture.ticker}:${dividendReinvest}`,
+      );
+    }
+  }
+});
+
 test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
   const assets = [
     productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),

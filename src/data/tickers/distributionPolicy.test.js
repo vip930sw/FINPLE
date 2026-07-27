@@ -92,16 +92,27 @@ test("QQQ and SPY keep ordinary dividends while GLD keeps confirmed zero distinc
   assert.notEqual(gld.dividendYield, null);
 });
 
-test("Screener and Step 1 share the explicit dividend display state contract", () => {
-  assert.deepEqual(
-    resolveDividendYieldDisplay({
-      ticker: "QQQ",
-      distributionType: "ordinary_cash_dividend",
-      dividendYield: 0.41,
-      dividendStatus: "confirmed_value",
-    }),
-    { kind: "confirmed_value", text: "0.41%" },
-  );
+test("Screener and Step 1 share the explicit dividend-only display state contract", () => {
+  for (const [ticker, dividendYield] of [
+    ["TQQQ", 0.47],
+    ["069500", 0.46],
+    ["SCHD", 3.30],
+  ]) {
+    assert.deepEqual(
+      resolveDividendYieldDisplay({
+        ticker,
+        distributionType: "ordinary_cash_dividend",
+        dividendYield,
+        dividendStatus: "confirmed_value",
+        dataStatus: "review_required",
+        metricsStatus: "review_required",
+        reviewFlag: "review_required",
+        reviewTag: "review_required",
+      }),
+      { kind: "confirmed_value", text: `${dividendYield.toFixed(2)}%` },
+      ticker,
+    );
+  }
 
   assert.deepEqual(
     resolveDividendYieldDisplay({
@@ -115,7 +126,7 @@ test("Screener and Step 1 share the explicit dividend display state contract", (
     { kind: "confirmed_zero", text: "0.00%" },
   );
 
-  for (const dividendStatus of ["", "missing", "unconfirmed"]) {
+  for (const dividendStatus of ["", "missing", "unconfirmed", "pending", "unknown"]) {
     assert.deepEqual(
       resolveDividendYieldDisplay({
         ticker: "MISS",
@@ -133,10 +144,54 @@ test("Screener and Step 1 share the explicit dividend display state contract", (
       ticker: "REVIEW",
       distributionType: "ordinary_cash_dividend",
       dividendYield: 2.5,
-      dividendStatus: "confirmed_value",
-      reviewFlag: "review_required",
+      dividendStatus: "review_required",
     }),
     { kind: "review_required", text: "확인 필요" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "POLICY-REVIEW",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: 2.5,
+      dividendStatus: "confirmed_value",
+      dividendPolicy: "review_required",
+    }),
+    { kind: "review_required", text: "확인 필요" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "SOXL",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: 0,
+      dividendStatus: "confirmed_value",
+      dividendPolicy: "no_dividend",
+      reviewFlag: "review_required",
+    }),
+    { kind: "missing", text: "확인 중" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "NO-DIVIDEND",
+      distributionType: "none",
+      dividendYield: null,
+      dividendStatus: "",
+      dividendPolicy: "no_dividend",
+    }),
+    { kind: "no_dividend", text: "-" },
+  );
+
+  assert.deepEqual(
+    resolveDividendYieldDisplay({
+      ticker: "MISSING-NO-DIVIDEND",
+      distributionType: "ordinary_cash_dividend",
+      dividendYield: null,
+      dividendStatus: "missing",
+      dividendPolicy: "no_dividend",
+    }),
+    { kind: "missing", text: "확인 중" },
   );
 
   for (const [ticker, trailingDistributionYield, distributionFrequency] of [
