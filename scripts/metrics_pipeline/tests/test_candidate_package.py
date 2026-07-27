@@ -12,6 +12,7 @@ from zipfile import ZipFile
 
 from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package, verify_candidate_package
 from scripts.metrics_pipeline import candidate_package as candidate_package_module
+from scripts.metrics_pipeline import pipeline as pipeline_module
 from scripts.metrics_pipeline.candidate_package import (
     CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
     SOURCE_DECLARATION_CONTRACT_VERSION,
@@ -1212,6 +1213,55 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             )
             self.assertFalse(result["candidatePackageReady"])
             self.assertIn("fixture_file_reclassified", {issue["issueType"] for issue in result["issues"]})
+
+
+class PriceGapMonthlyReturnContractTest(unittest.TestCase):
+    def test_price_gap_excludes_the_first_post_gap_monthly_return(self) -> None:
+        candidate = {
+            "market": "KR",
+            "ticker": "123456",
+            "benchmarkKey": "KOSPI200",
+            "proxyTicker": "",
+        }
+        prices = [
+            {
+                "month": month,
+                "close": close,
+                "currency": "KRW",
+                "dividendStatus": "confirmed_zero",
+            }
+            for month, close in (
+                ("2006-01-31", "100"),
+                ("2006-02-28", "101"),
+                ("2006-05-31", "104"),
+                ("2006-06-30", "105"),
+            )
+        ]
+        price_gap_audit_rows = [
+            {
+                "market": "KR",
+                "ticker": "123456",
+                "issueType": "missing_calendar_month",
+                "date": month,
+            }
+            for month in ("2006-03-31", "2006-04-30")
+        ]
+
+        reason = candidate_package_module._series_issue_reason(
+            "KR",
+            "123456",
+            "missing_calendar_month",
+            price_gap_audit_rows,
+        )
+        returns = pipeline_module._monthly_return_rows(candidate, prices)
+
+        self.assertIn("has 2 missing calendar month(s)", reason)
+        self.assertIn("(2006-03, 2006-04)", reason)
+        self.assertEqual(
+            [row["month"] for row in returns],
+            ["2006-02-28", "2006-06-30"],
+        )
+        self.assertNotIn("2006-05-31", {row["month"] for row in returns})
 
 
 if __name__ == "__main__":

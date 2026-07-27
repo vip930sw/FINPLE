@@ -46,6 +46,13 @@ export function normalizePersistedMetricFields(asset = {}) {
     distributionCalculationStatus: distributionFields.distributionCalculationStatus,
     reviewTag: asset.reviewTag || "",
     reviewReason: asset.reviewReason || "",
+    reviewApprovalPolicyVersion: asset.reviewApprovalPolicyVersion || "",
+    reviewApprovalStatus: asset.reviewApprovalStatus || "",
+    reviewApprovalReason: asset.reviewApprovalReason || "",
+    reviewApprovalReasonCodes: Array.isArray(asset.reviewApprovalReasonCodes)
+      ? [...asset.reviewApprovalReasonCodes]
+      : [],
+    reviewApprovalAudit: asset.reviewApprovalAudit || null,
     priceCagr10y: normalizeNullableNumber(asset.priceCagr10y, null),
     rawPriceCagr10y: normalizeNullableNumber(asset.rawPriceCagr10y, null),
     rollingCagr10yMedian: normalizeNullableNumber(asset.rollingCagr10yMedian, null),

@@ -443,6 +443,75 @@ test("Screener display separation does not change review-required baseline gates
   }
 });
 
+test("policy-approved TQQQ, SOXL, and 069500 restore Step 2/3 for both dividend settings", () => {
+  const ordinaryCompanions = [
+    productionAppExportAsset({ ticker: "SCHD", targetWeight: 25, dividendYield: 3.3 }),
+    productionAppExportAsset({ ticker: "TLT", targetWeight: 25, dividendYield: 4.53 }),
+    productionAppExportAsset({
+      ticker: "GLD",
+      targetWeight: 25,
+      dividendYield: 0,
+      dividendStatus: "confirmed_zero",
+    }),
+  ];
+  const portfolios = [
+    [
+      productionAppExportAsset({
+        ticker: "TQQQ",
+        targetWeight: 25,
+        dividendYield: 0.47,
+        dividendStatus: "confirmed_value",
+        reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
+        reviewApprovalStatus: "ready",
+      }),
+      ...ordinaryCompanions,
+    ],
+    [
+      productionAppExportAsset({
+        ticker: "SOXL",
+        targetWeight: 25,
+        dividendYield: 0,
+        dividendStatus: "confirmed_value",
+        reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
+        reviewApprovalStatus: "ready",
+      }),
+      ...ordinaryCompanions,
+    ],
+    [
+      productionAppExportAsset({
+        ticker: "069500",
+        market: "KR",
+        targetWeight: 100,
+        dividendYield: 0.46,
+        dividendStatus: "confirmed_value",
+        reviewApprovalPolicyVersion: "initial-history-gap-review-policy-v1-step114",
+        reviewApprovalStatus: "ready",
+      }),
+    ],
+  ];
+
+  for (const assets of portfolios) {
+    for (const dividendReinvest of [true, false]) {
+      const projection = buildMonthlyBaselineProjection({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        assets,
+      });
+      const comparison = buildStep2MonthlyBaselineComparison({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        portfolios: [{ id: "approved", name: "approved", assets }],
+      });
+      const detail = buildStep3MonthlyBaselineDetail({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        portfolio: { id: "approved", name: "approved", assets },
+      });
+
+      assert.equal(projection.status, "ready", `${assets[0].ticker}:${dividendReinvest}`);
+      assert.equal(comparison[0].result.status, "ready", `${assets[0].ticker}:${dividendReinvest}`);
+      assert.equal(detail.status, "ready", `${assets[0].ticker}:${dividendReinvest}`);
+    }
+  }
+});
+
 test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings", () => {
   for (const fixture of [
     productionAppExportAsset({
@@ -644,6 +713,36 @@ test("baseline block reasons are translated without exposing raw codes in user-f
     formatUserFacingBaselineBlockReason("missing_metric_lineage:QQQ.sourceHash"),
     "지표 출처 정보가 부족합니다.",
   );
+  assert.equal(
+    formatUserFacingBaselineBlockReason(
+      "asset_review_policy_pending:TQQQ.leveraged-inverse-review-policy-v1-step114",
+    ),
+    "TQQQ: 레버리지·인버스 ETF 지표 검토가 완료되지 않았습니다.",
+  );
+  assert.equal(
+    formatUserFacingBaselineBlockReason(
+      "asset_review_policy_pending:069500.initial-history-gap-review-policy-v1-step114",
+    ),
+    "069500: 초기 월수익률 결측 구간 검토가 필요합니다.",
+  );
+  assert.equal(
+    formatUserFacingBaselineBlockReason("asset_baseline_contract_missing:CASH.cash"),
+    "CASH: 승인된 baseline 계산 정책이 없습니다.",
+  );
+});
+
+test("asset-specific review labels suppress only their duplicate generic status label", () => {
+  const auditReasons = [
+    "unsupported_metric_status:TQQQ.reviewFlag=review_required",
+    "asset_review_policy_pending:TQQQ.leveraged-inverse-review-policy-v1-step114",
+    "unsupported_metric_status:VNQ.reviewFlag=review_required",
+  ];
+
+  assert.deepEqual(formatUserFacingBaselineBlockReasons(auditReasons), [
+    "TQQQ: 레버리지·인버스 ETF 지표 검토가 완료되지 않았습니다.",
+    "승인된 지표 상태를 확인할 수 없습니다.",
+  ]);
+  assert.equal(auditReasons.length, 3);
 });
 
 test("user-facing baseline block reasons are deduplicated while audit reasons remain intact", () => {

@@ -459,7 +459,7 @@ def check_generated_files(
     manifest_path: Path,
     reconciliation_path: Path,
 ) -> bool:
-    expected_csv = output.read_bytes()
+    expected_csv = _normalized_csv_bytes(output)
     expected_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     expected_reconciliation = json.loads(reconciliation_path.read_text(encoding="utf-8"))
     import tempfile
@@ -472,10 +472,17 @@ def check_generated_files(
             root / reconciliation_path.name,
         )
         return (
-            (root / output.name).read_bytes() == expected_csv
+            _normalized_csv_bytes(root / output.name) == expected_csv
             and result["manifest"] == expected_manifest
             and result["reconciliation"] == expected_reconciliation
         )
+
+
+def _normalized_csv_bytes(path: Path) -> bytes:
+    """Return logical UTF-8 CSV bytes independent of checkout line endings."""
+    return path.read_bytes().decode("utf-8").replace("\r\n", "\n").replace("\r", "\n").encode(
+        "utf-8"
+    )
 
 
 def main() -> None:
