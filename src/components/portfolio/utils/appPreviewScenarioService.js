@@ -77,6 +77,43 @@ function intersectMonths(seriesMaps) {
 
 const PROXY_STATUS_MARKER_PATTERN = /(?:^|[*:_\-\s])proxy(?:$|[*:_\-\s])/i;
 
+export const APP_EXPORT_SCENARIO_ERROR_CODES = Object.freeze({
+  PROXY_MONTHLY_RETURN: "unsupported_product_policy:proxy_monthly_return",
+  MISSING_PROXY_LINEAGE: "missing_metric_lineage:monthly_return_proxy_status",
+  IDENTITY_UNAVAILABLE: "production_monthly_identity_unavailable",
+});
+
+const APP_EXPORT_SCENARIO_POLICY_MESSAGES = Object.freeze({
+  [APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN]:
+    "Proxy-marked monthly-return rows are unavailable for scenario generation.",
+  [APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE]:
+    "Monthly-return proxy lineage is unavailable for scenario generation.",
+});
+
+export class AppExportScenarioPolicyError extends TypeError {
+  constructor({ code, identity }) {
+    super(APP_EXPORT_SCENARIO_POLICY_MESSAGES[code] || "Scenario policy rejected the input.");
+    this.name = "AppExportScenarioPolicyError";
+    this.code = code;
+    this.identity = identity;
+    this.domain = "scenario_policy";
+    this.catalogFallbackEligible = false;
+  }
+}
+
+export function getAppExportScenarioErrorMessage(error) {
+  switch (error?.code) {
+    case APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN:
+      return "프록시 월수익률이 포함된 자산은 확률분석을 제공할 수 없습니다.";
+    case APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE:
+      return "월수익률 출처 정보를 확인할 수 없어 확률분석을 제공할 수 없습니다.";
+    case APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE:
+      return "확률분석에 사용할 수 있는 월수익률이 없는 자산이 포함되어 있습니다.";
+    default:
+      return "확률분석 시나리오를 계산하지 못했습니다.";
+  }
+}
+
 function statusMarksProxy(value) {
   return typeof value === "string" && PROXY_STATUS_MARKER_PATTERN.test(value.trim());
 }
@@ -102,7 +139,10 @@ function assertNonProxyMonthlyLineage(
     if (statusMarksMonthlyProxy ||
         row?.isProxy === true ||
         (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
-      throw new TypeError(`unsupported_product_policy:proxy_monthly_return:${identity}`);
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
+        identity,
+      });
     }
     if (legacyUnproven) {
       const legacyAllowed =
@@ -111,9 +151,10 @@ function assertNonProxyMonthlyLineage(
         legacyProductionBindingVerified === true &&
         !String(asset?.reviewApprovalPolicyVersion || "").trim();
       if (!legacyAllowed) {
-        throw new TypeError(
-          `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
-        );
+        throw new AppExportScenarioPolicyError({
+          code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+          identity,
+        });
       }
       continue;
     }
@@ -121,15 +162,87 @@ function assertNonProxyMonthlyLineage(
         typeof row?.proxyTicker !== "string" ||
         row.proxyTicker.trim() ||
         row?.proxyLineageStatus === "legacy_unproven") {
-      throw new TypeError(
-        `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
-      );
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+        identity,
+      });
     }
   }
   if (lineageStates.size > 1) {
-    throw new TypeError(
-      `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
-    );
+    throw new AppExportScenarioPolicyError({
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+      identity,
+    });
+  }
+}
+
+export async function resolveAppExportScenarioState({
+  identities = [],
+  loadMonthlyReturns,
+  buildScenario,
+  productionMode = false,
+  activateCatalogFallback = () => {},
+  isCancelled = () => false,
+} = {}) {
+  let monthlyReturns;
+  try {
+    monthlyReturns = await loadMonthlyReturns(identities);
+  } catch (error) {
+    if (isCancelled()) return { status: "cancelled", result: null, error: null };
+    const identityUnavailable =
+      error?.code === APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE;
+    const catalogFallbackEligible = productionMode && !identityUnavailable;
+    if (catalogFallbackEligible) {
+      activateCatalogFallback(error?.code || "production_monthly_returns_unavailable");
+    }
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage(error),
+      errorCode: error?.code || null,
+      failureDomain: identityUnavailable ? "identity_unavailable" : "catalog_artifact",
+      catalogFallbackEligible,
+    };
+  }
+
+  if (isCancelled()) return { status: "cancelled", result: null, error: null };
+  const missingIdentities = Array.isArray(monthlyReturns?.missingIdentities)
+    ? monthlyReturns.missingIdentities
+    : [];
+  if (missingIdentities.length > 0) {
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      }),
+      errorCode: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      identity: missingIdentities.join(","),
+      failureDomain: "identity_unavailable",
+      catalogFallbackEligible: false,
+    };
+  }
+
+  try {
+    return {
+      status: "ready",
+      result: buildScenario(monthlyReturns),
+      error: null,
+      errorCode: null,
+      failureDomain: null,
+      catalogFallbackEligible: false,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage(error),
+      errorCode: error?.code || null,
+      identity: error?.identity || null,
+      failureDomain:
+        error?.domain === "scenario_policy" ? "scenario_policy" : "scenario_execution",
+      catalogFallbackEligible: false,
+    };
   }
 }
 

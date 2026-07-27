@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  APP_EXPORT_SCENARIO_ERROR_CODES,
+  AppExportScenarioPolicyError,
   buildAppExportScenarioResult,
   buildAppPreviewScenarioResult,
   longestContiguousMonthSegment,
+  resolveAppExportScenarioState,
 } from "./appPreviewScenarioService.js";
 import {
   buildProbabilityScenarioViewModel,
@@ -51,6 +54,19 @@ const manifest = {
   calculationPolicyVersion: "metrics-calculation-policy-2026-06-26",
   metricDataThroughMonth: "2024-08",
 };
+
+function assertScenarioPolicyError(action, { code, identity }) {
+  assert.throws(action, (error) => {
+    assert.ok(error instanceof AppExportScenarioPolicyError);
+    assert.equal(error.name, "AppExportScenarioPolicyError");
+    assert.equal(error.code, code);
+    assert.equal(error.identity, identity);
+    assert.equal(error.domain, "scenario_policy");
+    assert.equal(error.catalogFallbackEligible, false);
+    assert.doesNotMatch(error.message, new RegExp(code.replaceAll(":", "\\:")));
+    return true;
+  });
+}
 
 test("longestContiguousMonthSegment never fills missing months", () => {
   assert.deepEqual(
@@ -124,12 +140,15 @@ test("proxy or missing monthly lineage is rejected before scenario calculation",
   };
   const proxyRows = rows("US", "TQQQ");
   proxyRows[0] = { ...proxyRows[0], isProxy: true, proxyTicker: "QQQ" };
-  assert.throws(
+  assertScenarioPolicyError(
     () => buildAppPreviewScenarioResult({
       ...options,
       rowsByIdentity: { "US:TQQQ": proxyRows },
     }),
-    /unsupported_product_policy:proxy_monthly_return/,
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
+      identity: "US:TQQQ",
+    },
   );
   const legacyRows = rows("US", "TQQQ").map((row) => {
     const legacyRow = { ...row };
@@ -137,12 +156,15 @@ test("proxy or missing monthly lineage is rejected before scenario calculation",
     delete legacyRow.proxyTicker;
     return legacyRow;
   });
-  assert.throws(
+  assertScenarioPolicyError(
     () => buildAppPreviewScenarioResult({
       ...options,
       rowsByIdentity: { "US:TQQQ": legacyRows },
     }),
-    /missing_metric_lineage:monthly_return_proxy_status/,
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+      identity: "US:TQQQ",
+    },
   );
 });
 
@@ -160,15 +182,17 @@ test("bounded proxy status markers reject scenario rows without inferring lineag
     simulationCount: 24,
   };
   for (const dataStatus of ["proxy", "candidate_proxy", "proxy_source"]) {
-    assert.throws(
+    assertScenarioPolicyError(
       () => buildAppPreviewScenarioResult({
         ...base,
         rowsByIdentity: {
           "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus })),
         },
       }),
-      /unsupported_product_policy:proxy_monthly_return/,
-      dataStatus,
+      {
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
+        identity: "US:QQQ",
+      },
     );
   }
   const result = buildAppPreviewScenarioResult({
@@ -200,26 +224,26 @@ test("explicit monthly lineage keeps proxy and type contradictions fail-closed",
     {
       name: "candidate true SPY",
       patch: { dataStatus: "candidate", isProxy: true, proxyTicker: "SPY" },
-      reason: /unsupported_product_policy:proxy_monthly_return/,
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
     },
     {
       name: "candidate false SPY",
       patch: { dataStatus: "candidate", isProxy: false, proxyTicker: "SPY" },
-      reason: /unsupported_product_policy:proxy_monthly_return/,
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
     },
     {
       name: "string false",
       patch: { dataStatus: "candidate", isProxy: "false", proxyTicker: "" },
-      reason: /missing_metric_lineage:monthly_return_proxy_status/,
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
     },
     {
       name: "null ticker",
       patch: { dataStatus: "candidate", isProxy: false, proxyTicker: null },
-      reason: /missing_metric_lineage:monthly_return_proxy_status/,
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
     },
   ];
   for (const fixture of cases) {
-    assert.throws(
+    assertScenarioPolicyError(
       () => buildAppPreviewScenarioResult({
         ...base,
         rowsByIdentity: {
@@ -229,8 +253,10 @@ test("explicit monthly lineage keeps proxy and type contradictions fail-closed",
           })),
         },
       }),
-      fixture.reason,
-      fixture.name,
+      {
+        code: fixture.code,
+        identity: "US:TQQQ",
+      },
     );
   }
 });
@@ -264,7 +290,7 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
   assert.equal(result.productionAppExportContext.monthlyRowContract, "legacy_v1");
   assert.equal(result.productionAppExportContext.legacyProductionBindingVerified, true);
 
-  assert.throws(
+  assertScenarioPolicyError(
     () => buildAppExportScenarioResult({
       ...base,
       rowsByIdentity: {
@@ -274,16 +300,22 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
         })),
       },
     }),
-    /unsupported_product_policy:proxy_monthly_return/,
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
+      identity: "US:QQQ",
+    },
   );
-  assert.throws(
+  assertScenarioPolicyError(
     () => buildAppExportScenarioResult({
       ...base,
       legacyProductionBindingVerified: false,
     }),
-    /missing_metric_lineage:monthly_return_proxy_status/,
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+      identity: "US:QQQ",
+    },
   );
-  assert.throws(
+  assertScenarioPolicyError(
     () => buildAppExportScenarioResult({
       ...base,
       assets: [{
@@ -293,7 +325,10 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
         reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
       }],
     }),
-    /missing_metric_lineage:monthly_return_proxy_status/,
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+      identity: "US:QQQ",
+    },
   );
 });
 
@@ -326,6 +361,225 @@ test("review-approved non-proxy TQQQ SOXL and KODEX 200 remain scenario-ready", 
     });
     assert.equal(result.status, "ready", `${identity}: ${JSON.stringify(result.dataQuality)}`);
   }
+});
+
+test("Production scenario policy rejection preserves the validated catalog and recovers after asset removal", async () => {
+  const catalogSnapshot = {
+    preview: { status: "production_app_export_ready" },
+    candidates: Array.from({ length: 6029 }, (_, index) => ({ ticker: String(index) })),
+  };
+  const fallbackReasons = [];
+  const release = {
+    contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+    universeVersion: "finple-universe-v2-2026-07-24",
+    sourceAppExportSha256: "e".repeat(64),
+    metricDataThroughMonth: "2026-06",
+  };
+  const settings = {
+    startValue: 10000,
+    monthlyCashFlow: 0,
+    years: 5,
+    inflationRate: 0,
+  };
+  const loadMonthlyReturns = async () => ({
+    rowsByIdentity: {
+      "US:QQQ": rows("US", "QQQ").map((row) => ({
+        ...row,
+        dataStatus: "proxy",
+      })),
+      "US:SPY": rows("US", "SPY"),
+    },
+    missingIdentities: [],
+    sourceManifest: manifest,
+    release,
+    monthlyRowContract: "proxy_aware_v2",
+    legacyProductionBindingVerified: false,
+  });
+  const buildScenario = (assets) => (monthlyReturns) => buildAppExportScenarioResult({
+    activePortfolio: { id: "portfolio-production-policy", name: "Production policy" },
+    assets,
+    settings,
+    rowsByIdentity: monthlyReturns.rowsByIdentity,
+    manifest: monthlyReturns.sourceManifest,
+    release: monthlyReturns.release,
+    runtimeMode: "production_app_export_ready",
+    monthlyRowContract: monthlyReturns.monthlyRowContract,
+    legacyProductionBindingVerified: monthlyReturns.legacyProductionBindingVerified,
+    simulationCount: 24,
+  });
+
+  const rejected = await resolveAppExportScenarioState({
+    identities: ["US:QQQ", "US:SPY"],
+    loadMonthlyReturns,
+    buildScenario: buildScenario([
+      { market: "US", ticker: "QQQ", targetEvaluationAmount: 5000 },
+      { market: "US", ticker: "SPY", targetEvaluationAmount: 5000 },
+    ]),
+    productionMode: true,
+    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+  });
+  assert.equal(rejected.status, "unavailable");
+  assert.equal(rejected.errorCode, APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN);
+  assert.equal(rejected.failureDomain, "scenario_policy");
+  assert.equal(rejected.catalogFallbackEligible, false);
+  assert.deepEqual(fallbackReasons, []);
+  assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
+  assert.equal(catalogSnapshot.candidates.length, 6029);
+
+  const recovered = await resolveAppExportScenarioState({
+    identities: ["US:SPY"],
+    loadMonthlyReturns,
+    buildScenario: buildScenario([
+      { market: "US", ticker: "SPY", targetEvaluationAmount: 10000 },
+    ]),
+    productionMode: true,
+    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+  });
+  assert.equal(recovered.status, "ready", JSON.stringify(recovered.result?.dataQuality));
+  assert.deepEqual(fallbackReasons, []);
+  assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
+  assert.equal(catalogSnapshot.candidates.length, 6029);
+});
+
+test("scenario lineage, execution, and Preview policy failures never activate catalog fallback", async () => {
+  const fallbackReasons = [];
+  const lineageRows = rows("US", "QQQ").map((row) => ({
+    ...row,
+    isProxy: "false",
+  }));
+  const productionLineage = await resolveAppExportScenarioState({
+    identities: ["US:QQQ"],
+    loadMonthlyReturns: async () => ({
+      rowsByIdentity: { "US:QQQ": lineageRows },
+      missingIdentities: [],
+    }),
+    buildScenario: (monthlyReturns) => buildAppPreviewScenarioResult({
+      activePortfolio: { id: "lineage", name: "Lineage" },
+      assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+      settings: { startValue: 10000, monthlyCashFlow: 0, years: 5, inflationRate: 0 },
+      rowsByIdentity: monthlyReturns.rowsByIdentity,
+      manifest,
+      simulationCount: 24,
+    }),
+    productionMode: true,
+    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+  });
+  assert.equal(productionLineage.status, "unavailable");
+  assert.equal(
+    productionLineage.errorCode,
+    APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+  );
+  assert.equal(productionLineage.failureDomain, "scenario_policy");
+
+  const executionFailure = await resolveAppExportScenarioState({
+    identities: ["US:QQQ"],
+    loadMonthlyReturns: async () => ({
+      rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+      missingIdentities: [],
+    }),
+    buildScenario: () => {
+      throw new RangeError("scenario calculation failed");
+    },
+    productionMode: true,
+    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+  });
+  assert.equal(executionFailure.status, "unavailable");
+  assert.equal(executionFailure.failureDomain, "scenario_execution");
+
+  const previewPolicy = await resolveAppExportScenarioState({
+    identities: ["US:QQQ"],
+    loadMonthlyReturns: async () => ({
+      rowsByIdentity: {
+        "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus: "proxy" })),
+      },
+      missingIdentities: [],
+    }),
+    buildScenario: (monthlyReturns) => buildAppPreviewScenarioResult({
+      activePortfolio: { id: "preview-policy", name: "Preview policy" },
+      assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+      settings: { startValue: 10000, monthlyCashFlow: 0, years: 5, inflationRate: 0 },
+      rowsByIdentity: monthlyReturns.rowsByIdentity,
+      manifest,
+      simulationCount: 24,
+    }),
+    productionMode: false,
+    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+  });
+  assert.equal(previewPolicy.status, "unavailable");
+  assert.equal(previewPolicy.failureDomain, "scenario_policy");
+  assert.deepEqual(fallbackReasons, []);
+});
+
+test("only Production catalog artifact loader failures activate fallback once", async () => {
+  const artifactCodes = [
+    "production_release_manifest_unavailable",
+    "production_monthly_index_mismatch",
+    "production_monthly_shard_mismatch",
+    "production_source_manifest_mismatch",
+  ];
+  for (const code of artifactCodes) {
+    const fallbackReasons = [];
+    const loaderError = Object.assign(new TypeError("catalog artifact failure"), { code });
+    const outcome = await resolveAppExportScenarioState({
+      identities: ["US:QQQ"],
+      loadMonthlyReturns: async () => {
+        throw loaderError;
+      },
+      buildScenario: () => assert.fail("scenario must not run after loader failure"),
+      productionMode: true,
+      activateCatalogFallback: (reason) => fallbackReasons.push(reason),
+    });
+    assert.equal(outcome.status, "unavailable", code);
+    assert.equal(outcome.failureDomain, "catalog_artifact", code);
+    assert.equal(outcome.catalogFallbackEligible, true, code);
+    assert.deepEqual(fallbackReasons, [code], code);
+  }
+
+  const identityFallbacks = [];
+  const identityError = Object.assign(new Error("identity unavailable"), {
+    code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+  });
+  const thrownIdentity = await resolveAppExportScenarioState({
+    identities: ["US:MISSING"],
+    loadMonthlyReturns: async () => {
+      throw identityError;
+    },
+    buildScenario: () => assert.fail("scenario must not run for missing identity"),
+    productionMode: true,
+    activateCatalogFallback: (reason) => identityFallbacks.push(reason),
+  });
+  assert.equal(thrownIdentity.failureDomain, "identity_unavailable");
+  assert.equal(thrownIdentity.catalogFallbackEligible, false);
+
+  const returnedIdentity = await resolveAppExportScenarioState({
+    identities: ["US:MISSING"],
+    loadMonthlyReturns: async () => ({
+      rowsByIdentity: {},
+      missingIdentities: ["US:MISSING"],
+    }),
+    buildScenario: () => assert.fail("scenario must not run for missing identity"),
+    productionMode: true,
+    activateCatalogFallback: (reason) => identityFallbacks.push(reason),
+  });
+  assert.equal(returnedIdentity.failureDomain, "identity_unavailable");
+  assert.equal(returnedIdentity.catalogFallbackEligible, false);
+
+  const previewFallbacks = [];
+  const previewLoaderFailure = await resolveAppExportScenarioState({
+    identities: ["US:QQQ"],
+    loadMonthlyReturns: async () => {
+      throw Object.assign(new TypeError("preview shard failure"), {
+        code: "preview_monthly_shard_mismatch",
+      });
+    },
+    buildScenario: () => assert.fail("scenario must not run after loader failure"),
+    productionMode: false,
+    activateCatalogFallback: (reason) => previewFallbacks.push(reason),
+  });
+  assert.equal(previewLoaderFailure.failureDomain, "catalog_artifact");
+  assert.equal(previewLoaderFailure.catalogFallbackEligible, false);
+  assert.deepEqual(identityFallbacks, []);
+  assert.deepEqual(previewFallbacks, []);
 });
 
 test("production app export enables Step 4 only while AI scenario context stays excluded", () => {

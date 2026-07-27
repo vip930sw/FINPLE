@@ -91,10 +91,12 @@ test("fixed Production release bindings and exact counts are fail-closed", () =>
 
 test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary stay unchanged", () => {
   const hook = read("src/components/portfolio/hooks/usePortfolioSimulator.js");
+  const scenario = read("src/components/portfolio/utils/appPreviewScenarioService.js");
   const simulator = read("src/components/PortfolioSimulator.jsx");
   const personal = read("src/components/PersonalPage.jsx");
   assert.match(hook, /loadProductionMonthlyReturnsForIdentities/);
-  assert.match(hook, /production_monthly_identity_unavailable/);
+  assert.match(hook, /resolveAppExportScenarioState/);
+  assert.match(scenario, /production_monthly_identity_unavailable/);
   assert.match(simulator, /enableProductionAppExport/);
   assert.doesNotMatch(
     personal,

@@ -76,7 +76,10 @@ import {
   loadProductionMonthlyReturnsForIdentities,
 } from "../../../data/tickers/productionAppExportDataSource";
 import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy";
-import { buildAppExportScenarioResult } from "../utils/appPreviewScenarioService";
+import {
+  buildAppExportScenarioResult,
+  resolveAppExportScenarioState,
+} from "../utils/appPreviewScenarioService";
 
 import {
   consumeFreeApiLookup,
@@ -298,17 +301,13 @@ export default function usePortfolioSimulator() {
     const monthlyLoader = productionMode
       ? loadProductionMonthlyReturnsForIdentities
       : loadMonthlyReturnsForIdentities;
-    monthlyLoader(identities)
-      .then((monthlyReturns) => {
-        if (cancelled) return;
-        if (monthlyReturns.missingIdentities.length > 0) {
-          const unavailableError = new Error(
-            `월수익률을 사용할 수 없는 자산: ${monthlyReturns.missingIdentities.join(", ")}`,
-          );
-          unavailableError.code = "production_monthly_identity_unavailable";
-          throw unavailableError;
-        }
-        const scenarioResult = buildAppExportScenarioResult({
+    resolveAppExportScenarioState({
+      identities,
+      loadMonthlyReturns: monthlyLoader,
+      productionMode,
+      activateCatalogFallback: activateProductionAppExportFallback,
+      isCancelled: () => cancelled,
+      buildScenario: (monthlyReturns) => buildAppExportScenarioResult({
           activePortfolio,
           assets,
           settings,
@@ -319,20 +318,22 @@ export default function usePortfolioSimulator() {
           legacyProductionBindingVerified:
             monthlyReturns.legacyProductionBindingVerified === true,
           runtimeMode: screenerCandidateSnapshot.preview.status,
+        }),
+    })
+      .then((scenarioState) => {
+        if (cancelled || scenarioState.status === "cancelled") return;
+        setPreviewScenarioState({
+          status: scenarioState.status,
+          result: scenarioState.result,
+          error: scenarioState.error,
         });
-        setPreviewScenarioState({ status: "ready", result: scenarioResult, error: null });
       })
-      .catch((error) => {
+      .catch(() => {
         if (cancelled) return;
-        if (productionMode && error?.code !== "production_monthly_identity_unavailable") {
-          activateProductionAppExportFallback(
-            error?.code || "production_monthly_returns_unavailable",
-          );
-        }
         setPreviewScenarioState({
           status: "unavailable",
           result: null,
-          error: error?.message || "월수익률 시나리오를 계산하지 못했습니다.",
+          error: "확률분석 시나리오를 계산하지 못했습니다.",
         });
       });
     return () => {
