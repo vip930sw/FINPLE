@@ -180,8 +180,6 @@ export async function resolveAppExportScenarioState({
   identities = [],
   loadMonthlyReturns,
   buildScenario,
-  productionMode = false,
-  activateCatalogFallback = () => {},
   isCancelled = () => false,
 } = {}) {
   let monthlyReturns;
@@ -191,17 +189,13 @@ export async function resolveAppExportScenarioState({
     if (isCancelled()) return { status: "cancelled", result: null, error: null };
     const identityUnavailable =
       error?.code === APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE;
-    const catalogFallbackEligible = productionMode && !identityUnavailable;
-    if (catalogFallbackEligible) {
-      activateCatalogFallback(error?.code || "production_monthly_returns_unavailable");
-    }
     return {
       status: "unavailable",
       result: null,
       error: getAppExportScenarioErrorMessage(error),
       errorCode: error?.code || null,
-      failureDomain: identityUnavailable ? "identity_unavailable" : "catalog_artifact",
-      catalogFallbackEligible,
+      failureDomain: identityUnavailable ? "identity_unavailable" : "scenario_loader",
+      catalogFallbackEligible: false,
     };
   }
 

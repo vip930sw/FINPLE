@@ -368,7 +368,6 @@ test("Production scenario policy rejection preserves the validated catalog and r
     preview: { status: "production_app_export_ready" },
     candidates: Array.from({ length: 6029 }, (_, index) => ({ ticker: String(index) })),
   };
-  const fallbackReasons = [];
   const release = {
     contractVersion: "finple-production-app-export-release-v1-step114-2zc",
     universeVersion: "finple-universe-v2-2026-07-24",
@@ -415,14 +414,11 @@ test("Production scenario policy rejection preserves the validated catalog and r
       { market: "US", ticker: "QQQ", targetEvaluationAmount: 5000 },
       { market: "US", ticker: "SPY", targetEvaluationAmount: 5000 },
     ]),
-    productionMode: true,
-    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
   });
   assert.equal(rejected.status, "unavailable");
   assert.equal(rejected.errorCode, APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN);
   assert.equal(rejected.failureDomain, "scenario_policy");
   assert.equal(rejected.catalogFallbackEligible, false);
-  assert.deepEqual(fallbackReasons, []);
   assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
   assert.equal(catalogSnapshot.candidates.length, 6029);
 
@@ -432,17 +428,13 @@ test("Production scenario policy rejection preserves the validated catalog and r
     buildScenario: buildScenario([
       { market: "US", ticker: "SPY", targetEvaluationAmount: 10000 },
     ]),
-    productionMode: true,
-    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
   });
   assert.equal(recovered.status, "ready", JSON.stringify(recovered.result?.dataQuality));
-  assert.deepEqual(fallbackReasons, []);
   assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
   assert.equal(catalogSnapshot.candidates.length, 6029);
 });
 
-test("scenario lineage, execution, and Preview policy failures never activate catalog fallback", async () => {
-  const fallbackReasons = [];
+test("scenario lineage, execution, and Preview policy failures stay scenario-local", async () => {
   const lineageRows = rows("US", "QQQ").map((row) => ({
     ...row,
     isProxy: "false",
@@ -461,8 +453,6 @@ test("scenario lineage, execution, and Preview policy failures never activate ca
       manifest,
       simulationCount: 24,
     }),
-    productionMode: true,
-    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
   });
   assert.equal(productionLineage.status, "unavailable");
   assert.equal(
@@ -480,8 +470,6 @@ test("scenario lineage, execution, and Preview policy failures never activate ca
     buildScenario: () => {
       throw new RangeError("scenario calculation failed");
     },
-    productionMode: true,
-    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
   });
   assert.equal(executionFailure.status, "unavailable");
   assert.equal(executionFailure.failureDomain, "scenario_execution");
@@ -502,40 +490,44 @@ test("scenario lineage, execution, and Preview policy failures never activate ca
       manifest,
       simulationCount: 24,
     }),
-    productionMode: false,
-    activateCatalogFallback: (reason) => fallbackReasons.push(reason),
   });
   assert.equal(previewPolicy.status, "unavailable");
   assert.equal(previewPolicy.failureDomain, "scenario_policy");
-  assert.deepEqual(fallbackReasons, []);
 });
 
-test("only Production catalog artifact loader failures activate fallback once", async () => {
-  const artifactCodes = [
+test("Production monthly loader failures stay scenario-local and preserve the catalog", async () => {
+  const catalogSnapshot = {
+    preview: { status: "production_app_export_ready" },
+    candidates: Array.from({ length: 6029 }, (_, index) => ({ ticker: String(index) })),
+  };
+  const loaderFailures = [
+    { code: null, message: "transient fetch failure" },
+    { code: "production_monthly_shard_fetch_failed", message: "shard fetch failure" },
     "production_release_manifest_unavailable",
     "production_monthly_index_mismatch",
     "production_monthly_shard_mismatch",
     "production_source_manifest_mismatch",
-  ];
-  for (const code of artifactCodes) {
-    const fallbackReasons = [];
-    const loaderError = Object.assign(new TypeError("catalog artifact failure"), { code });
+  ].map((value) => (
+    typeof value === "string"
+      ? { code: value, message: "monthly loader validation failure" }
+      : value
+  ));
+  for (const { code, message } of loaderFailures) {
+    const loaderError = Object.assign(new TypeError(message), code ? { code } : {});
     const outcome = await resolveAppExportScenarioState({
       identities: ["US:QQQ"],
       loadMonthlyReturns: async () => {
         throw loaderError;
       },
       buildScenario: () => assert.fail("scenario must not run after loader failure"),
-      productionMode: true,
-      activateCatalogFallback: (reason) => fallbackReasons.push(reason),
     });
-    assert.equal(outcome.status, "unavailable", code);
-    assert.equal(outcome.failureDomain, "catalog_artifact", code);
-    assert.equal(outcome.catalogFallbackEligible, true, code);
-    assert.deepEqual(fallbackReasons, [code], code);
+    assert.equal(outcome.status, "unavailable", code || message);
+    assert.equal(outcome.failureDomain, "scenario_loader", code || message);
+    assert.equal(outcome.catalogFallbackEligible, false, code || message);
+    assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
+    assert.equal(catalogSnapshot.candidates.length, 6029);
   }
 
-  const identityFallbacks = [];
   const identityError = Object.assign(new Error("identity unavailable"), {
     code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
   });
@@ -545,8 +537,6 @@ test("only Production catalog artifact loader failures activate fallback once", 
       throw identityError;
     },
     buildScenario: () => assert.fail("scenario must not run for missing identity"),
-    productionMode: true,
-    activateCatalogFallback: (reason) => identityFallbacks.push(reason),
   });
   assert.equal(thrownIdentity.failureDomain, "identity_unavailable");
   assert.equal(thrownIdentity.catalogFallbackEligible, false);
@@ -558,13 +548,10 @@ test("only Production catalog artifact loader failures activate fallback once", 
       missingIdentities: ["US:MISSING"],
     }),
     buildScenario: () => assert.fail("scenario must not run for missing identity"),
-    productionMode: true,
-    activateCatalogFallback: (reason) => identityFallbacks.push(reason),
   });
   assert.equal(returnedIdentity.failureDomain, "identity_unavailable");
   assert.equal(returnedIdentity.catalogFallbackEligible, false);
 
-  const previewFallbacks = [];
   const previewLoaderFailure = await resolveAppExportScenarioState({
     identities: ["US:QQQ"],
     loadMonthlyReturns: async () => {
@@ -573,13 +560,11 @@ test("only Production catalog artifact loader failures activate fallback once", 
       });
     },
     buildScenario: () => assert.fail("scenario must not run after loader failure"),
-    productionMode: false,
-    activateCatalogFallback: (reason) => previewFallbacks.push(reason),
   });
-  assert.equal(previewLoaderFailure.failureDomain, "catalog_artifact");
+  assert.equal(previewLoaderFailure.failureDomain, "scenario_loader");
   assert.equal(previewLoaderFailure.catalogFallbackEligible, false);
-  assert.deepEqual(identityFallbacks, []);
-  assert.deepEqual(previewFallbacks, []);
+  assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
+  assert.equal(catalogSnapshot.candidates.length, 6029);
 });
 
 test("production app export enables Step 4 only while AI scenario context stays excluded", () => {

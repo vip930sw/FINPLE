@@ -96,6 +96,9 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   const personal = read("src/components/PersonalPage.jsx");
   assert.match(hook, /loadProductionMonthlyReturnsForIdentities/);
   assert.match(hook, /resolveAppExportScenarioState/);
+  assert.doesNotMatch(hook, /activateProductionAppExportFallback/);
+  assert.doesNotMatch(scenario, /activateCatalogFallback/);
+  assert.match(scenario, /failureDomain: identityUnavailable \? "identity_unavailable" : "scenario_loader"/);
   assert.match(scenario, /production_monthly_identity_unavailable/);
   assert.match(simulator, /enableProductionAppExport/);
   assert.doesNotMatch(

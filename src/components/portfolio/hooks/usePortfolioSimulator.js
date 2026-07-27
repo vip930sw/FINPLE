@@ -62,7 +62,6 @@ import {
 } from "../services/assetDataService";
 import { normalizeSimulatorTab } from "../utils/simulatorNavigation";
 import {
-  activateProductionAppExportFallback,
   getScreenerCandidateSnapshot,
   hydrateAssetForProductionFallback,
   hydratePortfolioAssetFromActiveCatalog,
@@ -304,8 +303,6 @@ export default function usePortfolioSimulator() {
     resolveAppExportScenarioState({
       identities,
       loadMonthlyReturns: monthlyLoader,
-      productionMode,
-      activateCatalogFallback: activateProductionAppExportFallback,
       isCancelled: () => cancelled,
       buildScenario: (monthlyReturns) => buildAppExportScenarioResult({
           activePortfolio,
