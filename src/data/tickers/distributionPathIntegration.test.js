@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import process from "node:process";
 import test from "node:test";
 
 import { createServer } from "vite";
@@ -30,6 +31,7 @@ const TARGETS = new Map([
   ["TSLP", { yield: 28.11, option: true }],
   ["QYLG", { yield: 16.26, option: true }],
   ["QQQ", { yield: 0.41, option: false }],
+  ["TQQQ", { yield: 0.47, option: false, reviewPolicy: true }],
   ["SPY", { yield: 1.01, option: false }],
   ["GLD", { yield: 0, option: false, dividendStatus: "confirmed_zero" }],
 ]);
@@ -66,6 +68,23 @@ function createMetricRow(candidate) {
     productionPublishReady: false,
     appExportApproved: false,
     sourceHash: "distribution-path-fixture-source",
+    ...(target?.reviewPolicy
+      ? {
+        exposureType: "leveraged_etf",
+        leverageMultiple: 3,
+        direction: "long",
+        resetFrequency: "daily",
+        underlyingTicker: "NDX",
+        inceptionDate: "2010-02-09",
+        officialSourceUrl: "https://www.proshares.com/our-etfs/leveraged-and-inverse/tqqq",
+        sourceCheckedAt: "2026-07-27",
+        reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
+        reviewApprovalStatus: "ready",
+        reviewApprovalReason: "daily_reset_geared_metrics_reproduced_and_coherent",
+        reviewApprovalReasonCodes: [],
+        reviewApprovalAudit: { validRollingWindowCount10y: 77 },
+      }
+      : {}),
   };
 }
 
@@ -222,6 +241,22 @@ test("metric overlay follows the public App Preview path through save/reload and
         assert.equal(result.status, "ready", ticker);
         assert.equal(result.expectedDividendYield, expected.yield, ticker);
         assert.equal(result.assets[0].annualDividendYield, expected.yield, ticker);
+        if (expected.reviewPolicy) {
+          assert.equal(reloaded.exposureType, "leveraged_etf", ticker);
+          assert.equal(reloaded.leverageMultiple, 3, ticker);
+          assert.equal(
+            reloaded.reviewApprovalPolicyVersion,
+            "leveraged-inverse-review-policy-v1-step114",
+            ticker,
+          );
+          assert.equal(reloaded.reviewApprovalStatus, "ready", ticker);
+          assert.deepEqual(reloaded.reviewApprovalReasonCodes, [], ticker);
+          assert.deepEqual(
+            reloaded.reviewApprovalAudit,
+            { validRollingWindowCount10y: 77 },
+            ticker,
+          );
+        }
       }
 
       if (ticker === "GLD") {

@@ -186,6 +186,11 @@ function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
         "dataStatus",
         "metricsStatus",
         "reviewFlag",
+        "reviewApprovalPolicyVersion",
+        "reviewApprovalStatus",
+        "reviewApprovalReason",
+        "reviewApprovalReasonCodes",
+        "reviewApprovalAudit",
         "rawPriceCoverageStatus",
         "priceUnavailable",
         "metricBaseDate",
@@ -207,6 +212,14 @@ function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
         "productionReleaseApprovedBy",
         "productionPublishReady",
         "appExportApproved",
+        "underlyingTicker",
+        "exposureType",
+        "leverageMultiple",
+        "direction",
+        "resetFrequency",
+        "inceptionDate",
+        "officialSourceUrl",
+        "sourceCheckedAt",
       ].map((field) => [field, patch[field]])
     ),
     priceMode: "lookup-required",
@@ -268,6 +281,11 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
         "dataStatus",
         "metricsStatus",
         "reviewFlag",
+        "reviewApprovalPolicyVersion",
+        "reviewApprovalStatus",
+        "reviewApprovalReason",
+        "reviewApprovalReasonCodes",
+        "reviewApprovalAudit",
         "rawPriceCoverageStatus",
         "priceUnavailable",
         "metricBaseDate",
@@ -289,6 +307,14 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
         "productionReleaseApprovedBy",
         "productionPublishReady",
         "appExportApproved",
+        "underlyingTicker",
+        "exposureType",
+        "leverageMultiple",
+        "direction",
+        "resetFrequency",
+        "inceptionDate",
+        "officialSourceUrl",
+        "sourceCheckedAt",
       ].map((field) => [field, csvData[field]])
     ),
     metricMode: csvData.metricMode || "csv",
@@ -625,7 +651,7 @@ async function fetchWithTimeout(url, { timeoutMs }) {
 async function readJsonSafely(response) {
   try {
     return await response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }

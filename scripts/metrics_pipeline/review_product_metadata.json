@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "leveraged-inverse-review-policy-v1-step114",
+  "records": [
+    {
+      "identity": "US:SDS",
+      "assetType": "ETF",
+      "exposureType": "inverse_etf",
+      "leverageMultiple": 2,
+      "direction": "inverse",
+      "resetFrequency": "daily",
+      "underlyingTicker": "SPX",
+      "inceptionDate": "2006-07-11",
+      "sourceId": "proshares:SDS",
+      "officialSourceUrl": "https://www.proshares.com/our-etfs/leveraged-and-inverse/sds",
+      "sourceCheckedAt": "2026-07-27"
+    },
+    {
+      "identity": "US:SOXL",
+      "assetType": "ETF",
+      "exposureType": "leveraged_etf",
+      "leverageMultiple": 3,
+      "direction": "long",
+      "resetFrequency": "daily",
+      "underlyingTicker": "NYSE Semiconductor Index",
+      "inceptionDate": "2010-03-11",
+      "sourceId": "direxion:SOXL",
+      "officialSourceUrl": "https://www.direxion.com/product/daily-semiconductor-bull-bear-3x-etfs",
+      "sourceCheckedAt": "2026-07-27"
+    },
+    {
+      "identity": "US:SPXL",
+      "assetType": "ETF",
+      "exposureType": "leveraged_etf",
+      "leverageMultiple": 3,
+      "direction": "long",
+      "resetFrequency": "daily",
+      "underlyingTicker": "SPX",
+      "inceptionDate": "2008-11-05",
+      "sourceId": "direxion:SPXL",
+      "officialSourceUrl": "https://www.direxion.com/product/daily-sp-500-bull-bear-3x-etfs",
+      "sourceCheckedAt": "2026-07-27"
+    },
+    {
+      "identity": "US:TQQQ",
+      "assetType": "ETF",
+      "exposureType": "leveraged_etf",
+      "leverageMultiple": 3,
+      "direction": "long",
+      "resetFrequency": "daily",
+      "underlyingTicker": "NDX",
+      "inceptionDate": "2010-02-09",
+      "sourceId": "proshares:TQQQ",
+      "officialSourceUrl": "https://www.proshares.com/our-etfs/leveraged-and-inverse/tqqq",
+      "sourceCheckedAt": "2026-07-27"
+    },
+    {
+      "identity": "US:UPRO",
+      "assetType": "ETF",
+      "exposureType": "leveraged_etf",
+      "leverageMultiple": 3,
+      "direction": "long",
+      "resetFrequency": "daily",
+      "underlyingTicker": "SPX",
+      "inceptionDate": "2009-06-23",
+      "sourceId": "proshares:UPRO",
+      "officialSourceUrl": "https://www.proshares.com/our-etfs/leveraged-and-inverse/upro",
+      "sourceCheckedAt": "2026-07-27"
+    }
+  ]
+}

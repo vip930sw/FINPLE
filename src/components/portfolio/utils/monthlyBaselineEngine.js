@@ -410,6 +410,26 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
   validateReadyStatus(metadata, "dataStatus", new Set(["ready"]), reasons, ticker);
   validateReadyStatus(metadata, "metricsStatus", new Set(["ready"]), reasons, ticker);
   validateReadyStatus(metadata, "reviewFlag", new Set(["none"]), reasons, ticker);
+  if (
+    normalizeStatus(metadata.reviewFlag) !== "none" &&
+    !isBlank(metadata.reviewApprovalPolicyVersion)
+  ) {
+    addBlockReason(
+      reasons,
+      "asset_review_policy_pending",
+      `${ticker}.${metadata.reviewApprovalPolicyVersion}`,
+    );
+  }
+  if (
+    normalizeStatus(metadata.assetType) === "cash" &&
+    (
+      normalizeStatus(metadata.dataStatus) !== "ready" ||
+      normalizeStatus(metadata.metricsStatus) !== "ready" ||
+      normalizeStatus(metadata.reviewFlag) !== "none"
+    )
+  ) {
+    addBlockReason(reasons, "asset_baseline_contract_missing", `${ticker}.cash`);
+  }
   validateReadyStatus(
     metadata,
     "overlayStatus",
@@ -498,6 +518,11 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
       cagrPolicy: asset.cagrPolicy || "",
       mddPolicy: asset.mddPolicy || "",
       betaPolicy: asset.betaPolicy || "",
+      reviewApprovalPolicyVersion: asset.reviewApprovalPolicyVersion || "",
+      reviewApprovalStatus: asset.reviewApprovalStatus || "",
+      reviewApprovalReasonCodes: Array.isArray(asset.reviewApprovalReasonCodes)
+        ? [...asset.reviewApprovalReasonCodes]
+        : [],
       internalPreviewReviewOnly: parseBooleanLike(asset.internalPreviewReviewOnly) === true,
       productionAppExportEnabled: asset.productionAppExportEnabled === true,
       productionReleaseContractVersion: asset.productionReleaseContractVersion || "",
