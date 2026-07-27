@@ -28,6 +28,7 @@ function rows(market, ticker, count = 80, omitted = new Set()) {
     priceReturn: index % 2 === 0 ? 0.02 : -0.01,
     totalReturn: index % 2 === 0 ? 0.03 : 0,
     currency: "USD",
+    dataStatus: "candidate",
     isProxy: false,
     proxyTicker: "",
   })).filter((_, index) => !omitted.has(index));
@@ -145,6 +146,95 @@ test("proxy or missing monthly lineage is rejected before scenario calculation",
   );
 });
 
+test("bounded proxy status markers reject scenario rows without inferring lineage", () => {
+  const base = {
+    activePortfolio: { id: "portfolio-proxy-status", name: "Proxy status" },
+    assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    manifest,
+    simulationCount: 24,
+  };
+  for (const dataStatus of ["proxy", "candidate_proxy", "proxy_source"]) {
+    assert.throws(
+      () => buildAppPreviewScenarioResult({
+        ...base,
+        rowsByIdentity: {
+          "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus })),
+        },
+      }),
+      /unsupported_product_policy:proxy_monthly_return/,
+      dataStatus,
+    );
+  }
+  const result = buildAppPreviewScenarioResult({
+    ...base,
+    rowsByIdentity: {
+      "US:QQQ": rows("US", "QQQ").map((row) => ({
+        ...row,
+        dataStatus: "aproxyvalue",
+      })),
+    },
+  });
+  assert.equal(result.status, "ready", JSON.stringify(result.dataQuality));
+});
+
+test("explicit monthly lineage keeps proxy and type contradictions fail-closed", () => {
+  const base = {
+    activePortfolio: { id: "portfolio-lineage-types", name: "Lineage types" },
+    assets: [{ market: "US", ticker: "TQQQ", targetEvaluationAmount: 10000 }],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    manifest,
+    simulationCount: 24,
+  };
+  const cases = [
+    {
+      name: "candidate true SPY",
+      patch: { dataStatus: "candidate", isProxy: true, proxyTicker: "SPY" },
+      reason: /unsupported_product_policy:proxy_monthly_return/,
+    },
+    {
+      name: "candidate false SPY",
+      patch: { dataStatus: "candidate", isProxy: false, proxyTicker: "SPY" },
+      reason: /unsupported_product_policy:proxy_monthly_return/,
+    },
+    {
+      name: "string false",
+      patch: { dataStatus: "candidate", isProxy: "false", proxyTicker: "" },
+      reason: /missing_metric_lineage:monthly_return_proxy_status/,
+    },
+    {
+      name: "null ticker",
+      patch: { dataStatus: "candidate", isProxy: false, proxyTicker: null },
+      reason: /missing_metric_lineage:monthly_return_proxy_status/,
+    },
+  ];
+  for (const fixture of cases) {
+    assert.throws(
+      () => buildAppPreviewScenarioResult({
+        ...base,
+        rowsByIdentity: {
+          "US:TQQQ": rows("US", "TQQQ").map((row) => ({
+            ...row,
+            ...fixture.patch,
+          })),
+        },
+      }),
+      fixture.reason,
+      fixture.name,
+    );
+  }
+});
+
 test("only the pinned legacy Production bridge preserves Step 4 for existing assets", () => {
   const release = {
     contractVersion: "finple-production-app-export-release-v1-step114-2zc",
@@ -177,6 +267,18 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
   assert.throws(
     () => buildAppExportScenarioResult({
       ...base,
+      rowsByIdentity: {
+        "US:QQQ": legacyRows("US", "QQQ").map((row) => ({
+          ...row,
+          dataStatus: "legacy_proxy",
+        })),
+      },
+    }),
+    /unsupported_product_policy:proxy_monthly_return/,
+  );
+  assert.throws(
+    () => buildAppExportScenarioResult({
+      ...base,
       legacyProductionBindingVerified: false,
     }),
     /missing_metric_lineage:monthly_return_proxy_status/,
@@ -193,6 +295,37 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
     }),
     /missing_metric_lineage:monthly_return_proxy_status/,
   );
+});
+
+test("review-approved non-proxy TQQQ SOXL and KODEX 200 remain scenario-ready", () => {
+  for (const fixture of [
+    { market: "US", ticker: "TQQQ", policy: "leveraged-inverse-review-policy-v1-step114" },
+    { market: "US", ticker: "SOXL", policy: "leveraged-inverse-review-policy-v1-step114" },
+    { market: "KR", ticker: "069500", policy: "initial-gap-review-policy-v1-step114" },
+  ]) {
+    const identity = `${fixture.market}:${fixture.ticker}`;
+    const result = buildAppPreviewScenarioResult({
+      activePortfolio: { id: `portfolio-${fixture.ticker}`, name: fixture.ticker },
+      assets: [{
+        market: fixture.market,
+        ticker: fixture.ticker,
+        targetEvaluationAmount: 10000,
+        reviewApprovalPolicyVersion: fixture.policy,
+      }],
+      settings: {
+        startValue: 10000,
+        monthlyCashFlow: 0,
+        years: 5,
+        inflationRate: 0,
+      },
+      rowsByIdentity: {
+        [identity]: rows(fixture.market, fixture.ticker),
+      },
+      manifest,
+      simulationCount: 24,
+    });
+    assert.equal(result.status, "ready", `${identity}: ${JSON.stringify(result.dataQuality)}`);
+  }
 });
 
 test("production app export enables Step 4 only while AI scenario context stays excluded", () => {

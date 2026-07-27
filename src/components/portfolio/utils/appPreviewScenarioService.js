@@ -75,6 +75,12 @@ function intersectMonths(seriesMaps) {
   );
 }
 
+const PROXY_STATUS_MARKER_PATTERN = /(?:^|[*:_\-\s])proxy(?:$|[*:_\-\s])/i;
+
+function statusMarksProxy(value) {
+  return typeof value === "string" && PROXY_STATUS_MARKER_PATTERN.test(value.trim());
+}
+
 function assertNonProxyMonthlyLineage(
   identity,
   rows = [],
@@ -87,11 +93,17 @@ function assertNonProxyMonthlyLineage(
 ) {
   const lineageStates = new Set();
   for (const row of rows) {
+    const statusMarksMonthlyProxy = statusMarksProxy(row?.dataStatus);
     const legacyUnproven =
       row?.isProxy === null &&
       row?.proxyTicker === null &&
       row?.proxyLineageStatus === "legacy_unproven";
     lineageStates.add(legacyUnproven ? "legacy_unproven" : "proxy_aware");
+    if (statusMarksMonthlyProxy ||
+        row?.isProxy === true ||
+        (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
+      throw new TypeError(`unsupported_product_policy:proxy_monthly_return:${identity}`);
+    }
     if (legacyUnproven) {
       const legacyAllowed =
         runtimeMode === "production_app_export_ready" &&
@@ -104,10 +116,6 @@ function assertNonProxyMonthlyLineage(
         );
       }
       continue;
-    }
-    if (row?.isProxy === true ||
-        (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
-      throw new TypeError(`unsupported_product_policy:proxy_monthly_return:${identity}`);
     }
     if (row?.isProxy !== false ||
         typeof row?.proxyTicker !== "string" ||

@@ -29,6 +29,7 @@ import zipfile
 
 from scripts.metrics_pipeline.candidate_package import verify_candidate_package
 from scripts.stage_app_preview_vercel import (
+    LEGACY_MONTHLY_ROW_ENCODING_V1,
     MANIFEST_NAME,
     StagingError,
     _inside,
@@ -44,6 +45,12 @@ SOURCE_GIT_MAIN_SHA = "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef"
 CANDIDATE_ZIP_SHA256 = "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e"
 CANDIDATE_PACKAGE_HASH = "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
 EXPORTER_VERSION = "finple-app-preview-export-v1-step114-2z"
+RECOVERY_EXPORT_CONTRACTS = {
+    (
+        SOURCE_GIT_MAIN_SHA,
+        EXPORTER_VERSION,
+    ): tuple(LEGACY_MONTHLY_ROW_ENCODING_V1),
+}
 EXPORTER_COMMAND = (
     "python -B -m scripts.export_finple_app_preview "
     "--input-package <candidate-zip> --output-dir <empty-output> "
@@ -524,10 +531,35 @@ def _validate_fixed_bindings(manifest: dict[str, object]) -> None:
         raise RecoveryError("source_artifact_count_or_binding_mismatch")
 
 
-def inspect_artifact(output_dir: Path, run_label: str) -> ArtifactSnapshot:
+def recovery_monthly_row_encoding(
+    source_git_main_sha: str,
+    exporter_version: str,
+) -> list[str]:
+    contract = RECOVERY_EXPORT_CONTRACTS.get(
+        (str(source_git_main_sha or ""), str(exporter_version or ""))
+    )
+    if contract is None:
+        raise RecoveryError("unsupported_recovery_export_contract")
+    return list(contract)
+
+
+def inspect_artifact(
+    output_dir: Path,
+    run_label: str,
+    *,
+    source_git_main_sha: str,
+    exporter_version: str,
+) -> ArtifactSnapshot:
     archive, bundle = _locate_export(output_dir, run_label)
+    monthly_row_encoding = recovery_monthly_row_encoding(
+        source_git_main_sha,
+        exporter_version,
+    )
     try:
-        validation = validate_export(bundle)
+        validation = validate_export(
+            bundle,
+            monthly_row_encoding=monthly_row_encoding,
+        )
     except (OSError, StagingError) as exc:
         raise RecoveryError(f"run_{run_label}_artifact_invalid") from exc
     manifest = validation.get("manifest")
@@ -855,8 +887,18 @@ def recover_production_app_export_source(
     if final_git_state != initial_git_state:
         raise RecoveryError("source_worktree_changed")
 
-    artifact_a = inspect_artifact(run_a, "a")
-    artifact_b = inspect_artifact(run_b, "b")
+    artifact_a = inspect_artifact(
+        run_a,
+        "a",
+        source_git_main_sha=initial_git_state.head,
+        exporter_version=EXPORTER_VERSION,
+    )
+    artifact_b = inspect_artifact(
+        run_b,
+        "b",
+        source_git_main_sha=initial_git_state.head,
+        exporter_version=EXPORTER_VERSION,
+    )
     if result_a.get("zipSha256") != sha256_file(artifact_a.zip_path):
         raise RecoveryError("run_a_reported_zip_sha256_mismatch")
     if result_b.get("zipSha256") != sha256_file(artifact_b.zip_path):
