@@ -6,6 +6,7 @@ import math
 import re
 import statistics
 from typing import Any, Mapping, Sequence
+from urllib.parse import urlsplit
 
 
 LEVERAGED_POLICY_VERSION = "leveraged-inverse-review-policy-v1-step114"
@@ -20,8 +21,13 @@ APPROVABLE_THRESHOLD_REASONS = frozenset(
 )
 PRODUCT_EXPOSURE_TYPES = frozenset({"leveraged_etf", "inverse_etf"})
 PRODUCT_DIRECTIONS = frozenset({"long", "inverse"})
-GAP_REVIEW_PATTERN = re.compile(
-    r"has \d+ missing calendar month\(s\).*no forward fill is applied.*crossing a gap are excluded",
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+GAP_REVIEW_EXACT_PATTERN = re.compile(
+    r"^(?P<identity>(?:US|KR):[0-9A-Z.^-]+) has "
+    r"(?P<count>\d+) missing calendar month\(s\) "
+    r"\((?P<months>[0-9., -]+)\); "
+    r"observed rows are preserved, no forward fill is applied, and "
+    r"rolling CAGR/monthly returns crossing a gap are excluded\.$",
     re.IGNORECASE,
 )
 
@@ -56,7 +62,7 @@ def evaluate_review_approval(
             benchmark_rows,
             product_metadata,
         )
-    if _is_gap_review(metric_row):
+    if _looks_like_gap_review(metric_row):
         return evaluate_initial_history_gap_review(
             metric_row,
             monthly_rows,
@@ -91,9 +97,24 @@ def evaluate_leveraged_inverse_review(
     calculated_cagrs = _rolling_cagrs(monthly_rows, 120)
     calculated_beta = _beta(monthly_rows, benchmark_rows)
     review_reasons = _review_reason_parts(metric_row.get("reviewReason"))
+    reasons.extend(
+        _review_state_reasons(
+            metric_row,
+            required_data_status="ready",
+            reason_outside_code="manual_review_required:reason_outside_product_policy",
+        )
+    )
 
-    if _text(product_metadata.get("assetType")).upper() != "ETF":
+    metadata_asset_type = _text(product_metadata.get("assetType"))
+    metric_asset_type = _text(metric_row.get("assetType"))
+    if metadata_asset_type.upper() != "ETF":
         reasons.append("invalid_metadata:asset_type")
+    if metric_asset_type.upper() != metadata_asset_type.upper():
+        reasons.append("invalid_metadata:metric_asset_type_mismatch")
+    if _text(product_metadata.get("identity")).upper() != _text(
+        metric_row.get("identity")
+    ).upper():
+        reasons.append("invalid_metadata:identity_mismatch")
     if exposure_type not in PRODUCT_EXPOSURE_TYPES:
         reasons.append("unsupported_product_policy:exposure_type")
     if direction not in PRODUCT_DIRECTIONS:
@@ -106,9 +127,15 @@ def evaluate_leveraged_inverse_review(
         reasons.append("invalid_metadata:inverse_direction")
     if exposure_type == "leveraged_etf" and direction != "long":
         reasons.append("invalid_metadata:leveraged_direction")
-    for field in ("underlyingTicker", "officialSourceUrl", "sourceId", "inceptionDate"):
+    for field in ("underlyingTicker", "sourceId"):
         if not _text(product_metadata.get(field)):
             reasons.append(f"invalid_metadata:{field}")
+    if not _valid_https_url(product_metadata.get("officialSourceUrl")):
+        reasons.append("invalid_metadata:official_source_url")
+    if not _valid_iso_date(product_metadata.get("sourceCheckedAt")):
+        reasons.append("invalid_metadata:source_checked_at")
+    if not _valid_iso_date(product_metadata.get("inceptionDate")):
+        reasons.append("invalid_metadata:inception_date")
 
     if _text(metric_row.get("rawPriceCoverageStatus")) != "covered":
         reasons.append("price_coverage_not_approved")
@@ -143,9 +170,10 @@ def evaluate_leveraged_inverse_review(
         reasons.append("inconsistent_metric:selected_cagr")
     if not _close(selected_beta, calculated_beta, 0.00011):
         reasons.append("inconsistent_metric:selected_beta")
+    reasons.extend(_mdd_source_binding_reasons(metric_row))
 
     disallowed_review_reasons = sorted(set(review_reasons) - APPROVABLE_THRESHOLD_REASONS)
-    if disallowed_review_reasons:
+    if review_reasons and disallowed_review_reasons:
         reasons.append("manual_review_required:reason_outside_product_policy")
 
     reasons = _unique(reasons)
@@ -163,17 +191,17 @@ def evaluate_leveraged_inverse_review(
         "sourceCheckedAt": _text(product_metadata.get("sourceCheckedAt")),
         "monthlyReturnCount": len(monthly_rows),
         "validRollingWindowCount10y": len(calculated_cagrs),
+        "selectedCagr": selected_cagr,
         "reproducedCagr": _rounded(reproduced_cagr, 6),
+        "selectedBeta": selected_beta,
         "reproducedBeta": _rounded(calculated_beta, 6),
+        "selectedMdd": selected_mdd,
+        "mddValidationMethod": "source_overlay_full_period_actual_binding",
+        "mddPolicy": _text(metric_row.get("mddPolicy")),
         "highMetricExplanation": (
             "daily_reset_geared_product_characteristic" if approved else ""
         ),
-        "sourceLineage": {
-            "identity": _text(metric_row.get("identity")),
-            "sourceHash": _text(metric_row.get("sourceHash")),
-            "normalizedSeriesHash": _text(metric_row.get("normalizedSeriesHash")),
-            "rawSourceSha256": _text(metric_row.get("rawSourceSha256")),
-        },
+        "sourceLineage": _source_lineage(metric_row),
     }
     return ReviewApprovalDecision(
         applicable=True,
@@ -181,7 +209,9 @@ def evaluate_leveraged_inverse_review(
         status="ready" if approved else _status_for_reasons(reasons),
         policyVersion=LEVERAGED_POLICY_VERSION,
         approvalReason=(
-            "daily_reset_geared_metrics_reproduced_and_coherent" if approved else ""
+            "daily_reset_geared_cagr_beta_reproduced_mdd_source_bound"
+            if approved
+            else ""
         ),
         reasonCodes=tuple(reasons),
         audit=audit,
@@ -202,6 +232,15 @@ def evaluate_initial_history_gap_review(
     calculated_cagrs = _rolling_cagrs(monthly_rows, 120)
     calculated_beta = _beta(monthly_rows, benchmark_rows)
     reported_gap = _reported_gap_metadata(metric_row.get("reviewReason"))
+    reasons.extend(
+        _review_state_reasons(
+            metric_row,
+            required_data_status="review_required",
+            reason_outside_code="manual_review_required:reason_outside_gap_policy",
+        )
+    )
+    if reported_gap is None:
+        reasons.append("manual_review_required:reason_outside_gap_policy")
 
     if len(gaps) != 1:
         reasons.append("unsupported_product_policy:gap_count")
@@ -240,11 +279,20 @@ def evaluate_initial_history_gap_review(
         reasons.append("inconsistent_metric:selected_cagr")
     if not _close(selected_beta, calculated_beta, 0.00011):
         reasons.append("inconsistent_metric:selected_beta")
+    reasons.extend(_mdd_source_binding_reasons(metric_row))
     p25 = _finite(metric_row.get("rollingCagr10yP25"))
     median = _finite(metric_row.get("rollingCagr10yMedian"))
     p75 = _finite(metric_row.get("rollingCagr10yP75"))
     if None in (p25, median, p75) or not p25 <= median <= p75:
         reasons.append("inconsistent_metric:rolling_percentiles")
+    if gap and (
+        reported_gap is None
+        or reported_gap["identity"].upper() != _text(metric_row.get("identity")).upper()
+        or reported_gap["start"] != gap["start"]
+        or reported_gap["end"] != gap["end"]
+        or reported_gap["count"] != gap["missingMonthCount"]
+    ):
+        reasons.append("inconsistent_metric:reported_gap_metadata")
 
     reasons = _unique(reasons)
     approved = not reasons
@@ -253,22 +301,22 @@ def evaluate_initial_history_gap_review(
         "excludedMonthlyReturnGapStart": gap["start"] if gap else "",
         "excludedMonthlyReturnGapEnd": gap["end"] if gap else "",
         "excludedMonthlyReturnGapCount": gap_month_count,
-        "sourceReportedPriceGapStart": reported_gap["start"],
-        "sourceReportedPriceGapEnd": reported_gap["end"],
-        "sourceReportedPriceGapCount": reported_gap["count"],
+        "sourceReportedPriceGapStart": reported_gap["start"] if reported_gap else "",
+        "sourceReportedPriceGapEnd": reported_gap["end"] if reported_gap else "",
+        "sourceReportedPriceGapCount": reported_gap["count"] if reported_gap else None,
         "prefixObservedMonthCount": prefix_count,
         "continuousPostGapMonthCount": len(tail_rows),
         "validRollingWindowCount10y": len(calculated_cagrs),
+        "selectedCagr": selected_cagr,
         "reproducedCagr": _rounded(reproduced_cagr, 6),
+        "selectedBeta": selected_beta,
         "reproducedBeta": _rounded(calculated_beta, 6),
+        "selectedMdd": selected_mdd,
+        "mddValidationMethod": "source_overlay_full_period_actual_binding",
+        "mddPolicy": _text(metric_row.get("mddPolicy")),
         "noForwardFillVerified": not _has_non_observed_rows(monthly_rows),
         "windowsCrossingGapExcluded": bool(gap),
-        "sourceLineage": {
-            "identity": _text(metric_row.get("identity")),
-            "sourceHash": _text(metric_row.get("sourceHash")),
-            "normalizedSeriesHash": _text(metric_row.get("normalizedSeriesHash")),
-            "rawSourceSha256": _text(metric_row.get("rawSourceSha256")),
-        },
+        "sourceLineage": _source_lineage(metric_row),
     }
     return ReviewApprovalDecision(
         applicable=True,
@@ -276,7 +324,7 @@ def evaluate_initial_history_gap_review(
         status="ready" if approved else _status_for_reasons(reasons),
         policyVersion=GAPPED_HISTORY_POLICY_VERSION,
         approvalReason=(
-            "bounded_initial_gap_with_reproducible_continuous_post_gap_metrics"
+            "bounded_initial_gap_cagr_beta_reproduced_mdd_source_bound"
             if approved
             else ""
         ),
@@ -285,23 +333,83 @@ def evaluate_initial_history_gap_review(
     )
 
 
-def _is_gap_review(metric_row: Mapping[str, Any]) -> bool:
-    return bool(GAP_REVIEW_PATTERN.search(_text(metric_row.get("reviewReason"))))
+def _looks_like_gap_review(metric_row: Mapping[str, Any]) -> bool:
+    return "missing calendar month(s)" in _text(metric_row.get("reviewReason")).lower()
 
 
 def _review_reason_parts(value: Any) -> set[str]:
     return {part.strip() for part in _text(value).split(";") if part.strip()}
 
 
-def _reported_gap_metadata(value: Any) -> dict[str, Any]:
+def _reported_gap_metadata(value: Any) -> dict[str, Any] | None:
     text = _text(value)
-    count_match = re.search(r"has (\d+) missing calendar month", text, re.IGNORECASE)
-    months = re.findall(r"\b\d{4}-\d{2}\b", text)
+    match = GAP_REVIEW_EXACT_PATTERN.fullmatch(text)
+    if not match:
+        return None
+    months = re.findall(r"\b\d{4}-\d{2}\b", match.group("months"))
+    if not months:
+        return None
     return {
-        "start": months[0] if months else "",
-        "end": months[-1] if months else "",
-        "count": int(count_match.group(1)) if count_match else None,
+        "identity": match.group("identity"),
+        "start": months[0],
+        "end": months[-1],
+        "count": int(match.group("count")),
     }
+
+
+def _review_state_reasons(
+    metric_row: Mapping[str, Any],
+    *,
+    required_data_status: str,
+    reason_outside_code: str,
+) -> list[str]:
+    reasons: list[str] = []
+    if _text(metric_row.get("dataStatus")) != required_data_status:
+        reasons.append("unsupported_metric_status:data_status")
+    if _text(metric_row.get("reviewFlag")) != "review_required":
+        reasons.append("unsupported_metric_status:review_flag")
+    if not _text(metric_row.get("reviewReason")):
+        reasons.append(reason_outside_code)
+    return reasons
+
+
+def _source_lineage(metric_row: Mapping[str, Any]) -> dict[str, str]:
+    return {
+        "identity": _text(metric_row.get("identity")),
+        "sourceHash": _text(metric_row.get("sourceHash")),
+        "normalizedSeriesHash": _text(metric_row.get("normalizedSeriesHash")),
+        "rawSourceSha256": _text(metric_row.get("rawSourceSha256")),
+    }
+
+
+def _mdd_source_binding_reasons(metric_row: Mapping[str, Any]) -> list[str]:
+    reasons: list[str] = []
+    if _text(metric_row.get("mddPolicy")) != "full_period_actual":
+        reasons.append("unsupported_metric_status:mdd_policy")
+    lineage = _source_lineage(metric_row)
+    for field in ("sourceHash", "normalizedSeriesHash", "rawSourceSha256"):
+        if not SHA256_PATTERN.fullmatch(lineage[field]):
+            reasons.append(f"missing_metric_lineage:{field}")
+    if (
+        SHA256_PATTERN.fullmatch(lineage["sourceHash"])
+        and SHA256_PATTERN.fullmatch(lineage["normalizedSeriesHash"])
+        and lineage["sourceHash"] != lineage["normalizedSeriesHash"]
+    ):
+        reasons.append("inconsistent_metric:source_lineage")
+    return reasons
+
+
+def _valid_iso_date(value: Any) -> bool:
+    text = _text(value)
+    try:
+        return date.fromisoformat(text).isoformat() == text
+    except ValueError:
+        return False
+
+
+def _valid_https_url(value: Any) -> bool:
+    parsed = urlsplit(_text(value))
+    return parsed.scheme == "https" and bool(parsed.netloc)
 
 
 def _metric_range_reasons(

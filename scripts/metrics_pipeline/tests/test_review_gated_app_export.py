@@ -11,6 +11,7 @@ import zipfile
 from scripts.build_review_gated_app_export import (
     OVERLAY,
     RELEASE_CANDIDATE,
+    ReviewArtifactError,
     SOURCE_MANIFEST,
     build,
     canonical_json_bytes,
@@ -18,6 +19,9 @@ from scripts.build_review_gated_app_export import (
     sha256_file,
 )
 from scripts.metrics_pipeline.review_approval_policy import _beta, _rolling_cagrs
+
+SOURCE_HASH = "a" * 64
+RAW_SOURCE_HASH = "b" * 64
 
 
 def add_month(start: str, offset: int) -> str:
@@ -50,7 +54,13 @@ class ReviewGatedAppExportTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def create_source(self) -> tuple[Path, Path, bytes]:
+    def create_source(
+        self,
+        *,
+        review_flag: str = "review_required",
+        include_unused_metadata: bool = False,
+        duplicate_metadata_identity_usage: bool = False,
+    ) -> tuple[Path, Path, bytes]:
         benchmark = rows(220, 1)
         geared = rows(220, 3)
         cagrs = _rolling_cagrs(geared, 120)
@@ -86,7 +96,7 @@ class ReviewGatedAppExportTest(unittest.TestCase):
                     "assetType": "ETF",
                     "benchmarkTicker": "SPY",
                     "dataStatus": "ready",
-                    "reviewFlag": "review_required",
+                    "reviewFlag": review_flag,
                     "reviewReason": (
                         "selectedCagr outside automatic publish threshold; "
                         "selectedMdd outside automatic publish threshold; "
@@ -100,19 +110,22 @@ class ReviewGatedAppExportTest(unittest.TestCase):
                     "selectedCagr": selected_cagr,
                     "selectedBeta": selected_beta,
                     "selectedMdd": -85,
+                    "mddPolicy": "full_period_actual",
                     "dividendYield": 0,
                     "dividendStatus": "confirmed_value",
                     "dataEndDate": geared[-1][0],
                     "rawPriceCoverageStatus": "covered",
-                    "sourceHash": "source",
-                    "normalizedSeriesHash": "normalized",
-                    "rawSourceSha256": "raw",
+                    "sourceHash": SOURCE_HASH,
+                    "normalizedSeriesHash": SOURCE_HASH,
+                    "rawSourceSha256": RAW_SOURCE_HASH,
                     "internalPreviewReviewOnly": True,
                     "productionPublishReady": False,
                     "appExportApproved": False,
                 },
             ],
         }
+        if duplicate_metadata_identity_usage:
+            overlay["rows"].append(dict(overlay["rows"][-1]))
         shard = {
             "exportVersion": "finple-app-preview-export-v1-step114-2z",
             "schemaVersion": 1,
@@ -206,24 +219,34 @@ class ReviewGatedAppExportTest(unittest.TestCase):
             for name, payload in sorted(files.items()):
                 archive.writestr(name, payload)
 
+        records = [
+            {
+                "identity": "US:TQQQ",
+                "assetType": "ETF",
+                "exposureType": "leveraged_etf",
+                "leverageMultiple": 3,
+                "direction": "long",
+                "resetFrequency": "daily",
+                "underlyingTicker": "NDX",
+                "inceptionDate": "2005-01-01",
+                "sourceId": "issuer:TQQQ",
+                "officialSourceUrl": "https://issuer.example/tqqq",
+                "sourceCheckedAt": "2026-07-27",
+            }
+        ]
+        if include_unused_metadata:
+            records.append(
+                {
+                    **records[0],
+                    "identity": "US:UNUSED",
+                    "sourceId": "issuer:UNUSED",
+                    "officialSourceUrl": "https://issuer.example/unused",
+                }
+            )
         metadata = {
             "schemaVersion": 1,
             "policyVersion": "leveraged-inverse-review-policy-v1-step114",
-            "records": [
-                {
-                    "identity": "US:TQQQ",
-                    "assetType": "ETF",
-                    "exposureType": "leveraged_etf",
-                    "leverageMultiple": 3,
-                    "direction": "long",
-                    "resetFrequency": "daily",
-                    "underlyingTicker": "NDX",
-                    "inceptionDate": "2005-01-01",
-                    "sourceId": "issuer:TQQQ",
-                    "officialSourceUrl": "https://issuer.example/tqqq",
-                    "sourceCheckedAt": "2026-07-27",
-                }
-            ],
+            "records": records,
         }
         metadata_path = self.root / "metadata.json"
         metadata_path.write_bytes(canonical_json_bytes(metadata, pretty=True))
@@ -277,6 +300,66 @@ class ReviewGatedAppExportTest(unittest.TestCase):
         self.assertFalse(release["appExportApproved"])
         self.assertIsNone(release["approvedAt"])
         self.assertIsNone(release["approvedBy"])
+
+    def test_builder_does_not_change_already_ready_none_row(self) -> None:
+        source, metadata, _ = self.create_source(review_flag="none")
+        result = build(
+            argparse.Namespace(
+                source_export=source,
+                expected_source_sha256=sha256_file(source),
+                candidate_zip_sha256="e" * 64,
+                source_git_sha="d" * 40,
+                product_metadata=metadata,
+                output_dir=self.root / "ready-none",
+            )
+        )
+
+        self.assertEqual(result["reviewApprovalSummary"]["changedCount"], 0)
+        self.assertEqual(result["reviewApprovalSummary"]["approvedCount"], 0)
+        output_overlay = json.loads(
+            (Path(result["bundle"]) / OVERLAY).read_text(encoding="utf-8")
+        )
+        tqqq = next(row for row in output_overlay["rows"] if row["ticker"] == "TQQQ")
+        self.assertEqual(tqqq["reviewFlag"], "none")
+        self.assertEqual(tqqq["reviewApprovalStatus"], "review_required")
+
+    def test_builder_rejects_unused_product_metadata(self) -> None:
+        source, metadata, _ = self.create_source(include_unused_metadata=True)
+
+        with self.assertRaisesRegex(
+            ReviewArtifactError,
+            "product metadata identity must bind exactly one overlay row",
+        ):
+            build(
+                argparse.Namespace(
+                    source_export=source,
+                    expected_source_sha256=sha256_file(source),
+                    candidate_zip_sha256="e" * 64,
+                    source_git_sha="d" * 40,
+                    product_metadata=metadata,
+                    output_dir=self.root / "unused-metadata",
+                )
+            )
+
+    def test_builder_rejects_metadata_identity_used_more_than_once(self) -> None:
+        source, metadata, _ = self.create_source(
+            duplicate_metadata_identity_usage=True,
+        )
+
+        with self.assertRaisesRegex(
+            ReviewArtifactError,
+            "product metadata identity must bind exactly one overlay row",
+        ):
+            build(
+                argparse.Namespace(
+                    source_export=source,
+                    expected_source_sha256=sha256_file(source),
+                    candidate_zip_sha256="e" * 64,
+                    source_git_sha="d" * 40,
+                    product_metadata=metadata,
+                    output_dir=self.root / "duplicate-metadata-usage",
+                )
+            )
 
 
 if __name__ == "__main__":

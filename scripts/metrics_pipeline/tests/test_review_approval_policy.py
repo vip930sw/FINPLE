@@ -13,6 +13,9 @@ from scripts.metrics_pipeline.review_approval_policy import (
     evaluate_review_approval,
 )
 
+SOURCE_HASH = "a" * 64
+RAW_SOURCE_HASH = "b" * 64
+
 
 def add_month(start: str, offset: int) -> str:
     year, month = (int(part) for part in start.split("-"))
@@ -74,20 +77,23 @@ def metric_row(
         "selectedCagr": selected_cagr,
         "selectedBeta": selected_beta,
         "selectedMdd": -85,
+        "mddPolicy": "full_period_actual",
         "dataEndDate": rows[-1][0],
-        "sourceHash": "source",
-        "normalizedSeriesHash": "normalized",
-        "rawSourceSha256": "raw",
+        "sourceHash": SOURCE_HASH,
+        "normalizedSeriesHash": SOURCE_HASH,
+        "rawSourceSha256": RAW_SOURCE_HASH,
     }
 
 
 def product_metadata(
     *,
+    identity: str = "US:GEARED",
     exposure_type: str = "leveraged_etf",
     leverage_multiple: float = 3,
     direction: str = "long",
 ) -> dict[str, object]:
     return {
+        "identity": identity,
         "assetType": "ETF",
         "exposureType": exposure_type,
         "leverageMultiple": leverage_multiple,
@@ -121,6 +127,14 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
             decision.audit["highMetricExplanation"],
             "daily_reset_geared_product_characteristic",
         )
+        self.assertEqual(decision.audit["selectedCagr"], metric_row(asset, benchmark)["selectedCagr"])
+        self.assertEqual(decision.audit["selectedBeta"], metric_row(asset, benchmark)["selectedBeta"])
+        self.assertEqual(decision.audit["selectedMdd"], -85)
+        self.assertEqual(
+            decision.audit["mddValidationMethod"],
+            "source_overlay_full_period_actual_binding",
+        )
+        self.assertEqual(decision.audit["mddPolicy"], "full_period_actual")
 
     def test_inverse_direction_and_beta_sign_are_supported(self) -> None:
         benchmark = monthly_rows(220)
@@ -176,6 +190,97 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
             decision.reasonCodes,
         )
 
+    def test_unexpected_review_flags_remain_fail_closed(self) -> None:
+        benchmark = monthly_rows(220)
+        asset = monthly_rows(220, multiplier=3)
+        for review_flag in ("error", "blocked", "pending", "unknown", "none", ""):
+            with self.subTest(review_flag=review_flag):
+                row = metric_row(asset, benchmark)
+                row["reviewFlag"] = review_flag
+                decision = evaluate_leveraged_inverse_review(
+                    row,
+                    asset,
+                    benchmark,
+                    product_metadata(),
+                )
+                self.assertFalse(decision.approved)
+                self.assertIn(
+                    "unsupported_metric_status:review_flag",
+                    decision.reasonCodes,
+                )
+
+    def test_blank_review_reason_remains_fail_closed(self) -> None:
+        benchmark = monthly_rows(220)
+        asset = monthly_rows(220, multiplier=3)
+        decision = evaluate_leveraged_inverse_review(
+            metric_row(asset, benchmark, review_reason=""),
+            asset,
+            benchmark,
+            product_metadata(),
+        )
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "manual_review_required:reason_outside_product_policy",
+            decision.reasonCodes,
+        )
+
+    def test_ready_none_row_is_not_reapproved(self) -> None:
+        benchmark = monthly_rows(220)
+        asset = monthly_rows(220, multiplier=3)
+        row = metric_row(asset, benchmark)
+        row["reviewFlag"] = "none"
+        decision = evaluate_leveraged_inverse_review(
+            row,
+            asset,
+            benchmark,
+            product_metadata(),
+        )
+
+        self.assertFalse(decision.approved)
+        self.assertIn("unsupported_metric_status:review_flag", decision.reasonCodes)
+
+    def test_metadata_contract_is_exact_and_fail_closed(self) -> None:
+        benchmark = monthly_rows(220)
+        asset = monthly_rows(220, multiplier=3)
+        cases = [
+            ("identity", "US:OTHER", "invalid_metadata:identity_mismatch"),
+            ("assetType", "STOCK", "invalid_metadata:metric_asset_type_mismatch"),
+            ("sourceCheckedAt", "2026/07/27", "invalid_metadata:source_checked_at"),
+            ("officialSourceUrl", "http://issuer.example/fund", "invalid_metadata:official_source_url"),
+            ("inceptionDate", "2005/01/01", "invalid_metadata:inception_date"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field):
+                metadata = product_metadata()
+                metadata[field] = value
+                decision = evaluate_leveraged_inverse_review(
+                    metric_row(asset, benchmark),
+                    asset,
+                    benchmark,
+                    metadata,
+                )
+                self.assertFalse(decision.approved)
+                self.assertIn(reason, decision.reasonCodes)
+
+    def test_mdd_requires_source_binding_without_claiming_reproduction(self) -> None:
+        benchmark = monthly_rows(220)
+        asset = monthly_rows(220, multiplier=3)
+        row = metric_row(asset, benchmark)
+        row["mddPolicy"] = "unknown"
+        row["sourceHash"] = "not-a-sha"
+        decision = evaluate_leveraged_inverse_review(
+            row,
+            asset,
+            benchmark,
+            product_metadata(),
+        )
+
+        self.assertFalse(decision.approved)
+        self.assertIn("unsupported_metric_status:mdd_policy", decision.reasonCodes)
+        self.assertIn("missing_metric_lineage:sourceHash", decision.reasonCodes)
+        self.assertNotIn("reproducedMdd", decision.audit)
+
     def test_dividend_zero_state_is_outside_metric_approval(self) -> None:
         benchmark = monthly_rows(220)
         asset = monthly_rows(220, multiplier=3)
@@ -217,6 +322,15 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
                 "crossing a gap are excluded."
             ),
         )
+        gap_start = add_month("2006-01", prefix_count)[:7]
+        gap_end = add_month("2006-01", prefix_count + missing_count - 1)[:7]
+        row["dataStatus"] = "review_required"
+        row["reviewReason"] = (
+            f"KR:GAPPED has {missing_count} missing calendar month(s) "
+            f"({gap_start}, ... {gap_end}); observed rows are preserved, "
+            "no forward fill is applied, and rolling CAGR/monthly returns "
+            "crossing a gap are excluded."
+        )
         row["selectedMdd"] = -35
         return row, asset, benchmark
 
@@ -230,6 +344,11 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
         self.assertEqual(decision.audit["continuousPostGapMonthCount"], 205)
         self.assertTrue(decision.audit["noForwardFillVerified"])
         self.assertTrue(decision.audit["windowsCrossingGapExcluded"])
+        self.assertEqual(decision.audit["selectedMdd"], -35)
+        self.assertEqual(
+            decision.audit["mddValidationMethod"],
+            "source_overlay_full_period_actual_binding",
+        )
 
     def test_more_severe_initial_gap_is_held(self) -> None:
         row, asset, benchmark = self.make_gap_fixture(missing_count=48)
@@ -260,6 +379,81 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
             "insufficient_history:continuous_post_gap_months",
             decision.reasonCodes,
         )
+
+    def test_reported_gap_count_mismatch_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewReason"] = str(row["reviewReason"]).replace(
+            "has 24 missing",
+            "has 23 missing",
+        )
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "inconsistent_metric:reported_gap_metadata",
+            decision.reasonCodes,
+        )
+
+    def test_reported_gap_start_mismatch_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewReason"] = str(row["reviewReason"]).replace(
+            "(2006-02,",
+            "(2006-03,",
+        )
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "inconsistent_metric:reported_gap_metadata",
+            decision.reasonCodes,
+        )
+
+    def test_reported_gap_end_mismatch_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewReason"] = str(row["reviewReason"]).replace(
+            "2008-01);",
+            "2007-12);",
+        )
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "inconsistent_metric:reported_gap_metadata",
+            decision.reasonCodes,
+        )
+
+    def test_malformed_gap_months_are_held_without_parser_error(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewReason"] = str(row["reviewReason"]).replace(
+            "(2006-02, ... 2008-01)",
+            "(200602, ... 200801)",
+        )
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "manual_review_required:reason_outside_gap_policy",
+            decision.reasonCodes,
+        )
+
+    def test_gap_reason_with_unrelated_reason_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewReason"] = f"{row['reviewReason']}; unrelated review reason"
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "manual_review_required:reason_outside_gap_policy",
+            decision.reasonCodes,
+        )
+
+    def test_gap_review_requires_exact_state(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        row["reviewFlag"] = "error"
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn("unsupported_metric_status:review_flag", decision.reasonCodes)
 
     def test_general_ready_asset_is_not_applicable(self) -> None:
         benchmark = monthly_rows(220)

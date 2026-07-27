@@ -336,6 +336,32 @@ class UniverseV2Tests(unittest.TestCase):
             ROOT / "src/data/tickers/finple_universe_v2_reconciliation.json",
         ))
 
+    def test_generated_universe_check_is_line_ending_independent(self):
+        source = ROOT / "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv"
+        output = ROOT / "src/data/tickers/finple_app_candidates_v2.csv"
+        manifest = ROOT / "src/data/tickers/finple_universe_v2_manifest.json"
+        reconciliation = ROOT / "src/data/tickers/finple_universe_v2_reconciliation.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_copy = root / source.name
+            output_copy = root / output.name
+            manifest_copy = root / manifest.name
+            reconciliation_copy = root / reconciliation.name
+            source_copy.write_bytes(source.read_bytes())
+            logical_csv = output.read_bytes().decode("utf-8").replace("\r\n", "\n")
+            output_copy.write_bytes(logical_csv.replace("\n", "\r\n").encode("utf-8"))
+            manifest_copy.write_bytes(manifest.read_bytes())
+            reconciliation_copy.write_bytes(reconciliation.read_bytes())
+
+            self.assertTrue(
+                universe.check_generated_files(
+                    source_copy,
+                    output_copy,
+                    manifest_copy,
+                    reconciliation_copy,
+                )
+            )
+
     def test_product_metadata_and_null_history_are_explicit(self):
         with (ROOT / "src/data/tickers/finple_app_candidates_v2.csv").open(encoding="utf-8") as handle:
             rows = {row["ticker"]: row for row in csv.DictReader(handle) if row["market"] == "US"}

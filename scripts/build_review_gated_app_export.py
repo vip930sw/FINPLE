@@ -10,6 +10,7 @@ It never calls a provider and never creates a Production-approved release.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -186,6 +187,21 @@ def apply_review_policies(
     rows = overlay.get("rows")
     if not isinstance(rows, list):
         raise ReviewArtifactError("metrics overlay rows are missing")
+    identity_counts = Counter(
+        str(row.get("identity") or f"{row.get('market')}:{row.get('ticker')}").upper()
+        for row in rows
+        if isinstance(row, dict)
+    )
+    invalid_metadata_usage = sorted(
+        identity
+        for identity in metadata
+        if identity_counts.get(identity, 0) != 1
+    )
+    if invalid_metadata_usage:
+        raise ReviewArtifactError(
+            "product metadata identity must bind exactly one overlay row: "
+            + ", ".join(invalid_metadata_usage)
+        )
     shard_cache: dict[str, Any] = {}
     decisions: list[dict[str, Any]] = []
     changes: list[dict[str, Any]] = []
@@ -234,7 +250,10 @@ def apply_review_policies(
                     "sourceCheckedAt",
                 ):
                     row[field] = metadata[identity].get(field)
-            if decision.approved and row.get("reviewFlag") != "none":
+            if (
+                decision.approved
+                and str(row.get("reviewFlag") or "").strip() == "review_required"
+            ):
                 before = {
                     "dataStatus": row.get("dataStatus"),
                     "reviewFlag": row.get("reviewFlag"),
