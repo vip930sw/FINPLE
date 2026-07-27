@@ -64,6 +64,7 @@ class ReviewGatedAppExportTest(unittest.TestCase):
         duplicate_metadata_identity_usage: bool = False,
         legacy_lineage: bool = False,
         proxy_geared: bool = False,
+        proxy_status_contradiction: bool = False,
         invalid_lineage: tuple[object, object] | None = None,
     ) -> tuple[Path, Path, bytes]:
         benchmark = rows(220, 1)
@@ -74,6 +75,8 @@ class ReviewGatedAppExportTest(unittest.TestCase):
         if proxy_geared:
             for monthly_row in geared:
                 monthly_row[7], monthly_row[8] = True, "QQQ"
+        if proxy_status_contradiction:
+            geared[0][6] = "candidate_proxy"
         if invalid_lineage is not None:
             geared[0][7], geared[0][8] = invalid_lineage
         if legacy_lineage:
@@ -437,6 +440,38 @@ class ReviewGatedAppExportTest(unittest.TestCase):
             "unsupported_product_policy:proxy_monthly_return",
             tqqq["reviewApprovalReasonCodes"],
         )
+
+    def test_builder_keeps_proxy_status_lineage_contradiction_review_required(
+        self,
+    ) -> None:
+        source, metadata, _ = self.create_source(proxy_status_contradiction=True)
+        result = build(
+            argparse.Namespace(
+                source_export=source,
+                expected_source_sha256=sha256_file(source),
+                candidate_zip_sha256="e" * 64,
+                source_git_sha="d" * 40,
+                product_metadata=metadata,
+                output_dir=self.root / "proxy-status-contradiction",
+            )
+        )
+        output_overlay = json.loads(
+            (Path(result["bundle"]) / OVERLAY).read_text(encoding="utf-8")
+        )
+        tqqq = next(row for row in output_overlay["rows"] if row["ticker"] == "TQQQ")
+        self.assertEqual(tqqq["reviewFlag"], "review_required")
+        self.assertIn(
+            "unsupported_product_policy:proxy_monthly_return",
+            tqqq["reviewApprovalReasonCodes"],
+        )
+        self.assertIn(
+            "missing_metric_lineage:monthly_return_proxy_status",
+            tqqq["reviewApprovalReasonCodes"],
+        )
+        audit = tqqq["reviewApprovalAudit"]["monthlyReturnProxyLineage"]
+        self.assertEqual(audit["proxyStatusMarkerCount"], 1)
+        self.assertEqual(audit["proxyStatusValues"], ["candidate_proxy"])
+        self.assertEqual(audit["statusLineageContradictionCount"], 1)
 
 
 if __name__ == "__main__":

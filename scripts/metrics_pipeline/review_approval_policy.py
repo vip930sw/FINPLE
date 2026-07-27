@@ -25,6 +25,10 @@ APPROVABLE_THRESHOLD_REASONS = frozenset(
 PRODUCT_EXPOSURE_TYPES = frozenset({"leveraged_etf", "inverse_etf"})
 PRODUCT_DIRECTIONS = frozenset({"long", "inverse"})
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+PROXY_STATUS_MARKER_PATTERN = re.compile(
+    r"(?:^|[*:_\-\s])proxy(?:$|[*:_\-\s])",
+    re.IGNORECASE,
+)
 GAP_REVIEW_EXACT_PATTERN = re.compile(
     r"^(?P<identity>(?:US|KR):[0-9A-Z.^-]+) has "
     r"(?P<count>\d+) missing calendar month\(s\) "
@@ -554,19 +558,37 @@ def _monthly_proxy_lineage_reasons(
     proxy_detected = False
     lineage_missing_or_inconsistent = False
     for row in rows:
+        status_value = row[6] if len(row) > 6 else None
+        status_is_string = isinstance(status_value, str)
+        status_marks_proxy = (
+            _status_marks_proxy(status_value) if status_is_string else False
+        )
         if len(row) < 9:
+            if status_marks_proxy:
+                proxy_detected = True
             lineage_missing_or_inconsistent = True
             continue
         is_proxy = row[7]
         proxy_ticker_value = row[8]
         proxy_ticker_is_string = isinstance(proxy_ticker_value, str)
         proxy_ticker = proxy_ticker_value.strip() if proxy_ticker_is_string else ""
-        if is_proxy is True or proxy_ticker:
+        if status_marks_proxy or is_proxy is True or proxy_ticker:
             proxy_detected = True
-        if type(is_proxy) is not bool or not proxy_ticker_is_string:
+        if (
+            not status_is_string
+            or type(is_proxy) is not bool
+            or not proxy_ticker_is_string
+        ):
             lineage_missing_or_inconsistent = True
         if (is_proxy is True and not proxy_ticker) or (
             is_proxy is False and proxy_ticker
+        ):
+            lineage_missing_or_inconsistent = True
+        if (
+            status_marks_proxy
+            and is_proxy is False
+            and proxy_ticker_is_string
+            and not proxy_ticker
         ):
             lineage_missing_or_inconsistent = True
     reasons = []
@@ -582,19 +604,37 @@ def _monthly_proxy_lineage_audit(
 ) -> dict[str, Any]:
     is_proxy_values = set()
     proxy_tickers = set()
+    proxy_status_values = set()
     missing_row_count = 0
+    invalid_status_type_row_count = 0
     invalid_type_row_count = 0
+    proxy_status_marker_count = 0
+    status_lineage_contradiction_count = 0
     for row in rows:
+        raw_status_value = row[6] if len(row) > 6 else None
+        status_is_string = isinstance(raw_status_value, str)
+        status_value = _text(raw_status_value) if status_is_string else ""
+        status_marks_proxy = (
+            _status_marks_proxy(status_value) if status_is_string else False
+        )
+        if status_marks_proxy:
+            proxy_status_marker_count += 1
+            proxy_status_values.add(status_value)
         if len(row) < 9:
             missing_row_count += 1
             continue
+        if not status_is_string:
+            invalid_status_type_row_count += 1
         is_proxy = row[7]
         proxy_ticker_value = row[8]
         if type(is_proxy) is not bool or not isinstance(proxy_ticker_value, str):
             invalid_type_row_count += 1
             continue
+        proxy_ticker = proxy_ticker_value.strip()
         is_proxy_values.add(is_proxy)
-        proxy_tickers.add(proxy_ticker_value.strip())
+        proxy_tickers.add(proxy_ticker)
+        if status_marks_proxy and is_proxy is False and not proxy_ticker:
+            status_lineage_contradiction_count += 1
     return {
         "rowCount": len(rows),
         "isProxyUniqueValues": sorted(
@@ -602,16 +642,27 @@ def _monthly_proxy_lineage_audit(
             for value in is_proxy_values
         ),
         "proxyTickerUniqueValues": sorted(proxy_tickers),
+        "proxyStatusMarkerCount": proxy_status_marker_count,
+        "proxyStatusValues": sorted(proxy_status_values),
+        "statusLineageContradictionCount": status_lineage_contradiction_count,
         "missingLineageRowCount": missing_row_count,
+        "invalidStatusTypeRowCount": invalid_status_type_row_count,
         "invalidLineageTypeRowCount": invalid_type_row_count,
         "nonProxyProven": (
             bool(rows)
             and missing_row_count == 0
+            and invalid_status_type_row_count == 0
             and invalid_type_row_count == 0
+            and proxy_status_marker_count == 0
+            and status_lineage_contradiction_count == 0
             and is_proxy_values == {False}
             and proxy_tickers == {""}
         ),
     }
+
+
+def _status_marks_proxy(value: Any) -> bool:
+    return bool(PROXY_STATUS_MARKER_PATTERN.search(_text(value)))
 
 
 def _listing_period_is_sufficient(

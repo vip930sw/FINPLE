@@ -141,6 +141,16 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
         self.assertTrue(
             decision.audit["monthlyReturnProxyLineage"]["nonProxyProven"]
         )
+        self.assertEqual(
+            decision.audit["monthlyReturnProxyLineage"]["proxyStatusMarkerCount"],
+            0,
+        )
+        self.assertEqual(
+            decision.audit["monthlyReturnProxyLineage"][
+                "statusLineageContradictionCount"
+            ],
+            0,
+        )
 
     def test_proxy_lineage_contract_is_fail_closed(self) -> None:
         benchmark = monthly_rows(220)
@@ -257,6 +267,169 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
                         "missing_metric_lineage:monthly_return_proxy_status",
                         decision.reasonCodes,
                     )
+
+    def test_proxy_status_and_explicit_lineage_are_reconciled_fail_closed(
+        self,
+    ) -> None:
+        benchmark = monthly_rows(220)
+        proxy_reason = "unsupported_product_policy:proxy_monthly_return"
+        lineage_reason = "missing_metric_lineage:monthly_return_proxy_status"
+        cases = (
+            ("candidate_non_proxy", "candidate", False, "", (), True, 0, (), 0),
+            (
+                "non_marker_substring",
+                "candidate_proxying",
+                False,
+                "",
+                (),
+                True,
+                0,
+                (),
+                0,
+            ),
+            (
+                "proxy_non_proxy_lineage",
+                "proxy",
+                False,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                1,
+                ("proxy",),
+                1,
+            ),
+            (
+                "candidate_proxy_non_proxy_lineage",
+                "candidate_proxy",
+                False,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                1,
+                ("candidate_proxy",),
+                1,
+            ),
+            (
+                "proxy_explicit_proxy",
+                "proxy",
+                True,
+                "SPY",
+                (proxy_reason,),
+                False,
+                1,
+                ("proxy",),
+                0,
+            ),
+            (
+                "candidate_explicit_proxy",
+                "candidate",
+                True,
+                "SPY",
+                (proxy_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_proxy_without_ticker",
+                "candidate",
+                True,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_ticker_without_proxy",
+                "candidate",
+                False,
+                "SPY",
+                (proxy_reason, lineage_reason),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_string_false",
+                "candidate",
+                "false",
+                "",
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_null_ticker",
+                "candidate",
+                False,
+                None,
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "invalid_status_type",
+                None,
+                False,
+                "",
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+        )
+
+        for (
+            label,
+            status,
+            is_proxy,
+            proxy_ticker,
+            expected_reasons,
+            expected_approved,
+            expected_marker_count,
+            expected_status_values,
+            expected_contradiction_count,
+        ) in cases:
+            with self.subTest(label=label):
+                asset = monthly_rows(220, multiplier=3)
+                asset[0][6] = status
+                asset[0][7] = is_proxy
+                asset[0][8] = proxy_ticker
+                decision = evaluate_leveraged_inverse_review(
+                    metric_row(asset, benchmark),
+                    asset,
+                    benchmark,
+                    product_metadata(),
+                )
+
+                self.assertEqual(decision.approved, expected_approved)
+                for reason in (proxy_reason, lineage_reason):
+                    if reason in expected_reasons:
+                        self.assertIn(reason, decision.reasonCodes)
+                    else:
+                        self.assertNotIn(reason, decision.reasonCodes)
+                audit = decision.audit["monthlyReturnProxyLineage"]
+                self.assertEqual(
+                    audit["proxyStatusMarkerCount"],
+                    expected_marker_count,
+                )
+                self.assertEqual(
+                    audit["proxyStatusValues"],
+                    list(expected_status_values),
+                )
+                self.assertEqual(
+                    audit["statusLineageContradictionCount"],
+                    expected_contradiction_count,
+                )
 
     def test_non_proxy_tqqq_and_soxl_remain_approvable(self) -> None:
         benchmark = monthly_rows(220)
@@ -498,6 +671,9 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
         self.assertEqual(decision.audit["continuousPostGapMonthCount"], 205)
         self.assertTrue(decision.audit["noForwardFillVerified"])
         self.assertTrue(decision.audit["windowsCrossingGapExcluded"])
+        self.assertTrue(
+            decision.audit["monthlyReturnProxyLineage"]["nonProxyProven"]
+        )
         self.assertEqual(decision.audit["selectedMdd"], -35)
         self.assertEqual(
             decision.audit["mddValidationMethod"],
