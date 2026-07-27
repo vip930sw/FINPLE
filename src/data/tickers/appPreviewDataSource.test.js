@@ -87,14 +87,14 @@ function fixture({ usAssetCount = 3000 } = {}) {
   const shardA = {
     exportVersion: EXPORT_VERSION,
     series: {
-      "US:QQQ": [["2026-05-31", 0.03, 0.03, 0, "USD", "US_SPY", "candidate"]],
+      "US:QQQ": [["2026-05-31", 0.03, 0.03, 0, "USD", "US_SPY", "candidate", false, ""]],
     },
   };
   const shardB = {
     exportVersion: EXPORT_VERSION,
     series: {
-      "KR:069500": [["2026-05-31", 0.01, 0.01, 0, "KRW", "KR_KOSPI", "candidate"]],
-      "KR:0086C0": [["2026-05-31", -0.02, -0.02, 0, "KRW", "KR_KOSPI", "candidate"]],
+      "KR:069500": [["2026-05-31", 0.01, 0.01, 0, "KRW", "KR_KOSPI", "candidate", false, ""]],
+      "KR:0086C0": [["2026-05-31", -0.02, -0.02, 0, "KRW", "KR_KOSPI", "candidate", false, ""]],
     },
   };
   const shardABytes = jsonBytes(shardA);
@@ -109,7 +109,17 @@ function fixture({ usAssetCount = 3000 } = {}) {
   const index = {
     exportVersion: EXPORT_VERSION,
     metricDataThroughMonth: "2026-06",
-    rowEncoding: ["month", "priceReturn", "totalReturn", "fxReturn", "currency", "benchmarkId", "dataStatus"],
+    rowEncoding: [
+      "month",
+      "priceReturn",
+      "totalReturn",
+      "fxReturn",
+      "currency",
+      "benchmarkId",
+      "dataStatus",
+      "isProxy",
+      "proxyTicker",
+    ],
     assetCount: 3,
     rowCount: 3,
     assets: {
@@ -263,6 +273,8 @@ test("monthly returns request only target shards and deduplicate concurrent load
     loadMonthlyReturnsForIdentities(["US:QQQ"], options),
   ]);
   assert.equal(first.rowsByIdentity["US:QQQ"][0].priceReturn, 0.03);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].isProxy, false);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyTicker, "");
   assert.equal(second.rowsByIdentity["US:QQQ"][0].ticker, "QQQ");
   assert.deepEqual(first.requestedShardPaths, ["monthly-returns/monthly-returns-00.json"]);
   assert.equal(
@@ -287,4 +299,27 @@ test("missing monthly-return identity remains unavailable and is not zero-filled
   assert.deepEqual(result.rowsByIdentity, {});
   assert.deepEqual(result.missingIdentities, ["US:UNKNOWN"]);
   assert.deepEqual(result.requestedShardPaths, []);
+});
+
+test("legacy seven-field monthly-return index is rejected", async () => {
+  resetAppPreviewDataSourceForTests();
+  const files = fixture();
+  const indexUrl = `${BASE_URL}/monthly-returns-index.json`;
+  const manifestUrl = `${BASE_URL}/app-preview-manifest.json`;
+  const decoder = new TextDecoder();
+  const index = JSON.parse(decoder.decode(files.get(indexUrl)));
+  index.rowEncoding = index.rowEncoding.slice(0, 7);
+  const indexBytes = jsonBytes(index);
+  const manifest = JSON.parse(decoder.decode(files.get(manifestUrl)));
+  manifest.monthlyReturnsIndex.sha256 = sha256Hex(indexBytes);
+  files.set(indexUrl, indexBytes);
+  files.set(manifestUrl, jsonBytes(manifest));
+  await assert.rejects(
+    loadMonthlyReturnsForIdentities(["US:QQQ"], {
+      enabled: true,
+      baseUrl: BASE_URL,
+      fetchImpl: createFetch(files, []),
+    }),
+    /app preview monthly-return index mismatch/,
+  );
 });

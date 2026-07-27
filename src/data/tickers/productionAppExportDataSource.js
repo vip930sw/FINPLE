@@ -4,6 +4,17 @@ export const PRODUCTION_RELEASE_CONTRACT_VERSION =
   "finple-production-app-export-release-v1-step114-2zc";
 export const PRODUCTION_EXPORT_VERSION =
   "finple-app-preview-export-v1-step114-2z";
+const MONTHLY_ROW_ENCODING = Object.freeze([
+  "month",
+  "priceReturn",
+  "totalReturn",
+  "fxReturn",
+  "currency",
+  "benchmarkId",
+  "dataStatus",
+  "isProxy",
+  "proxyTicker",
+]);
 export const PRODUCTION_UNIVERSE_VERSION =
   "finple-universe-v2-2026-07-24";
 export const PRODUCTION_SOURCE_GIT_MAIN_SHA =
@@ -273,6 +284,7 @@ function assertMonthlyIndex(index, release) {
       index?.metricDataThroughMonth !== release.metricDataThroughMonth ||
       index?.assetCount !== release.monthlyReturnAssetCount ||
       index?.rowCount !== release.monthlyReturnRowCount ||
+      stableJson(index?.rowEncoding) !== stableJson(MONTHLY_ROW_ENCODING) ||
       !index.assets ||
       Object.keys(index.assets).length !== release.monthlyReturnAssetCount ||
       !Array.isArray(index.shards) ||
@@ -298,7 +310,7 @@ async function fetchVerifiedJson({
   let response;
   try {
     response = await fetchImpl(url, { credentials: "same-origin", cache: "no-store" });
-  } catch (error) {
+  } catch {
     fail(failureCode, `request failed for ${url}`);
   }
   if (!response.ok) fail(failureCode, `request returned ${response.status} for ${url}`);
@@ -311,7 +323,7 @@ async function fetchVerifiedJson({
   }
   try {
     return JSON.parse(new TextDecoder("utf-8").decode(bytes));
-  } catch (error) {
+  } catch {
     fail(failureCode, `invalid JSON for ${url}`);
   }
 }
@@ -426,6 +438,9 @@ export async function loadProductionAppExportCatalog(options = {}) {
 function decodeSeries(identity, encodedRows, rowEncoding) {
   const [market, ticker] = identity.split(":", 2);
   return (Array.isArray(encodedRows) ? encodedRows : []).map((encodedRow) => {
+    if (!Array.isArray(encodedRow) || encodedRow.length !== MONTHLY_ROW_ENCODING.length) {
+      fail("production_monthly_shard_mismatch", `proxy lineage missing for ${identity}`);
+    }
     const values = Object.fromEntries(
       rowEncoding.map((field, index) => [field, encodedRow[index] ?? null]),
     );
@@ -433,6 +448,9 @@ function decodeSeries(identity, encodedRows, rowEncoding) {
       if (values[field] !== null && !Number.isFinite(Number(values[field]))) {
         fail("production_monthly_shard_mismatch", `non-finite ${identity}.${field}`);
       }
+    }
+    if (typeof values.isProxy !== "boolean" || typeof encodedRow[8] !== "string") {
+      fail("production_monthly_shard_mismatch", `proxy lineage invalid for ${identity}`);
     }
     return {
       market,
@@ -444,6 +462,8 @@ function decodeSeries(identity, encodedRows, rowEncoding) {
       currency: values.currency,
       benchmarkId: values.benchmarkId,
       dataStatus: values.dataStatus,
+      isProxy: values.isProxy,
+      proxyTicker: values.proxyTicker,
       returnBasis: "price_return",
       sourceHash: null,
     };

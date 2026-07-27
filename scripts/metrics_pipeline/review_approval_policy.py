@@ -152,6 +152,7 @@ def evaluate_leveraged_inverse_review(
         reasons.append("insufficient_history:monthly_returns")
     if _has_non_observed_rows(monthly_rows):
         reasons.append("unsupported_product_policy:imputed_monthly_return")
+    reasons.extend(_monthly_proxy_lineage_reasons(monthly_rows))
     if _month_gaps(monthly_rows):
         reasons.append("unsupported_product_policy:monthly_gap")
     if not _listing_period_is_sufficient(product_metadata, metric_row, 120):
@@ -193,6 +194,7 @@ def evaluate_leveraged_inverse_review(
         "sourceId": _text(product_metadata.get("sourceId")),
         "sourceCheckedAt": _text(product_metadata.get("sourceCheckedAt")),
         "monthlyReturnCount": len(monthly_rows),
+        "monthlyReturnProxyLineage": _monthly_proxy_lineage_audit(monthly_rows),
         "validRollingWindowCount10y": len(calculated_cagrs),
         "selectedCagr": selected_cagr,
         "reproducedCagr": _rounded(reproduced_cagr, 6),
@@ -266,6 +268,7 @@ def evaluate_initial_history_gap_review(
         reasons.append("insufficient_history:step4_common_months")
     if _has_non_observed_rows(monthly_rows):
         reasons.append("unsupported_product_policy:forward_fill_detected")
+    reasons.extend(_monthly_proxy_lineage_reasons(monthly_rows))
     if _month_gaps(tail_rows):
         reasons.append("unsupported_product_policy:post_gap_not_continuous")
     if _text(metric_row.get("rawPriceCoverageStatus")) != "covered":
@@ -337,6 +340,7 @@ def evaluate_initial_history_gap_review(
         "mddValidationMethod": "source_overlay_full_period_actual_binding",
         "mddPolicy": _text(metric_row.get("mddPolicy")),
         "noForwardFillVerified": not _has_non_observed_rows(monthly_rows),
+        "monthlyReturnProxyLineage": _monthly_proxy_lineage_audit(monthly_rows),
         "windowsCrossingGapExcluded": bool(gap),
         "sourceLineage": _source_lineage(metric_row),
     }
@@ -539,9 +543,65 @@ def _month_gaps(rows: Sequence[Sequence[Any]]) -> list[dict[str, Any]]:
 def _has_non_observed_rows(rows: Sequence[Sequence[Any]]) -> bool:
     for row in rows:
         status = _text(row[6] if len(row) > 6 else "").lower()
-        if any(token in status for token in ("forward", "fill", "imputed", "proxy")):
+        if any(token in status for token in ("forward", "fill", "imputed")):
             return True
     return False
+
+
+def _monthly_proxy_lineage_reasons(
+    rows: Sequence[Sequence[Any]],
+) -> list[str]:
+    proxy_detected = False
+    lineage_missing_or_inconsistent = False
+    for row in rows:
+        if len(row) < 9:
+            lineage_missing_or_inconsistent = True
+            continue
+        is_proxy = row[7]
+        proxy_ticker = _text(row[8])
+        if is_proxy is True or proxy_ticker:
+            proxy_detected = True
+        if not isinstance(is_proxy, bool):
+            lineage_missing_or_inconsistent = True
+        if (is_proxy is True and not proxy_ticker) or (
+            is_proxy is False and proxy_ticker
+        ):
+            lineage_missing_or_inconsistent = True
+    reasons = []
+    if proxy_detected:
+        reasons.append("unsupported_product_policy:proxy_monthly_return")
+    if lineage_missing_or_inconsistent:
+        reasons.append("missing_metric_lineage:monthly_return_proxy_status")
+    return reasons
+
+
+def _monthly_proxy_lineage_audit(
+    rows: Sequence[Sequence[Any]],
+) -> dict[str, Any]:
+    is_proxy_values = set()
+    proxy_tickers = set()
+    missing_row_count = 0
+    for row in rows:
+        if len(row) < 9:
+            missing_row_count += 1
+            continue
+        is_proxy_values.add(row[7])
+        proxy_tickers.add(_text(row[8]))
+    return {
+        "rowCount": len(rows),
+        "isProxyUniqueValues": sorted(
+            "missing" if value is None else str(value).lower()
+            for value in is_proxy_values
+        ),
+        "proxyTickerUniqueValues": sorted(proxy_tickers),
+        "missingLineageRowCount": missing_row_count,
+        "nonProxyProven": (
+            bool(rows)
+            and missing_row_count == 0
+            and is_proxy_values == {False}
+            and proxy_tickers == {""}
+        ),
+    }
 
 
 def _listing_period_is_sufficient(

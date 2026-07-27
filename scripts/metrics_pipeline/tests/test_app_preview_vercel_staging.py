@@ -158,6 +158,17 @@ def make_export(root: Path, *, shard_count: int = EXPECTED_SHARD_COUNT) -> Path:
     monthly_index = {
         "exportVersion": EXPECTED_EXPORT_VERSION,
         "metricDataThroughMonth": EXPECTED_METRIC_DATA_THROUGH_MONTH,
+        "rowEncoding": [
+            "month",
+            "priceReturn",
+            "totalReturn",
+            "fxReturn",
+            "currency",
+            "benchmarkId",
+            "dataStatus",
+            "isProxy",
+            "proxyTicker",
+        ],
         "assetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
         "rowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
         "assets": index_assets,

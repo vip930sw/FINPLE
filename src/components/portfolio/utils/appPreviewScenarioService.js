@@ -75,6 +75,19 @@ function intersectMonths(seriesMaps) {
   );
 }
 
+function assertNonProxyMonthlyLineage(identity, rows = []) {
+  for (const row of rows) {
+    if (row?.isProxy === true || String(row?.proxyTicker || "").trim()) {
+      throw new TypeError(`unsupported_product_policy:proxy_monthly_return:${identity}`);
+    }
+    if (row?.isProxy !== false || typeof row?.proxyTicker !== "string") {
+      throw new TypeError(
+        `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
+      );
+    }
+  }
+}
+
 export function buildAppExportScenarioResult({
   activePortfolio = {},
   assets = [],
@@ -91,6 +104,9 @@ export function buildAppExportScenarioResult({
     .filter((asset) => identityForAsset(asset))
     .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
   const identities = activeAssets.map(identityForAsset);
+  identities.forEach((identity) => {
+    assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity]);
+  });
   const weights = normalizeWeights(activeAssets);
   const configuredStartValue = Number(settings.startValue);
   const assetStartValue = activeAssets.reduce((sum, asset) => sum + getAssetValue(asset), 0);
@@ -104,7 +120,6 @@ export function buildAppExportScenarioResult({
   const monthlyReturnMatrix = [];
   for (const month of contiguousMonths) {
     activeAssets.forEach((asset, index) => {
-      const identity = identities[index];
       const row = seriesMaps[index].get(month);
       monthlyReturnMatrix.push({
         month: row.month,
@@ -113,6 +128,8 @@ export function buildAppExportScenarioResult({
         returnBasis: "price_return",
         currencyMode: row.currency,
         priceReturn: row.priceReturn,
+        isProxy: row.isProxy,
+        proxyTicker: row.proxyTicker,
         sourceHash: manifest.sourceCandidatePackageHash,
       });
     });

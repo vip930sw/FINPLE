@@ -1,3 +1,4 @@
+/* global process */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -155,8 +156,8 @@ function makeFixture() {
     const series = index === 0
       ? {
           "US:QQQ": [
-            ["2020-01", 0.01, null, null, "USD", "US:SPY", "ready"],
-            ["2020-02", -0.02, null, null, "USD", "US:SPY", "ready"],
+            ["2020-01", 0.01, null, null, "USD", "US:SPY", "ready", false, ""],
+            ["2020-02", -0.02, null, null, "USD", "US:SPY", "ready", false, ""],
           ],
         }
       : {};
@@ -197,6 +198,8 @@ function makeFixture() {
       "currency",
       "benchmarkId",
       "dataStatus",
+      "isProxy",
+      "proxyTicker",
     ],
     assets,
     shards: shardInventory,
@@ -364,6 +367,8 @@ test("production monthly loader lazy-loads one shard and deduplicates concurrent
   ]);
   assert.deepEqual(first.requestedShardPaths, ["monthly-returns/monthly-returns-00.json"]);
   assert.equal(first.rowsByIdentity["US:QQQ"].length, 2);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].isProxy, false);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyTicker, "");
   assert.deepEqual(second.rowsByIdentity, first.rowsByIdentity);
   assert.equal(
     requestCounts.get(`${BASE_URL}/monthly-returns/monthly-returns-00.json`),

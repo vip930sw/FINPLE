@@ -1,6 +1,17 @@
 import { sha256Hex } from "../../utils/sha256.js";
 
 const EXPECTED_EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z";
+const MONTHLY_ROW_ENCODING = [
+  "month",
+  "priceReturn",
+  "totalReturn",
+  "fxReturn",
+  "currency",
+  "benchmarkId",
+  "dataStatus",
+  "isProxy",
+  "proxyTicker",
+];
 const DEFAULT_MANIFEST_NAME = "app-preview-manifest.json";
 const buildEnv = import.meta.env || {};
 
@@ -159,7 +170,7 @@ export function isLocalAppPreviewQaEnabled(overrides = {}) {
     const appHost = String(window.location?.hostname || "").toLowerCase();
     const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
     return loopbackHosts.has(assetHost) && loopbackHosts.has(appHost);
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -214,6 +225,7 @@ async function loadMonthlyIndex(catalog, options = {}) {
           index.metricDataThroughMonth !== catalog.manifest.metricDataThroughMonth ||
           index.rowCount !== catalog.manifest.monthlyReturnRowCount ||
           index.assetCount !== catalog.manifest.monthlyReturnAssetCount ||
+          JSON.stringify(index.rowEncoding) !== JSON.stringify(MONTHLY_ROW_ENCODING) ||
           !index.assets ||
           !Array.isArray(index.shards) ||
           index.shards.length !== catalog.manifest.shardCount) {
@@ -254,11 +266,17 @@ async function loadShard(catalog, index, shardPath, options = {}) {
 function decodeSeries(identity, encodedRows, rowEncoding) {
   const [market, ticker] = identity.split(":", 2);
   return (Array.isArray(encodedRows) ? encodedRows : []).map((encodedRow) => {
+    if (!Array.isArray(encodedRow) || encodedRow.length !== MONTHLY_ROW_ENCODING.length) {
+      throw new TypeError(`monthly-return proxy lineage missing: ${identity}`);
+    }
     const values = Object.fromEntries(rowEncoding.map((field, index) => [field, encodedRow[index] ?? null]));
     for (const field of ["priceReturn", "totalReturn", "fxReturn"]) {
       if (values[field] !== null && !Number.isFinite(Number(values[field]))) {
         throw new TypeError(`non-finite monthly return ${identity}.${field}`);
       }
+    }
+    if (typeof values.isProxy !== "boolean" || typeof encodedRow[8] !== "string") {
+      throw new TypeError(`monthly-return proxy lineage invalid: ${identity}`);
     }
     return {
       market,
@@ -270,6 +288,8 @@ function decodeSeries(identity, encodedRows, rowEncoding) {
       currency: values.currency,
       benchmarkId: values.benchmarkId,
       dataStatus: values.dataStatus,
+      isProxy: values.isProxy,
+      proxyTicker: values.proxyTicker,
       returnBasis: "price_return",
       sourceHash: null,
     };

@@ -77,6 +77,17 @@ NUMERIC_METRIC_FIELDS = {
 
 INTEGER_METRIC_FIELDS = {"validRollingWindowCount10y"}
 MONTHLY_NUMERIC_FIELDS = {"priceReturn", "totalReturn", "fxReturn"}
+MONTHLY_ROW_ENCODING = (
+    "month",
+    "priceReturn",
+    "totalReturn",
+    "fxReturn",
+    "currency",
+    "benchmarkId",
+    "dataStatus",
+    "isProxy",
+    "proxyTicker",
+)
 
 
 class PreviewExportError(ValueError):
@@ -248,6 +259,17 @@ def parse_nullable_number(value: Any, field: str) -> int | float | None:
     if not math.isfinite(number):
         raise PreviewExportError(f"non-finite numeric value in {field}: {raw}")
     return number
+
+
+def parse_proxy_flag(value: Any) -> bool | None:
+    raw = str(value or "").strip().lower()
+    if not raw:
+        return None
+    if raw == "true":
+        return True
+    if raw == "false":
+        return False
+    raise PreviewExportError(f"invalid isProxy value: {value}")
 
 
 def parse_raw_missing_identities(
@@ -422,7 +444,7 @@ def build_monthly_shards(
     bundle_dir: Path,
     manifest: dict[str, Any],
     shard_count: int,
-) -> tuple[dict[str, Any], dict[str, Any], list[Path]]:
+) -> tuple[dict[str, Any], dict[str, Any], list[Path], dict[str, Any]]:
     shard_dir = bundle_dir / "monthly-returns"
     shard_id_width = max(2, len(f"{shard_count - 1:x}"))
     writers = {
@@ -443,6 +465,7 @@ def build_monthly_shards(
     current_market = ""
     current_ticker = ""
     current_rows: list[list[Any]] = []
+    lineage_by_identity: dict[str, dict[str, Any]] = {}
 
     def flush_series() -> None:
         nonlocal current_rows
@@ -500,6 +523,8 @@ def build_monthly_shards(
                 ]
                 if parsed_values[0] is None:
                     raise PreviewExportError(f"priceReturn must not be blank: {identity}:{month}")
+                is_proxy = parse_proxy_flag(source_row.get("isProxy"))
+                proxy_ticker = str(source_row.get("proxyTicker") or "").strip()
                 current_rows.append(
                     [
                         month,
@@ -509,8 +534,28 @@ def build_monthly_shards(
                         str(source_row.get("currency") or "").strip() or None,
                         str(source_row.get("benchmarkId") or "").strip() or None,
                         str(source_row.get("dataStatus") or "").strip() or None,
+                        is_proxy,
+                        proxy_ticker,
                     ]
                 )
+                lineage = lineage_by_identity.setdefault(
+                    identity,
+                    {
+                        "identity": identity,
+                        "rowCount": 0,
+                        "isProxyValues": set(),
+                        "proxyTickerValues": set(),
+                        "proxyRowCount": 0,
+                        "unknownLineageRowCount": 0,
+                    },
+                )
+                lineage["rowCount"] += 1
+                lineage["isProxyValues"].add(is_proxy)
+                lineage["proxyTickerValues"].add(proxy_ticker)
+                if is_proxy is True:
+                    lineage["proxyRowCount"] += 1
+                if is_proxy is None:
+                    lineage["unknownLineageRowCount"] += 1
                 market_row_counts[market] += 1
                 total_rows += 1
                 first_month = month if first_month is None or month < first_month else first_month
@@ -547,15 +592,7 @@ def build_monthly_shards(
         "sourceCandidatePackageId": manifest["candidatePackageId"],
         "metricDataThroughMonth": manifest["metricDataThroughMonth"],
         "returnBasis": "price_return",
-        "rowEncoding": [
-            "month",
-            "priceReturn",
-            "totalReturn",
-            "fxReturn",
-            "currency",
-            "benchmarkId",
-            "dataStatus",
-        ],
+        "rowEncoding": list(MONTHLY_ROW_ENCODING),
         "assetCount": len(asset_index),
         "rowCount": total_rows,
         "firstMonth": first_month,
@@ -563,15 +600,57 @@ def build_monthly_shards(
         "assets": dict(sorted(asset_index.items())),
         "shards": shard_inventory,
     }
+    lineage_rows = []
+    for identity, lineage in sorted(lineage_by_identity.items()):
+        is_proxy_values = lineage["isProxyValues"]
+        proxy_ticker_values = lineage["proxyTickerValues"]
+        non_proxy_proven = is_proxy_values == {False} and proxy_ticker_values == {""}
+        lineage_rows.append(
+            {
+                "identity": identity,
+                "rowCount": lineage["rowCount"],
+                "isProxyUniqueValues": [
+                    "missing" if value is None else str(value).lower()
+                    for value in sorted(is_proxy_values, key=lambda value: str(value))
+                ],
+                "proxyTickerUniqueValues": sorted(proxy_ticker_values),
+                "proxyRowCount": lineage["proxyRowCount"],
+                "unknownLineageRowCount": lineage["unknownLineageRowCount"],
+                "nonProxyProven": non_proxy_proven,
+            }
+        )
+    non_proxy_proven_asset_count = sum(
+        1 for lineage in lineage_rows if lineage["nonProxyProven"]
+    )
+    proxy_row_count = sum(lineage["proxyRowCount"] for lineage in lineage_rows)
+    unknown_lineage_row_count = sum(
+        lineage["unknownLineageRowCount"] for lineage in lineage_rows
+    )
+    lineage_audit = {
+        "schemaVersion": 1,
+        "contractVersion": "monthly-return-proxy-lineage-v1",
+        "rowEncoding": list(MONTHLY_ROW_ENCODING),
+        "assetCount": len(lineage_rows),
+        "rowCount": total_rows,
+        "nonProxyProvenAssetCount": non_proxy_proven_asset_count,
+        "proxyOrUnprovenAssetCount": len(lineage_rows) - non_proxy_proven_asset_count,
+        "proxyRowCount": proxy_row_count,
+        "unknownLineageRowCount": unknown_lineage_row_count,
+        "rows": lineage_rows,
+    }
     stats = {
         "monthlyReturnAssetCount": len(asset_index),
         "monthlyReturnRowCount": total_rows,
         "monthlyReturnMarketRowCounts": dict(sorted(market_row_counts.items())),
         "monthlyReturnFirstMonth": first_month,
         "monthlyReturnLastMonth": last_month,
+        "monthlyNonProxyProvenAssetCount": non_proxy_proven_asset_count,
+        "monthlyProxyOrUnprovenAssetCount": len(lineage_rows) - non_proxy_proven_asset_count,
+        "monthlyProxyRowCount": proxy_row_count,
+        "monthlyUnknownProxyLineageRowCount": unknown_lineage_row_count,
         "shardCount": shard_count,
     }
-    return monthly_index, stats, shard_paths
+    return monthly_index, stats, shard_paths, lineage_audit
 
 
 def representative_metric(rows: list[dict[str, Any]], identity: str) -> dict[str, Any]:
@@ -709,7 +788,7 @@ def export_app_preview(
             metrics_path = bundle_dir / "metrics-overlay.json"
             write_stable_json(metrics_path, overlay)
 
-            monthly_index, monthly_stats, shard_paths = build_monthly_shards(
+            monthly_index, monthly_stats, shard_paths, lineage_audit = build_monthly_shards(
                 reader,
                 monthly_member,
                 bundle_dir,
@@ -718,6 +797,8 @@ def export_app_preview(
             )
             monthly_index_path = bundle_dir / "monthly-returns-index.json"
             write_stable_json(monthly_index_path, monthly_index)
+            lineage_audit_path = bundle_dir / "monthly-return-proxy-lineage.json"
+            write_stable_json(lineage_audit_path, lineage_audit)
 
             missing_example = sorted(raw_missing_identities)[0] if raw_missing_identities else "US:QQQ"
             qa_summary = {
@@ -750,6 +831,8 @@ def export_app_preview(
                     "qqqRollingCagrPolicy": True,
                     "mddFullPeriodPolicy": True,
                     "betaAlignedMonthlyReturnPolicy": True,
+                    "proxyLineagePreserved": True,
+                    "legacySevenFieldShardRejected": True,
                 },
                 "representativeAssets": {
                     identity: representative_metric(overlay["rows"], identity)
@@ -759,7 +842,13 @@ def export_app_preview(
             qa_path = bundle_dir / "app-preview-qa-summary.json"
             write_stable_json(qa_path, qa_summary)
 
-            content_files = [metrics_path, monthly_index_path, qa_path, *shard_paths]
+            content_files = [
+                metrics_path,
+                monthly_index_path,
+                lineage_audit_path,
+                qa_path,
+                *shard_paths,
+            ]
             content_inventory = [
                 file_record(path, bundle_dir)
                 for path in sorted(content_files, key=lambda item: item.relative_to(bundle_dir).as_posix())
@@ -797,6 +886,7 @@ def export_app_preview(
                 "monthlyReturnLastMonth": monthly_stats["monthlyReturnLastMonth"],
                 "metricsOverlay": file_record(metrics_path, bundle_dir),
                 "monthlyReturnsIndex": file_record(monthly_index_path, bundle_dir),
+                "monthlyReturnProxyLineage": file_record(lineage_audit_path, bundle_dir),
                 "qaSummary": file_record(qa_path, bundle_dir),
                 "shards": monthly_index["shards"],
                 "shardCount": monthly_stats["shardCount"],
@@ -822,6 +912,12 @@ def export_app_preview(
             "rawMissingAssetCount": metric_stats["rawMissingAssetCount"],
             "monthlyReturnAssetCount": monthly_stats["monthlyReturnAssetCount"],
             "monthlyReturnRowCount": monthly_stats["monthlyReturnRowCount"],
+            "monthlyNonProxyProvenAssetCount": monthly_stats[
+                "monthlyNonProxyProvenAssetCount"
+            ],
+            "monthlyProxyOrUnprovenAssetCount": monthly_stats[
+                "monthlyProxyOrUnprovenAssetCount"
+            ],
             "shardCount": monthly_stats["shardCount"],
             "metricBaseDate": manifest["metricBaseDate"],
             "metricDataThroughMonth": manifest["metricDataThroughMonth"],

@@ -101,7 +101,12 @@ def metric_row(market: str, ticker: str) -> dict[str, str]:
     return row
 
 
-def build_fixture(root: Path, *, non_finite: bool = False) -> Path:
+def build_fixture(
+    root: Path,
+    *,
+    non_finite: bool = False,
+    proxy_qqq: bool = False,
+) -> Path:
     package_dir = root / "package"
     package_dir.mkdir()
     manifest = {
@@ -170,8 +175,8 @@ def build_fixture(root: Path, *, non_finite: bool = False) -> Path:
                     "totalReturn": value,
                     "fxReturn": "0.000000",
                     "benchmarkId": "KR_KOSPI" if market == "KR" else "US_SPY",
-                    "isProxy": "false",
-                    "proxyTicker": "",
+                    "isProxy": "true" if proxy_qqq and ticker == "QQQ" else "false",
+                    "proxyTicker": "SPY" if proxy_qqq and ticker == "QQQ" else "",
                     "dataStatus": "candidate",
                 }
             )
@@ -230,11 +235,27 @@ class AppPreviewExportTests(unittest.TestCase):
             index = json.loads((bundle / "monthly-returns-index.json").read_text(encoding="utf-8"))
             self.assertEqual(index["rowCount"], 4)
             self.assertEqual(index["lastMonth"], "2026-06-30")
+            self.assertEqual(
+                index["rowEncoding"][-2:],
+                ["isProxy", "proxyTicker"],
+            )
             self.assertEqual(len(index["shards"]), 64)
             for shard in index["shards"]:
                 path = bundle / shard["path"]
                 self.assertEqual(shard["sha256"], sha256(path))
             self.assertNotEqual(index["assets"]["US:QQQ"]["shard"], "")
+            qqq_shard = json.loads(
+                (bundle / index["assets"]["US:QQQ"]["shard"]).read_text(encoding="utf-8")
+            )
+            self.assertIs(qqq_shard["series"]["US:QQQ"][0][7], False)
+            self.assertEqual(qqq_shard["series"]["US:QQQ"][0][8], "")
+            lineage = json.loads(
+                (bundle / "monthly-return-proxy-lineage.json").read_text(encoding="utf-8")
+            )
+            qqq_lineage = next(
+                row for row in lineage["rows"] if row["identity"] == "US:QQQ"
+            )
+            self.assertTrue(qqq_lineage["nonProxyProven"])
             self.assertNotIn("raw_daily", "\n".join(path.as_posix() for path in bundle.rglob("*")))
             self.assertNotIn("normalized_month", "\n".join(path.as_posix() for path in bundle.rglob("*")))
 
@@ -254,6 +275,30 @@ class AppPreviewExportTests(unittest.TestCase):
             package_dir = build_fixture(root, non_finite=True)
             with self.assertRaisesRegex(PreviewExportError, "non-finite"):
                 export_app_preview(package_dir, root / "out", shard_count=64)
+
+    def test_proxy_lineage_is_serialized_without_defaulting(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            package_dir = build_fixture(root, proxy_qqq=True)
+            result = export_app_preview(package_dir, root / "out", shard_count=64)
+            bundle = Path(result["bundleDirectory"])
+            index = json.loads(
+                (bundle / "monthly-returns-index.json").read_text(encoding="utf-8")
+            )
+            shard = json.loads(
+                (bundle / index["assets"]["US:QQQ"]["shard"]).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertIs(shard["series"]["US:QQQ"][0][7], True)
+            self.assertEqual(shard["series"]["US:QQQ"][0][8], "SPY")
+            lineage = json.loads(
+                (bundle / "monthly-return-proxy-lineage.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            qqq = next(row for row in lineage["rows"] if row["identity"] == "US:QQQ")
+            self.assertFalse(qqq["nonProxyProven"])
 
 
 if __name__ == "__main__":

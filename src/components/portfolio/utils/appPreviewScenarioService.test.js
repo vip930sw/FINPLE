@@ -28,6 +28,8 @@ function rows(market, ticker, count = 80, omitted = new Set()) {
     priceReturn: index % 2 === 0 ? 0.02 : -0.01,
     totalReturn: index % 2 === 0 ? 0.03 : 0,
     currency: "USD",
+    isProxy: false,
+    proxyTicker: "",
   })).filter((_, index) => !omitted.has(index));
 }
 
@@ -95,6 +97,43 @@ test("missing asset series stays blocked instead of receiving zero rows", () => 
   });
   assert.notEqual(result.status, "ready");
   assert.equal(result.internalPreviewContext.contiguousObservedMonthCount, 0);
+});
+
+test("proxy or missing monthly lineage is rejected before scenario calculation", () => {
+  const options = {
+    activePortfolio: { id: "portfolio-preview", name: "Preview" },
+    assets: [{ market: "US", ticker: "TQQQ", targetEvaluationAmount: 10000 }],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    manifest,
+    simulationCount: 24,
+  };
+  const proxyRows = rows("US", "TQQQ");
+  proxyRows[0] = { ...proxyRows[0], isProxy: true, proxyTicker: "QQQ" };
+  assert.throws(
+    () => buildAppPreviewScenarioResult({
+      ...options,
+      rowsByIdentity: { "US:TQQQ": proxyRows },
+    }),
+    /unsupported_product_policy:proxy_monthly_return/,
+  );
+  const legacyRows = rows("US", "TQQQ").map((row) => {
+    const legacyRow = { ...row };
+    delete legacyRow.isProxy;
+    delete legacyRow.proxyTicker;
+    return legacyRow;
+  });
+  assert.throws(
+    () => buildAppPreviewScenarioResult({
+      ...options,
+      rowsByIdentity: { "US:TQQQ": legacyRows },
+    }),
+    /missing_metric_lineage:monthly_return_proxy_status/,
+  );
 });
 
 test("production app export enables Step 4 only while AI scenario context stays excluded", () => {
