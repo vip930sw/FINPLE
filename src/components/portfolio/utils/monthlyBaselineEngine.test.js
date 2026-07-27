@@ -404,6 +404,45 @@ test("blocked and review-only metric sources fail closed", () => {
   }
 });
 
+test("Screener display separation does not change review-required baseline gates", () => {
+  for (const fixture of [
+    productionAppExportAsset({
+      ticker: "TQQQ",
+      dividendYield: 0.47,
+      dividendStatus: "confirmed_value",
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({
+      ticker: "SOXL",
+      dividendYield: 0,
+      dividendStatus: "confirmed_value",
+      reviewFlag: "review_required",
+    }),
+    productionAppExportAsset({
+      ticker: "069500",
+      market: "KR",
+      dividendYield: 0.46,
+      dividendStatus: "confirmed_value",
+      dataStatus: "review_required",
+      metricsStatus: "review_required",
+      reviewFlag: "review_required",
+    }),
+  ]) {
+    for (const dividendReinvest of [true, false]) {
+      const result = buildMonthlyBaselineProjection({
+        settings: { ...BASE_SETTINGS, dividendReinvest },
+        assets: [fixture],
+      });
+      assert.equal(result.status, "blocked", `${fixture.ticker}:${dividendReinvest}`);
+      assert.match(
+        result.blockReasons.join("|"),
+        new RegExp(`unsupported_metric_status:${fixture.ticker}\\.`),
+        `${fixture.ticker}:${dividendReinvest}`,
+      );
+    }
+  }
+});
+
 test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
   const assets = [
     productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),

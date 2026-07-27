@@ -50,8 +50,6 @@ export function resolveDividendYieldDisplay(asset = {}) {
 
   const dividendStatus = normalizeDividendState(asset.dividendStatus);
   const dividendPolicy = normalizeDividendState(asset.dividendPolicy);
-  const reviewTag = normalizeDividendState(asset.reviewTag);
-  const reviewFlag = normalizeDividendState(asset.reviewFlag);
   const displayValue = String(asset.displayDividendYield || "").trim();
   const numericYield = toNullableNumber(asset.dividendYield);
 
@@ -61,9 +59,7 @@ export function resolveDividendYieldDisplay(asset = {}) {
 
   if (
     dividendStatus === "review_required" ||
-    dividendPolicy === "review_required" ||
-    reviewTag === "review_required" ||
-    reviewFlag === "review_required"
+    dividendPolicy === "review_required"
   ) {
     return { kind: "review_required", text: "확인 필요" };
   }
@@ -81,17 +77,15 @@ export function resolveDividendYieldDisplay(asset = {}) {
     return { kind: "cash", text: "확인 중" };
   }
 
-  if (["missing", "unconfirmed", "pending", "unknown"].includes(dividendStatus)) {
+  if (
+    ["", "missing", "unconfirmed", "pending", "unknown"].includes(dividendStatus)
+  ) {
     return { kind: "missing", text: "확인 중" };
   }
 
-  if (dividendPolicy === "no_dividend") {
-    return { kind: "no_dividend", text: "-" };
-  }
-
-  if (numericYield !== null && numericYield > 0) {
+  if (dividendStatus === "confirmed_value" && numericYield !== null && numericYield > 0) {
     return {
-      kind: dividendStatus === "confirmed_value" ? "confirmed_value" : "legacy_value",
+      kind: "confirmed_value",
       text: `${numericYield.toFixed(2)}%`,
     };
   }
