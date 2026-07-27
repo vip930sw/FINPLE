@@ -8,6 +8,7 @@ Production release manifest while preserving the source review manifest.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import ipaddress
 import json
 import os
@@ -21,6 +22,8 @@ from typing import Callable, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
 from scripts.stage_app_preview_vercel import (
+    LEGACY_MONTHLY_ROW_ENCODING_V1,
+    PROXY_AWARE_MONTHLY_ROW_ENCODING_V2,
     StagingError,
     _atomic_publish,
     _extract_zip_safely,
@@ -40,6 +43,15 @@ UNIVERSE_VERSION = "finple-universe-v2-2026-07-24"
 SOURCE_GIT_MAIN_SHA = "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef"
 CANDIDATE_ZIP_SHA256 = "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e"
 CANDIDATE_PACKAGE_HASH = "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
+PINNED_LEGACY_RELEASE_SHA256 = (
+    "fd2ffd18f60753b5301dddf2df3a73d46195cf7f13581c697170e6e720409fa8"
+)
+PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256 = (
+    "603b426e175603ccfdf836c56de791377a1d554b4cfc498350612386b161ffd8"
+)
+PINNED_LEGACY_ARTIFACT_BINDING_SHA256 = (
+    "594684b2e1e7043e01171a40607a1073344a5491ee0bbdc7eaa071d6501097b8"
+)
 EXPECTED_COUNTS = {
     "assetCount": 6029,
     "marketAssetCounts": {"KR": 3000, "US": 3029},
@@ -74,6 +86,62 @@ RELEASE_FIELDS = {
     "sourceManifest",
     "universeVersion",
 }
+
+
+def _artifact_binding_sha256(release: Mapping[str, object]) -> str:
+    binding = {
+        "sourceManifest": release.get("sourceManifest"),
+        "metricsOverlay": release.get("metricsOverlay"),
+        "monthlyReturnsIndex": release.get("monthlyReturnsIndex"),
+        "shardCount": release.get("shardCount"),
+        "shardInventory": release.get("shardInventory"),
+    }
+    canonical = json.dumps(
+        binding,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def is_pinned_legacy_production_release(
+    release: Mapping[str, object],
+    *,
+    release_manifest_sha256: str,
+    source_app_export_sha256: str,
+) -> bool:
+    return is_pinned_legacy_production_binding(
+        release_manifest_sha256=release_manifest_sha256,
+        source_app_export_sha256=source_app_export_sha256,
+        contract_version=str(release.get("contractVersion") or ""),
+        source_git_main_sha=str(release.get("sourceGitMainSha") or ""),
+        candidate_zip_sha256=str(release.get("candidateZipSha256") or ""),
+        candidate_package_hash=str(release.get("candidatePackageHash") or ""),
+        artifact_binding_sha256=_artifact_binding_sha256(release),
+    )
+
+
+def is_pinned_legacy_production_binding(
+    *,
+    release_manifest_sha256: str,
+    source_app_export_sha256: str,
+    contract_version: str,
+    source_git_main_sha: str,
+    candidate_zip_sha256: str,
+    candidate_package_hash: str,
+    artifact_binding_sha256: str,
+) -> bool:
+    return (
+        release_manifest_sha256 == PINNED_LEGACY_RELEASE_SHA256
+        and source_app_export_sha256 == PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256
+        and contract_version == RELEASE_CONTRACT_VERSION
+        and source_git_main_sha == SOURCE_GIT_MAIN_SHA
+        and candidate_zip_sha256 == CANDIDATE_ZIP_SHA256
+        and candidate_package_hash == CANDIDATE_PACKAGE_HASH
+        and artifact_binding_sha256 == PINNED_LEGACY_ARTIFACT_BINDING_SHA256
+    )
 
 
 def _validate_sha256(value: object, label: str) -> str:
@@ -412,7 +480,19 @@ def stage_production_app_export(
     try:
         export_root = working / "export"
         _extract_zip_safely(source, export_root)
-        export_validation = validate_export(export_root)
+        pinned_legacy_release = is_pinned_legacy_production_release(
+            release,
+            release_manifest_sha256=expected_release_manifest_sha256,
+            source_app_export_sha256=expected_export_hash,
+        )
+        export_validation = validate_export(
+            export_root,
+            monthly_row_encoding=(
+                LEGACY_MONTHLY_ROW_ENCODING_V1
+                if pinned_legacy_release
+                else PROXY_AWARE_MONTHLY_ROW_ENCODING_V2
+            ),
+        )
         validate_release_against_export(release, export_root, export_validation)
 
         output_root = prepared / ".vercel" / "output"

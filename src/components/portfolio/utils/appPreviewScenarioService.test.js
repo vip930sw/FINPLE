@@ -33,6 +33,15 @@ function rows(market, ticker, count = 80, omitted = new Set()) {
   })).filter((_, index) => !omitted.has(index));
 }
 
+function legacyRows(market, ticker, count = 80) {
+  return rows(market, ticker, count).map((row) => ({
+    ...row,
+    isProxy: null,
+    proxyTicker: null,
+    proxyLineageStatus: "legacy_unproven",
+  }));
+}
+
 const manifest = {
   sourceCandidatePackageId: "finple-candidate-test",
   sourceCandidatePackageHash: "a".repeat(64),
@@ -131,6 +140,56 @@ test("proxy or missing monthly lineage is rejected before scenario calculation",
     () => buildAppPreviewScenarioResult({
       ...options,
       rowsByIdentity: { "US:TQQQ": legacyRows },
+    }),
+    /missing_metric_lineage:monthly_return_proxy_status/,
+  );
+});
+
+test("only the pinned legacy Production bridge preserves Step 4 for existing assets", () => {
+  const release = {
+    contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+    universeVersion: "finple-universe-v2-2026-07-24",
+    sourceAppExportSha256: "e".repeat(64),
+    metricDataThroughMonth: "2026-06",
+  };
+  const base = {
+    activePortfolio: { id: "portfolio-production", name: "Production legacy" },
+    assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    rowsByIdentity: { "US:QQQ": legacyRows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    monthlyRowContract: "legacy_v1",
+    legacyProductionBindingVerified: true,
+    simulationCount: 24,
+  };
+  const result = buildAppExportScenarioResult(base);
+  assert.equal(result.status, "ready", JSON.stringify(result.dataQuality));
+  assert.equal(result.productionAppExportContext.monthlyRowContract, "legacy_v1");
+  assert.equal(result.productionAppExportContext.legacyProductionBindingVerified, true);
+
+  assert.throws(
+    () => buildAppExportScenarioResult({
+      ...base,
+      legacyProductionBindingVerified: false,
+    }),
+    /missing_metric_lineage:monthly_return_proxy_status/,
+  );
+  assert.throws(
+    () => buildAppExportScenarioResult({
+      ...base,
+      assets: [{
+        market: "US",
+        ticker: "QQQ",
+        targetEvaluationAmount: 10000,
+        reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
+      }],
     }),
     /missing_metric_lineage:monthly_return_proxy_status/,
   );

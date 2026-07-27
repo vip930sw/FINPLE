@@ -27,7 +27,16 @@ import zipfile
 EXPECTED_EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z"
 MANIFEST_NAME = "app-preview-manifest.json"
 FORBIDDEN_SOURCE_ROLE_TOKENS = ("raw_daily_prices", "normalized_month_end")
-MONTHLY_ROW_ENCODING = [
+LEGACY_MONTHLY_ROW_ENCODING_V1 = [
+    "month",
+    "priceReturn",
+    "totalReturn",
+    "fxReturn",
+    "currency",
+    "benchmarkId",
+    "dataStatus",
+]
+PROXY_AWARE_MONTHLY_ROW_ENCODING_V2 = [
     "month",
     "priceReturn",
     "totalReturn",
@@ -212,7 +221,21 @@ def validate_preview_api_bundle(static_output_dir: Path, api_upstream_base_url: 
         raise StagingError("Preview JavaScript bundle still contains the local API fallback")
 
 
-def validate_export(export_root: Path) -> dict[str, object]:
+def validate_export(
+    export_root: Path,
+    *,
+    monthly_row_encoding: list[str] | None = None,
+) -> dict[str, object]:
+    expected_monthly_row_encoding = (
+        list(monthly_row_encoding)
+        if monthly_row_encoding is not None
+        else list(PROXY_AWARE_MONTHLY_ROW_ENCODING_V2)
+    )
+    if expected_monthly_row_encoding not in (
+        LEGACY_MONTHLY_ROW_ENCODING_V1,
+        PROXY_AWARE_MONTHLY_ROW_ENCODING_V2,
+    ):
+        raise StagingError("unsupported monthly-return row encoding contract")
     manifest_path = export_root / MANIFEST_NAME
     if not manifest_path.is_file():
         raise StagingError(f"missing required {MANIFEST_NAME}")
@@ -380,8 +403,8 @@ def validate_export(export_root: Path) -> dict[str, object]:
     _require_equal(monthly_index.get("rowCount"), monthly_row_count, "monthly returns index row count")
     _require_equal(
         monthly_index.get("rowEncoding"),
-        MONTHLY_ROW_ENCODING,
-        "monthly returns proxy-aware row encoding",
+        expected_monthly_row_encoding,
+        "monthly returns row encoding",
     )
     index_assets = monthly_index.get("assets")
     index_shards = monthly_index.get("shards")
@@ -402,13 +425,16 @@ def validate_export(export_root: Path) -> dict[str, object]:
             for row in rows:
                 if (
                     not isinstance(row, list)
-                    or len(row) != len(MONTHLY_ROW_ENCODING)
-                    or not isinstance(row[7], bool)
-                    or not isinstance(row[8], str)
+                    or len(row) != len(expected_monthly_row_encoding)
                 ):
                     raise StagingError(
-                        f"monthly-return proxy lineage is invalid: {identity}"
+                        f"monthly-return row encoding is invalid: {identity}"
                     )
+                if expected_monthly_row_encoding == PROXY_AWARE_MONTHLY_ROW_ENCODING_V2:
+                    if not isinstance(row[7], bool) or not isinstance(row[8], str):
+                        raise StagingError(
+                            f"monthly-return proxy lineage is invalid: {identity}"
+                        )
 
     return {
         "manifest": manifest,
@@ -418,6 +444,7 @@ def validate_export(export_root: Path) -> dict[str, object]:
         "monthlyReturnAssetCount": monthly_asset_count,
         "monthlyReturnRowCount": monthly_row_count,
         "shardCount": shard_count,
+        "monthlyRowEncoding": expected_monthly_row_encoding,
     }
 
 

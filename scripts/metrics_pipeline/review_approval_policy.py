@@ -558,10 +558,12 @@ def _monthly_proxy_lineage_reasons(
             lineage_missing_or_inconsistent = True
             continue
         is_proxy = row[7]
-        proxy_ticker = _text(row[8])
+        proxy_ticker_value = row[8]
+        proxy_ticker_is_string = isinstance(proxy_ticker_value, str)
+        proxy_ticker = proxy_ticker_value.strip() if proxy_ticker_is_string else ""
         if is_proxy is True or proxy_ticker:
             proxy_detected = True
-        if not isinstance(is_proxy, bool):
+        if type(is_proxy) is not bool or not proxy_ticker_is_string:
             lineage_missing_or_inconsistent = True
         if (is_proxy is True and not proxy_ticker) or (
             is_proxy is False and proxy_ticker
@@ -581,12 +583,18 @@ def _monthly_proxy_lineage_audit(
     is_proxy_values = set()
     proxy_tickers = set()
     missing_row_count = 0
+    invalid_type_row_count = 0
     for row in rows:
         if len(row) < 9:
             missing_row_count += 1
             continue
-        is_proxy_values.add(row[7])
-        proxy_tickers.add(_text(row[8]))
+        is_proxy = row[7]
+        proxy_ticker_value = row[8]
+        if type(is_proxy) is not bool or not isinstance(proxy_ticker_value, str):
+            invalid_type_row_count += 1
+            continue
+        is_proxy_values.add(is_proxy)
+        proxy_tickers.add(proxy_ticker_value.strip())
     return {
         "rowCount": len(rows),
         "isProxyUniqueValues": sorted(
@@ -595,9 +603,11 @@ def _monthly_proxy_lineage_audit(
         ),
         "proxyTickerUniqueValues": sorted(proxy_tickers),
         "missingLineageRowCount": missing_row_count,
+        "invalidLineageTypeRowCount": invalid_type_row_count,
         "nonProxyProven": (
             bool(rows)
             and missing_row_count == 0
+            and invalid_type_row_count == 0
             and is_proxy_values == {False}
             and proxy_tickers == {""}
         ),

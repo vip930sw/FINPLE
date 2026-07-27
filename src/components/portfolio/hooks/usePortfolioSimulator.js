@@ -315,6 +315,9 @@ export default function usePortfolioSimulator() {
           rowsByIdentity: monthlyReturns.rowsByIdentity,
           manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
           release: monthlyReturns.release || null,
+          monthlyRowContract: monthlyReturns.monthlyRowContract || "proxy_aware_v2",
+          legacyProductionBindingVerified:
+            monthlyReturns.legacyProductionBindingVerified === true,
           runtimeMode: screenerCandidateSnapshot.preview.status,
         });
         setPreviewScenarioState({ status: "ready", result: scenarioResult, error: null });

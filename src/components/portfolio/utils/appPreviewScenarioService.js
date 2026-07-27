@@ -75,16 +75,53 @@ function intersectMonths(seriesMaps) {
   );
 }
 
-function assertNonProxyMonthlyLineage(identity, rows = []) {
+function assertNonProxyMonthlyLineage(
+  identity,
+  rows = [],
+  {
+    asset = {},
+    runtimeMode = "internal_preview_review_only",
+    monthlyRowContract = "proxy_aware_v2",
+    legacyProductionBindingVerified = false,
+  } = {},
+) {
+  const lineageStates = new Set();
   for (const row of rows) {
-    if (row?.isProxy === true || String(row?.proxyTicker || "").trim()) {
+    const legacyUnproven =
+      row?.isProxy === null &&
+      row?.proxyTicker === null &&
+      row?.proxyLineageStatus === "legacy_unproven";
+    lineageStates.add(legacyUnproven ? "legacy_unproven" : "proxy_aware");
+    if (legacyUnproven) {
+      const legacyAllowed =
+        runtimeMode === "production_app_export_ready" &&
+        monthlyRowContract === "legacy_v1" &&
+        legacyProductionBindingVerified === true &&
+        !String(asset?.reviewApprovalPolicyVersion || "").trim();
+      if (!legacyAllowed) {
+        throw new TypeError(
+          `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
+        );
+      }
+      continue;
+    }
+    if (row?.isProxy === true ||
+        (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
       throw new TypeError(`unsupported_product_policy:proxy_monthly_return:${identity}`);
     }
-    if (row?.isProxy !== false || typeof row?.proxyTicker !== "string") {
+    if (row?.isProxy !== false ||
+        typeof row?.proxyTicker !== "string" ||
+        row.proxyTicker.trim() ||
+        row?.proxyLineageStatus === "legacy_unproven") {
       throw new TypeError(
         `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
       );
     }
+  }
+  if (lineageStates.size > 1) {
+    throw new TypeError(
+      `missing_metric_lineage:monthly_return_proxy_status:${identity}`,
+    );
   }
 }
 
@@ -96,6 +133,8 @@ export function buildAppExportScenarioResult({
   manifest = {},
   release = null,
   runtimeMode = "internal_preview_review_only",
+  monthlyRowContract = "proxy_aware_v2",
+  legacyProductionBindingVerified = false,
   simulationCount = 500,
   randomSeed = 1142,
 } = {}) {
@@ -104,8 +143,13 @@ export function buildAppExportScenarioResult({
     .filter((asset) => identityForAsset(asset))
     .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
   const identities = activeAssets.map(identityForAsset);
-  identities.forEach((identity) => {
-    assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity]);
+  identities.forEach((identity, index) => {
+    assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity], {
+      asset: activeAssets[index],
+      runtimeMode,
+      monthlyRowContract,
+      legacyProductionBindingVerified,
+    });
   });
   const weights = normalizeWeights(activeAssets);
   const configuredStartValue = Number(settings.startValue);
@@ -195,6 +239,8 @@ export function buildAppExportScenarioResult({
       identities,
       universeVersion: release.universeVersion,
       releaseContractVersion: release.contractVersion,
+      monthlyRowContract,
+      legacyProductionBindingVerified,
       sourceAppExportSha256: release.sourceAppExportSha256,
       metricDataThroughMonth: release.metricDataThroughMonth,
       commonObservedMonthCount: commonMonths.length,

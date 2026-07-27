@@ -181,6 +181,36 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
             )
         )
 
+        null_ticker = monthly_rows(220, multiplier=3)
+        null_ticker[0][8] = None
+        cases.append(
+            (
+                "null_proxy_ticker",
+                null_ticker,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        string_flag = monthly_rows(220, multiplier=3)
+        string_flag[0][7] = "false"
+        cases.append(
+            (
+                "string_proxy_flag",
+                string_flag,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        numeric_flag = monthly_rows(220, multiplier=3)
+        numeric_flag[0][7] = 0
+        cases.append(
+            (
+                "numeric_proxy_flag",
+                numeric_flag,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
         missing_lineage = [row[:7] for row in monthly_rows(220, multiplier=3)]
         cases.append(
             (

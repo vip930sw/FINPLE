@@ -189,6 +189,10 @@ def series_for_identity(
         raise ReviewArtifactError(f"monthly-return series binding mismatch: {identity}")
     if any(not isinstance(row, list) or len(row) != len(MONTHLY_ROW_ENCODING) for row in rows):
         raise ReviewArtifactError(f"monthly-return proxy lineage is missing: {identity}")
+    if any(type(row[7]) is not bool or not isinstance(row[8], str) for row in rows):
+        raise ReviewArtifactError(
+            f"monthly-return proxy lineage type is invalid: {identity}"
+        )
     return rows
 
 
