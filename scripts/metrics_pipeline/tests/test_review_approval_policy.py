@@ -4,6 +4,7 @@ import statistics
 import unittest
 
 from scripts.metrics_pipeline.review_approval_policy import (
+    GAP_RECONCILIATION_MODE,
     GAPPED_HISTORY_POLICY_VERSION,
     LEVERAGED_POLICY_VERSION,
     _beta,
@@ -305,11 +306,20 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
         prefix_count: int = 1,
         missing_count: int = 24,
         tail_count: int = 205,
+        actual_return_gap_extra: int = 0,
+        actual_return_gap_start_offset: int = 0,
     ) -> tuple[dict[str, object], list[list[object]], list[list[object]]]:
-        benchmark = monthly_rows(prefix_count + missing_count + tail_count)
+        actual_return_gap_count = missing_count + 1 + actual_return_gap_extra
+        actual_gap_start = prefix_count + actual_return_gap_start_offset
+        benchmark = monthly_rows(actual_gap_start + actual_return_gap_count + tail_count)
         asset = (
-            benchmark[:prefix_count]
-            + benchmark[prefix_count + missing_count : prefix_count + missing_count + tail_count]
+            benchmark[:actual_gap_start]
+            + benchmark[
+                actual_gap_start
+                + actual_return_gap_count : actual_gap_start
+                + actual_return_gap_count
+                + tail_count
+            ]
         )
         row = metric_row(
             asset,
@@ -340,7 +350,17 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
 
         self.assertTrue(decision.approved)
         self.assertEqual(decision.policyVersion, GAPPED_HISTORY_POLICY_VERSION)
-        self.assertEqual(decision.audit["excludedMonthlyReturnGapCount"], 24)
+        self.assertEqual(decision.audit["sourceReportedPriceGapCount"], 24)
+        self.assertEqual(decision.audit["expectedMonthlyReturnGapCount"], 25)
+        self.assertEqual(decision.audit["actualMonthlyReturnGapCount"], 25)
+        self.assertEqual(
+            decision.audit["expectedMonthlyReturnGapEnd"],
+            decision.audit["actualMonthlyReturnGapEnd"],
+        )
+        self.assertEqual(
+            decision.audit["gapReconciliationMode"],
+            GAP_RECONCILIATION_MODE,
+        )
         self.assertEqual(decision.audit["continuousPostGapMonthCount"], 205)
         self.assertTrue(decision.audit["noForwardFillVerified"])
         self.assertTrue(decision.audit["windowsCrossingGapExcluded"])
@@ -349,6 +369,15 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
             decision.audit["mddValidationMethod"],
             "source_overlay_full_period_actual_binding",
         )
+
+    def test_twenty_five_month_price_gap_maps_to_twenty_six_return_months(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture(missing_count=25)
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertTrue(decision.approved)
+        self.assertEqual(decision.audit["sourceReportedPriceGapCount"], 25)
+        self.assertEqual(decision.audit["expectedMonthlyReturnGapCount"], 26)
+        self.assertEqual(decision.audit["actualMonthlyReturnGapCount"], 26)
 
     def test_more_severe_initial_gap_is_held(self) -> None:
         row, asset, benchmark = self.make_gap_fixture(missing_count=48)
@@ -380,43 +409,46 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
             decision.reasonCodes,
         )
 
-    def test_reported_gap_count_mismatch_is_held(self) -> None:
-        row, asset, benchmark = self.make_gap_fixture()
-        row["reviewReason"] = str(row["reviewReason"]).replace(
-            "has 24 missing",
-            "has 23 missing",
-        )
+    def test_return_gap_larger_than_expected_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture(actual_return_gap_extra=1)
         decision = evaluate_initial_history_gap_review(row, asset, benchmark)
 
         self.assertFalse(decision.approved)
+        self.assertEqual(decision.audit["expectedMonthlyReturnGapCount"], 25)
+        self.assertEqual(decision.audit["actualMonthlyReturnGapCount"], 26)
         self.assertIn(
             "inconsistent_metric:reported_gap_metadata",
             decision.reasonCodes,
         )
 
-    def test_reported_gap_start_mismatch_is_held(self) -> None:
-        row, asset, benchmark = self.make_gap_fixture()
-        row["reviewReason"] = str(row["reviewReason"]).replace(
-            "(2006-02,",
-            "(2006-03,",
+    def test_return_gap_start_mismatch_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture(
+            actual_return_gap_start_offset=1,
         )
         decision = evaluate_initial_history_gap_review(row, asset, benchmark)
 
         self.assertFalse(decision.approved)
+        self.assertNotEqual(
+            decision.audit["expectedMonthlyReturnGapStart"],
+            decision.audit["actualMonthlyReturnGapStart"],
+        )
         self.assertIn(
             "inconsistent_metric:reported_gap_metadata",
             decision.reasonCodes,
         )
 
-    def test_reported_gap_end_mismatch_is_held(self) -> None:
-        row, asset, benchmark = self.make_gap_fixture()
-        row["reviewReason"] = str(row["reviewReason"]).replace(
-            "2008-01);",
-            "2007-12);",
+    def test_return_gap_end_mismatch_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture(
+            prefix_count=2,
+            actual_return_gap_start_offset=-1,
         )
         decision = evaluate_initial_history_gap_review(row, asset, benchmark)
 
         self.assertFalse(decision.approved)
+        self.assertNotEqual(
+            decision.audit["expectedMonthlyReturnGapEnd"],
+            decision.audit["actualMonthlyReturnGapEnd"],
+        )
         self.assertIn(
             "inconsistent_metric:reported_gap_metadata",
             decision.reasonCodes,
@@ -433,6 +465,42 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
         self.assertFalse(decision.approved)
         self.assertIn(
             "manual_review_required:reason_outside_gap_policy",
+            decision.reasonCodes,
+        )
+
+    def test_multiple_monthly_return_gaps_are_held(self) -> None:
+        benchmark = monthly_rows(260)
+        asset = benchmark[:1] + benchmark[26:100] + benchmark[102:]
+        row = metric_row(
+            asset,
+            benchmark,
+            identity="KR:GAPPED",
+            review_reason=(
+                "KR:GAPPED has 24 missing calendar month(s) "
+                "(2006-02, ... 2008-01); observed rows are preserved, "
+                "no forward fill is applied, and rolling CAGR/monthly returns "
+                "crossing a gap are excluded."
+            ),
+        )
+        row["dataStatus"] = "review_required"
+        row["selectedMdd"] = -35
+
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "unsupported_product_policy:gap_count",
+            decision.reasonCodes,
+        )
+
+    def test_forward_filled_monthly_return_is_held(self) -> None:
+        row, asset, benchmark = self.make_gap_fixture()
+        asset[-1][6] = "forward_fill"
+        decision = evaluate_initial_history_gap_review(row, asset, benchmark)
+
+        self.assertFalse(decision.approved)
+        self.assertIn(
+            "unsupported_product_policy:forward_fill_detected",
             decision.reasonCodes,
         )
 

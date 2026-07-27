@@ -11,6 +11,9 @@ from urllib.parse import urlsplit
 
 LEVERAGED_POLICY_VERSION = "leveraged-inverse-review-policy-v1-step114"
 GAPPED_HISTORY_POLICY_VERSION = "initial-history-gap-review-policy-v1-step114"
+GAP_RECONCILIATION_MODE = (
+    "price_observation_gap_plus_skipped_cross_gap_monthly_return_v1"
+)
 
 APPROVABLE_THRESHOLD_REASONS = frozenset(
     {
@@ -232,6 +235,7 @@ def evaluate_initial_history_gap_review(
     calculated_cagrs = _rolling_cagrs(monthly_rows, 120)
     calculated_beta = _beta(monthly_rows, benchmark_rows)
     reported_gap = _reported_gap_metadata(metric_row.get("reviewReason"))
+    expected_return_gap = _expected_monthly_return_gap(reported_gap)
     reasons.extend(
         _review_state_reasons(
             metric_row,
@@ -254,7 +258,7 @@ def evaluate_initial_history_gap_review(
 
     if gap and prefix_count > 12:
         reasons.append("unsupported_product_policy:mid_history_gap")
-    if gap and gap_month_count > 36:
+    if reported_gap and reported_gap["count"] > 36:
         reasons.append("unsupported_product_policy:initial_gap_too_large")
     if len(tail_rows) < 180:
         reasons.append("insufficient_history:continuous_post_gap_months")
@@ -288,9 +292,10 @@ def evaluate_initial_history_gap_review(
     if gap and (
         reported_gap is None
         or reported_gap["identity"].upper() != _text(metric_row.get("identity")).upper()
-        or reported_gap["start"] != gap["start"]
-        or reported_gap["end"] != gap["end"]
-        or reported_gap["count"] != gap["missingMonthCount"]
+        or expected_return_gap is None
+        or expected_return_gap["start"] != gap["start"]
+        or expected_return_gap["end"] != gap["end"]
+        or expected_return_gap["count"] != gap["missingMonthCount"]
     ):
         reasons.append("inconsistent_metric:reported_gap_metadata")
 
@@ -304,6 +309,23 @@ def evaluate_initial_history_gap_review(
         "sourceReportedPriceGapStart": reported_gap["start"] if reported_gap else "",
         "sourceReportedPriceGapEnd": reported_gap["end"] if reported_gap else "",
         "sourceReportedPriceGapCount": reported_gap["count"] if reported_gap else None,
+        "expectedMonthlyReturnGapStart": (
+            expected_return_gap["start"] if expected_return_gap else ""
+        ),
+        "expectedMonthlyReturnGapEnd": (
+            expected_return_gap["end"] if expected_return_gap else ""
+        ),
+        "expectedMonthlyReturnGapCount": (
+            expected_return_gap["count"] if expected_return_gap else None
+        ),
+        "actualMonthlyReturnGapStart": gap["start"] if gap else "",
+        "actualMonthlyReturnGapEnd": gap["end"] if gap else "",
+        "actualMonthlyReturnGapCount": gap_month_count if gap else None,
+        "gapReconciliationMode": (
+            GAP_RECONCILIATION_MODE
+            if expected_return_gap
+            else "unavailable_reported_price_gap"
+        ),
         "prefixObservedMonthCount": prefix_count,
         "continuousPostGapMonthCount": len(tail_rows),
         "validRollingWindowCount10y": len(calculated_cagrs),
@@ -347,13 +369,30 @@ def _reported_gap_metadata(value: Any) -> dict[str, Any] | None:
     if not match:
         return None
     months = re.findall(r"\b\d{4}-\d{2}\b", match.group("months"))
-    if not months:
+    if not months or any(not _valid_month_string(month) for month in months):
+        return None
+    count = int(match.group("count"))
+    start_index = _month_index(months[0])
+    end_index = _month_index(months[-1])
+    if count <= 0 or end_index < start_index or end_index - start_index + 1 != count:
         return None
     return {
         "identity": match.group("identity"),
         "start": months[0],
         "end": months[-1],
-        "count": int(match.group("count")),
+        "count": count,
+    }
+
+
+def _expected_monthly_return_gap(
+    reported_price_gap: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    if reported_price_gap is None:
+        return None
+    return {
+        "start": reported_price_gap["start"],
+        "end": _month_string(_month_index(reported_price_gap["end"]) + 1),
+        "count": reported_price_gap["count"] + 1,
     }
 
 
@@ -521,6 +560,14 @@ def _listing_period_is_sufficient(
 def _month_index(value: Any) -> int:
     year, month = (int(part) for part in _text(value)[:7].split("-"))
     return year * 12 + month - 1
+
+
+def _valid_month_string(value: Any) -> bool:
+    text = _text(value)
+    if not re.fullmatch(r"\d{4}-\d{2}", text):
+        return False
+    year, month = (int(part) for part in text.split("-"))
+    return year >= 1 and 1 <= month <= 12
 
 
 def _month_string(index: int) -> str:
