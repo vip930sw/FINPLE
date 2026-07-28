@@ -17,6 +17,7 @@ import {
   buildSimulatorAiScenarioContext,
   getProviderScenarioContext,
 } from "./aiScenarioInterpretationContext.js";
+import { reconcileIdentityScopedAssetMetadata } from "../../../data/tickers/portfolioAssetIdentityMetadata.js";
 
 function monthEnd(index) {
   const date = new Date(Date.UTC(2018, index + 1, 0));
@@ -330,6 +331,67 @@ test("only the pinned legacy Production bridge preserves Step 4 for existing ass
       identity: "US:QQQ",
     },
   );
+});
+
+test("same-row identity replacement clears stale review policy and restores pinned legacy Step 4", () => {
+  const catalogSnapshot = {
+    preview: { status: "production_app_export_ready" },
+    candidates: Array.from({ length: 6029 }, (_, index) => ({
+      ticker: String(index),
+    })),
+  };
+  const reviewGatedAsset = {
+    id: "asset-row-1",
+    market: "US",
+    ticker: "TQQQ",
+    targetEvaluationAmount: 10000,
+    reviewApprovalPolicyVersion:
+      "leveraged-inverse-review-policy-v1-step114",
+    reviewApprovalStatus: "ready",
+    reviewApprovalReasonCodes: [],
+    sourceHash: "review-source",
+  };
+  const replacementAsset = reconcileIdentityScopedAssetMetadata(
+    reviewGatedAsset,
+    { market: "US", ticker: "QQQ" },
+    {
+      market: "US",
+      ticker: "QQQ",
+      dataStatus: "ready",
+      metricsStatus: "ready",
+    },
+  );
+  const result = buildAppExportScenarioResult({
+    activePortfolio: {
+      id: "portfolio-same-row-replacement",
+      name: "Same row replacement",
+    },
+    assets: [replacementAsset],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    rowsByIdentity: { "US:QQQ": legacyRows("US", "QQQ") },
+    manifest,
+    release: {
+      contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+      universeVersion: "finple-universe-v2-2026-07-24",
+      sourceAppExportSha256: "e".repeat(64),
+      metricDataThroughMonth: "2026-06",
+    },
+    runtimeMode: "production_app_export_ready",
+    monthlyRowContract: "legacy_v1",
+    legacyProductionBindingVerified: true,
+    simulationCount: 24,
+  });
+
+  assert.equal(replacementAsset.id, "asset-row-1");
+  assert.equal(replacementAsset.reviewApprovalPolicyVersion, "");
+  assert.equal(result.status, "ready", JSON.stringify(result.dataQuality));
+  assert.equal(catalogSnapshot.preview.status, "production_app_export_ready");
+  assert.equal(catalogSnapshot.candidates.length, 6029);
 });
 
 test("review-approved non-proxy TQQQ SOXL and KODEX 200 remain scenario-ready", () => {

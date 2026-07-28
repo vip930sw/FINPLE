@@ -15,6 +15,7 @@ import {
   isNonOrdinaryDistribution,
   resolveDistributionYieldFields,
 } from "./distributionPolicy";
+import { reconcileIdentityScopedAssetMetadata } from "./portfolioAssetIdentityMetadata";
 
 const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
 const toNumber = (value) => {
@@ -656,9 +657,16 @@ export function hydratePortfolioAssetFromActiveCatalog(
       .filter((field) => patch[field] !== undefined)
       .map((field) => [field, patch[field]]),
   );
+  const identityHydratedAsset = reconcileIdentityScopedAssetMetadata(
+    asset,
+    {
+      market: patch.market || asset?.market,
+      ticker: patch.ticker || asset?.ticker,
+    },
+    catalogFields,
+  );
   return {
-    ...asset,
-    ...catalogFields,
+    ...identityHydratedAsset,
     dividendYield: isNonOrdinaryDistribution(patch)
       ? null
       : patch.dividendYield,

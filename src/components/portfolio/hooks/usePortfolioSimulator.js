@@ -70,6 +70,7 @@ import {
   PRODUCTION_APP_EXPORT_LOADING_STATUS,
   subscribeScreenerCandidateSnapshot,
 } from "../../../data/tickers/screenerCandidateLoader";
+import { reconcileIdentityScopedAssetMetadata } from "../../../data/tickers/portfolioAssetIdentityMetadata";
 import { loadMonthlyReturnsForIdentities } from "../../../data/tickers/appPreviewDataSource";
 import {
   loadProductionMonthlyReturnsForIdentities,
@@ -362,7 +363,93 @@ export default function usePortfolioSimulator() {
   function equalizeTargetWeights() { const rows = targetWeightRows; if (rows.length === 0) { window.alert("균등분배할 수 있는 자산이 없습니다. 자산을 먼저 추가해 주세요."); return; } const baseWeight = Math.floor((100 / rows.length) * 100) / 100; const nextDrafts = {}; rows.forEach((row, rowIndex) => { const value = rowIndex === rows.length - 1 ? Number((100 - baseWeight * (rows.length - 1)).toFixed(2)) : baseWeight; nextDrafts[row.key] = String(value); }); setTargetWeightDrafts(nextDrafts); setAssetLookupSummary("전체 자산 목표비중을 균등분배했습니다. 계산 버튼을 누르면 평가금액이 반영됩니다."); }
   function applyTargetWeights() { const startValue = Number(simulationStartValue || 0); if (startValue <= 0) { window.alert("시작 평가금액이 0원입니다. 시작 평가금액을 입력해 주세요."); return; } const rows = targetWeightRows.filter((row) => row.ticker); if (rows.length === 0) { window.alert("목표비중을 적용할 자산이 없습니다."); return; } const nextTotal = rows.reduce((sum, row) => sum + row.targetWeight, 0); if (Math.abs(nextTotal - 100) > 0.01) { window.alert("목표비중 합계를 100%로 맞춘 뒤 적용해 주세요."); return; } const targetMap = new Map(rows.map((row) => [row.index, row.targetWeight])); let missingPriceCount = 0; setAssets((previousAssets) => previousAssets.map((asset, index) => { if (!targetMap.has(index)) return asset; const price = Number(asset.price || 0); const targetWeight = Number(targetMap.get(index) || 0); const targetValue = startValue * (targetWeight / 100); const quantity = price > 0 ? Number((targetValue / price).toFixed(6)) : 0; if (price <= 0 && targetWeight > 0) missingPriceCount += 1; return { ...asset, quantity, targetEvaluationAmount: Number(targetValue.toFixed(0)) }; })); setTargetWeightDrafts({}); setAssetLookupSummary(missingPriceCount > 0 ? `목표비중을 적용했습니다. 현재가 없는 자산 ${missingPriceCount}개는 평가금액 기준으로 계산하고, 수량은 현재가 조회 후 보정됩니다.` : "목표비중을 적용했습니다. 시작 평가금액 기준으로 수량과 평가금액이 재계산되었습니다."); }
 
-  function updateAsset(index, field, value) { const nextAssets = [...assets]; const currentAsset = nextAssets[index]; if (!currentAsset) return; const currentPlan = getCurrentPlanConfig(); const assetLimit = currentPlan.limits.assetsPerPortfolio; if (assetLimit && assetLimit !== Infinity && isActivatingEmptyAsset(currentAsset, field, value) && countRealAssets(nextAssets) >= assetLimit) { showPlanLimitNotice("asset"); return; } if (field === "targetWeight") { updateTargetWeightDraft(index, value); return; } if (field === "ticker") { const currentKey = getAssetDraftKey(currentAsset, index); setTargetWeightDrafts((previousDrafts) => { const nextDrafts = { ...previousDrafts }; delete nextDrafts[currentKey]; return nextDrafts; }); const nextTicker = normalizeTicker(value); const previousTicker = normalizeTicker(currentAsset.ticker); const tickerChanged = nextTicker !== previousTicker; nextAssets[index] = normalizeAsset({ ...currentAsset, ticker: nextTicker, name: tickerChanged ? "" : currentAsset.name, price: tickerChanged ? 0 : currentAsset.price, targetEvaluationAmount: tickerChanged ? null : currentAsset.targetEvaluationAmount, cagr: tickerChanged ? 0 : currentAsset.cagr, beta: tickerChanged ? 0 : currentAsset.beta, mdd: tickerChanged ? 0 : currentAsset.mdd, dividendYield: tickerChanged ? null : currentAsset.dividendYield, displayDividendYield: tickerChanged ? "" : currentAsset.displayDividendYield, exposureType: tickerChanged ? "" : currentAsset.exposureType, distributionType: tickerChanged ? "unknown" : currentAsset.distributionType, distributionFrequency: tickerChanged ? "unknown" : currentAsset.distributionFrequency, trailingDistributionYield: tickerChanged ? null : currentAsset.trailingDistributionYield, cashDistributionYieldTtm: tickerChanged ? null : currentAsset.cashDistributionYieldTtm, distributionYieldPolicy: tickerChanged ? "" : currentAsset.distributionYieldPolicy, distributionCalculationStatus: tickerChanged ? "" : currentAsset.distributionCalculationStatus, priceMode: tickerChanged ? "manual" : currentAsset.priceMode, metricMode: tickerChanged ? "manual" : currentAsset.metricMode, dataSource: tickerChanged ? "manual" : currentAsset.dataSource, cacheMode: tickerChanged ? null : currentAsset.cacheMode, rawPrice: tickerChanged ? null : currentAsset.rawPrice, rawCurrency: tickerChanged ? null : currentAsset.rawCurrency, exchangeRate: tickerChanged ? null : currentAsset.exchangeRate, lastUpdatedAt: tickerChanged ? null : currentAsset.lastUpdatedAt }, index); } else { nextAssets[index] = { ...currentAsset, [field]: value }; } setAssets(nextAssets); }
+  function updateAsset(index, field, value) {
+    const nextAssets = [...assets];
+    const currentAsset = nextAssets[index];
+    if (!currentAsset) return;
+    const currentPlan = getCurrentPlanConfig();
+    const assetLimit = currentPlan.limits.assetsPerPortfolio;
+    if (
+      assetLimit &&
+      assetLimit !== Infinity &&
+      isActivatingEmptyAsset(currentAsset, field, value) &&
+      countRealAssets(nextAssets) >= assetLimit
+    ) {
+      showPlanLimitNotice("asset");
+      return;
+    }
+    if (field === "targetWeight") {
+      updateTargetWeightDraft(index, value);
+      return;
+    }
+    if (field === "ticker") {
+      const currentKey = getAssetDraftKey(currentAsset, index);
+      setTargetWeightDrafts((previousDrafts) => {
+        const nextDrafts = { ...previousDrafts };
+        delete nextDrafts[currentKey];
+        return nextDrafts;
+      });
+      const nextTicker = normalizeTicker(value);
+      const previousTicker = normalizeTicker(currentAsset.ticker);
+      const tickerChanged = nextTicker !== previousTicker;
+      const identityBaseAsset = reconcileIdentityScopedAssetMetadata(
+        currentAsset,
+        {
+          market: currentAsset.market,
+          ticker: nextTicker,
+        },
+      );
+      nextAssets[index] = normalizeAsset(
+        {
+          ...identityBaseAsset,
+          ticker: nextTicker,
+          name: tickerChanged ? "" : currentAsset.name,
+          price: tickerChanged ? 0 : currentAsset.price,
+          targetEvaluationAmount: tickerChanged
+            ? null
+            : currentAsset.targetEvaluationAmount,
+          cagr: tickerChanged ? 0 : currentAsset.cagr,
+          beta: tickerChanged ? 0 : currentAsset.beta,
+          mdd: tickerChanged ? 0 : currentAsset.mdd,
+          dividendYield: tickerChanged ? null : currentAsset.dividendYield,
+          displayDividendYield: tickerChanged
+            ? ""
+            : currentAsset.displayDividendYield,
+          exposureType: tickerChanged ? "" : currentAsset.exposureType,
+          distributionType: tickerChanged
+            ? "unknown"
+            : currentAsset.distributionType,
+          distributionFrequency: tickerChanged
+            ? "unknown"
+            : currentAsset.distributionFrequency,
+          trailingDistributionYield: tickerChanged
+            ? null
+            : currentAsset.trailingDistributionYield,
+          cashDistributionYieldTtm: tickerChanged
+            ? null
+            : currentAsset.cashDistributionYieldTtm,
+          distributionYieldPolicy: tickerChanged
+            ? ""
+            : currentAsset.distributionYieldPolicy,
+          distributionCalculationStatus: tickerChanged
+            ? ""
+            : currentAsset.distributionCalculationStatus,
+          priceMode: tickerChanged ? "manual" : currentAsset.priceMode,
+          metricMode: tickerChanged ? "manual" : currentAsset.metricMode,
+          dataSource: tickerChanged ? "manual" : currentAsset.dataSource,
+          cacheMode: tickerChanged ? null : currentAsset.cacheMode,
+          rawPrice: tickerChanged ? null : currentAsset.rawPrice,
+          rawCurrency: tickerChanged ? null : currentAsset.rawCurrency,
+          exchangeRate: tickerChanged ? null : currentAsset.exchangeRate,
+          lastUpdatedAt: tickerChanged ? null : currentAsset.lastUpdatedAt,
+        },
+        index,
+      );
+    } else {
+      nextAssets[index] = { ...currentAsset, [field]: value };
+    }
+    setAssets(nextAssets);
+  }
   function getAssetStatusKey(asset, index) { return asset?.id || String(index); }
   function isRecentlyFetchedAsset(asset) { if (!asset?.lastUpdatedAt) return false; if (!String(asset?.dataSource || "").includes("alpha-vantage")) return false; const fetchedAt = new Date(asset.lastUpdatedAt).getTime(); if (!Number.isFinite(fetchedAt)) return false; return Date.now() - fetchedAt < 24 * 60 * 60 * 1000; }
   function isRateLimitMessage(message = "") { return /Alpha Vantage|호출 제한|rate limit|premium/i.test(String(message)); }

@@ -92,6 +92,10 @@ test("fixed Production release bindings and exact counts are fail-closed", () =>
 test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary stay unchanged", () => {
   const hook = read("src/components/portfolio/hooks/usePortfolioSimulator.js");
   const scenario = read("src/components/portfolio/utils/appPreviewScenarioService.js");
+  const loader = read("src/data/tickers/screenerCandidateLoader.js");
+  const identityMetadata = read(
+    "src/data/tickers/portfolioAssetIdentityMetadata.js",
+  );
   const simulator = read("src/components/PortfolioSimulator.jsx");
   const personal = read("src/components/PersonalPage.jsx");
   assert.match(hook, /loadProductionMonthlyReturnsForIdentities/);
@@ -100,6 +104,13 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   assert.doesNotMatch(scenario, /activateCatalogFallback/);
   assert.match(scenario, /failureDomain: identityUnavailable \? "identity_unavailable" : "scenario_loader"/);
   assert.match(scenario, /production_monthly_identity_unavailable/);
+  assert.match(hook, /reconcileIdentityScopedAssetMetadata/);
+  assert.match(loader, /reconcileIdentityScopedAssetMetadata/);
+  assert.match(identityMetadata, /previousIdentity\.market !== nextIdentity\.market/);
+  assert.match(identityMetadata, /previousIdentity\.ticker !== nextIdentity\.ticker/);
+  assert.match(identityMetadata, /reviewApprovalPolicyVersion: ""/);
+  assert.match(identityMetadata, /sourceHash: ""/);
+  assert.match(identityMetadata, /proxyLineageStatus: ""/);
   assert.match(simulator, /enableProductionAppExport/);
   assert.doesNotMatch(
     personal,
