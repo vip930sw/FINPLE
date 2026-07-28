@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import math
 import statistics
+import tempfile
 import unittest
 from datetime import date
+from pathlib import Path
 
 from tools.canonical_csv.config import PipelineConfig
 from tools.canonical_csv.market_data import (
@@ -13,11 +15,15 @@ from tools.canonical_csv.market_data import (
     DailyObservation,
     DividendData,
     MarketDataBundle,
+    RAW_UNADJUSTED_CLOSE,
+    SPLIT_ADJUSTED_CLOSE,
+    price_series,
     split_adjusted_price_series,
 )
 from tools.canonical_csv.metrics import (
     MetricCalculationError,
     calculate_annualized_volatility,
+    calculate_asset_metrics,
     calculate_beta,
     calculate_cagr,
     calculate_dividend_yield,
@@ -135,6 +141,93 @@ class MetricTests(unittest.TestCase):
             min_observations=3,
         )
         self.assertLess(volatility, 20.0)
+
+    def test_split_adjusted_close_with_event_is_not_adjusted_twice(self) -> None:
+        bundle = MarketDataBundle(
+            (
+                DailyObservation(date(2024, 1, 1), 50.0),
+                DailyObservation(date(2024, 1, 2), 51.0),
+                DailyObservation(
+                    date(2024, 1, 3),
+                    51.0,
+                    split_factor=2.0,
+                ),
+                DailyObservation(date(2024, 1, 4), 52.0),
+            ),
+            DividendData(DIVIDEND_CONFIRMED_ZERO, 0.0),
+            SPLIT_ADJUSTED_CLOSE,
+        )
+        points = price_series(bundle, date(2024, 1, 4))
+        self.assertEqual(
+            [value for _, value in points],
+            [50.0, 51.0, 51.0, 52.0],
+        )
+
+    def test_raw_unadjusted_close_is_adjusted_exactly_once(self) -> None:
+        bundle = MarketDataBundle(
+            (
+                DailyObservation(date(2024, 1, 1), 100.0),
+                DailyObservation(date(2024, 1, 2), 102.0),
+                DailyObservation(
+                    date(2024, 1, 3),
+                    51.0,
+                    split_factor=2.0,
+                ),
+            ),
+            DividendData(DIVIDEND_CONFIRMED_ZERO, 0.0),
+            RAW_UNADJUSTED_CLOSE,
+        )
+        self.assertEqual(
+            [value for _, value in price_series(bundle, date(2024, 1, 3))],
+            [50.0, 51.0, 51.0],
+        )
+
+    def test_invalid_or_blank_price_basis_fails(self) -> None:
+        for basis in ("", "ambiguous_close"):
+            with self.subTest(basis=basis):
+                bundle = MarketDataBundle(
+                    (DailyObservation(date(2024, 1, 1), 100.0),),
+                    DividendData(DIVIDEND_CONFIRMED_ZERO, 0.0),
+                    basis,
+                )
+                with self.assertRaisesRegex(
+                    Exception,
+                    "unsupported_or_missing_price_basis",
+                ):
+                    price_series(bundle, date(2024, 1, 1))
+
+    def test_invalid_benchmark_basis_fails_under_same_contract(self) -> None:
+        observations = tuple(
+            DailyObservation(observed_on, value)
+            for observed_on, value in _month_points(months=25)
+        )
+        asset = MarketDataBundle(
+            observations,
+            DividendData(DIVIDEND_CONFIRMED_ZERO, 0.0),
+            SPLIT_ADJUSTED_CLOSE,
+        )
+        benchmark = MarketDataBundle(
+            observations,
+            DividendData(DIVIDEND_CONFIRMED_ZERO, 0.0),
+            "",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = PipelineConfig(
+                source_canonical_path=root / "source.csv",
+                universe_path=root / "universe.csv",
+                output_candidate_path=root / "candidate.csv",
+                as_of_date=date(2020, 1, 1),
+                rolling_cagr_window_years=(1,),
+                min_rolling_windows=6,
+                min_beta_observations=2,
+                min_volatility_observations=2,
+            )
+            with self.assertRaisesRegex(
+                MetricCalculationError,
+                "unsupported_or_missing_price_basis",
+            ):
+                calculate_asset_metrics(asset, benchmark, config)
 
     def test_cash_dividend_is_not_reinvested_into_price_cagr(self) -> None:
         without_dividend = (

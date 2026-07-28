@@ -72,6 +72,12 @@ server/node_modules/
 dist/
 server/dist/
 
+# FINPLE canonical CSV local cache and run artifacts
+.canonical_csv_cache/
+*.checkpoint.json
+*.candidate.csv
+*.canonical-live-smoke.json
+
 # FINPLE extra env files
 server/*.env
 *.env

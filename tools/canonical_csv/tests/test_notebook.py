@@ -22,6 +22,12 @@ class NotebookStructureTests(unittest.TestCase):
         self.assertIn("build_canonical_candidate", source)
         self.assertIn("YFinanceMarketDataProvider", source)
         self.assertIn("AS_OF_DATE", source)
+        self.assertIn("SOURCE_CANONICAL_PATH", source)
+        self.assertIn("CACHE_DIR", source)
+        self.assertIn("CHUNK_SIZE", source)
+        self.assertIn("RESUME", source)
+        self.assertIn("RETRY_COUNT", source)
+        self.assertIn("PersistentCachedMarketDataProvider", source)
         self.assertNotIn("Adj Close", source)
         self.assertNotIn("Total Return", source)
 

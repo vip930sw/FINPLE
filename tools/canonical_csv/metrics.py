@@ -13,7 +13,8 @@ from .market_data import (
     DIVIDEND_CONFIRMED_ZERO,
     MarketDataBundle,
     MarketDataError,
-    split_adjusted_price_series,
+    SPLIT_ADJUSTED_CLOSE,
+    price_series,
 )
 
 
@@ -35,7 +36,6 @@ class AssetMetrics:
     mdd: float
     annualizedVolatility: float
     volatilityObservationCount: int
-    dividendYield: float
     priceDataEndDate: str
     priceBasis: str
 
@@ -204,7 +204,7 @@ def calculate_annualized_volatility(
     return statistics.stdev(returns) * math.sqrt(252.0) * 100.0, len(returns)
 
 
-def calculate_dividend_yield(
+def calculate_cash_yield(
     bundle: MarketDataBundle,
     latest_price: float,
 ) -> float:
@@ -224,30 +224,18 @@ def calculate_dividend_yield(
     return float(cash) / _finite_positive(latest_price, "latest price") * 100.0
 
 
+# Compatibility name for callers that explicitly use ordinary dividends.
+calculate_dividend_yield = calculate_cash_yield
+
+
 def calculate_asset_metrics(
     asset_bundle: MarketDataBundle,
     benchmark_bundle: MarketDataBundle,
     config: PipelineConfig,
 ) -> AssetMetrics:
-    if asset_bundle.price_basis != "split_adjusted_close_ex_dividends":
-        raise MetricCalculationError(
-            "invalid_price_basis",
-            f"unsupported price basis: {asset_bundle.price_basis}",
-        )
-    if benchmark_bundle.price_basis != "split_adjusted_close_ex_dividends":
-        raise MetricCalculationError(
-            "invalid_benchmark_price_basis",
-            f"unsupported benchmark price basis: {benchmark_bundle.price_basis}",
-        )
     try:
-        asset_points = split_adjusted_price_series(
-            asset_bundle.observations,
-            config.effective_as_of_date,
-        )
-        benchmark_points = split_adjusted_price_series(
-            benchmark_bundle.observations,
-            config.effective_as_of_date,
-        )
+        asset_points = price_series(asset_bundle, config.as_of_date)
+        benchmark_points = price_series(benchmark_bundle, config.as_of_date)
     except MarketDataError as error:
         raise MetricCalculationError("market_data_invalid", str(error)) from error
     raw_cagr = calculate_cagr(asset_points)
@@ -267,10 +255,6 @@ def calculate_asset_metrics(
         lookback=config.volatility_lookback_observations,
         min_observations=config.min_volatility_observations,
     )
-    dividend_yield = calculate_dividend_yield(
-        asset_bundle,
-        asset_points[-1][1],
-    )
     return AssetMetrics(
         rawPriceCagr=round(raw_cagr, 8),
         rollingCagrMedian=round(rolling_median, 8),
@@ -281,7 +265,6 @@ def calculate_asset_metrics(
         mdd=round(calculate_mdd(asset_points), 8),
         annualizedVolatility=round(volatility, 8),
         volatilityObservationCount=volatility_count,
-        dividendYield=round(dividend_yield, 8),
         priceDataEndDate=asset_points[-1][0].isoformat(),
-        priceBasis=asset_bundle.price_basis,
+        priceBasis=SPLIT_ADJUSTED_CLOSE,
     )

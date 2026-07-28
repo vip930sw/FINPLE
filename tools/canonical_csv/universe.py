@@ -42,10 +42,10 @@ def normalize_ticker(value: object, market: str) -> str:
     if not ticker:
         raise UniverseError("ticker must not be blank")
     if market == "KR":
-        if ticker.isdigit():
-            ticker = ticker.zfill(6)
         if len(ticker) != 6:
             raise UniverseError(f"KR ticker must be six characters: {ticker}")
+        if not ticker.isalnum():
+            raise UniverseError(f"KR ticker must be alphanumeric: {ticker}")
     return ticker
 
 
@@ -73,6 +73,8 @@ class UniverseAsset:
     benchmark_provider_symbol: str
     exposure_type: str
     distribution_type: str
+    distribution_frequency: str
+    row_data: dict[str, str]
 
     @property
     def identity(self) -> str:
@@ -121,6 +123,14 @@ def load_universe(path: Path | str) -> list[UniverseAsset]:
                 distribution_type=str(
                     row.get("distributionType") or "unknown"
                 ).strip().lower(),
+                distribution_frequency=str(
+                    row.get("distributionFrequency") or "unknown"
+                ).strip().lower(),
+                row_data={
+                    str(key): str(value or "").strip()
+                    for key, value in row.items()
+                    if key is not None
+                },
             )
         except UniverseError as error:
             raise UniverseError(f"{source_path}:{row_number}: {error}") from error

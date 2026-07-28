@@ -1,0 +1,24 @@
+name: Canonical CSV pipeline
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/canonical-csv-pipeline.yml"
+      - "notebooks/FINPLE_CANONICAL_CSV_MONTHLY_BUILD.ipynb"
+      - "tools/canonical_csv/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-python-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run canonical CSV tests without live provider access
+        run: python -m unittest discover -s tools/canonical_csv/tests -v
