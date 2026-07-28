@@ -30,6 +30,7 @@ import {
   PRODUCTION_SOURCE_GIT_MAIN_SHA,
   PRODUCTION_UNIVERSE_VERSION,
   assertProductionReleaseManifest,
+  buildProductionCatalogPolicyByIdentity,
   decodeProductionMonthlySeries,
   getProductionAppExportRequestLog,
   loadProductionAppExportCatalog,
@@ -99,7 +100,10 @@ function distribute(total, buckets) {
   );
 }
 
-function makeFixture({ legacyLineage = false } = {}) {
+function makeFixture({
+  legacyLineage = false,
+  overlayRowOverrides = {},
+} = {}) {
   const identities = canonicalIdentities();
   assert.equal(identities.length, 6029);
   const dividendYields = new Map([
@@ -143,6 +147,7 @@ function makeFixture({ legacyLineage = false } = {}) {
       internalPreviewReviewOnly: true,
       productionPublishReady: false,
       appExportApproved: false,
+      ...(overlayRowOverrides[identity] || {}),
     };
   });
   const overlay = {
@@ -361,10 +366,74 @@ test("production catalog validates 6029 rows and fixed RM/monthly bindings", asy
   assert.equal(Object.keys(catalog.index.assets).length, 5347);
   assert.equal(catalog.release.monthlyReturnRowCount, 701485);
   assert.equal(catalog.monthlyRowContract, MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2);
+  assert.equal(Object.keys(catalog.catalogPolicyByIdentity).length, 6029);
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity), true);
+  assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity["US:QQQ"]), true);
   assert.equal(
     catalog.overlay.rows.find((row) => row.identity === "US:QQQ").selectedCagr,
     17.11,
   );
+});
+
+test("verified overlay identity policy owns pinned legacy eligibility", async () => {
+  resetProductionAppExportDataSourceForTests();
+  const fixture = makeFixture({
+    overlayRowOverrides: {
+      "US:TQQQ": {
+        reviewFlag: "review_required",
+        reviewApprovalPolicyVersion:
+          "leveraged-inverse-review-policy-v1-step114",
+      },
+      "US:AIPI": {
+        dataStatus: "insufficient_history",
+        reviewFlag: "review_required",
+        exposureType: "single_stock_option_income",
+      },
+      "US:SPY": {
+        reviewApprovalPolicyVersion: false,
+      },
+    },
+  });
+  const catalog = await loadProductionAppExportCatalog(options(fixture));
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:TQQQ"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:TQQQ"].reviewFlag,
+    "review_required",
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:AIPI"].ordinaryDistribution,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:AIPI"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:SPY"].policyEvidenceValid,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:SPY"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:NOT-IN-CATALOG"],
+    undefined,
+  );
+
+  const rebuilt = buildProductionCatalogPolicyByIdentity(fixture.overlay);
+  assert.deepEqual(rebuilt, catalog.catalogPolicyByIdentity);
 });
 
 test("an arbitrary seven-field Production artifact is rejected", async () => {
@@ -424,6 +493,11 @@ test("production monthly loader lazy-loads one shard and deduplicates concurrent
   assert.equal(first.rowsByIdentity["US:QQQ"][0].isProxy, false);
   assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyTicker, "");
   assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyLineageStatus, "non_proxy_proven");
+  assert.equal(
+    first.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(Object.keys(first.catalogPolicyByIdentity).length, 6029);
   assert.deepEqual(second.rowsByIdentity, first.rowsByIdentity);
   assert.equal(
     requestCounts.get(`${BASE_URL}/monthly-returns/monthly-returns-00.json`),

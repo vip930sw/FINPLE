@@ -315,6 +315,8 @@ export default function usePortfolioSimulator() {
           monthlyRowContract: monthlyReturns.monthlyRowContract || "proxy_aware_v2",
           legacyProductionBindingVerified:
             monthlyReturns.legacyProductionBindingVerified === true,
+          catalogPolicyByIdentity:
+            monthlyReturns.catalogPolicyByIdentity || null,
           runtimeMode: screenerCandidateSnapshot.preview.status,
         }),
     })

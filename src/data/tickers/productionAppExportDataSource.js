@@ -1,4 +1,5 @@
 import { sha256Hex } from "../../utils/sha256.js";
+import { isNonOrdinaryDistribution } from "./distributionPolicy.js";
 
 export const PRODUCTION_RELEASE_CONTRACT_VERSION =
   "finple-production-app-export-release-v1-step114-2zc";
@@ -108,6 +109,73 @@ function normalizeIdentity(value) {
   const ticker = tickerParts.join(":").trim().toUpperCase();
   const normalizedMarket = market.trim().toUpperCase();
   return normalizedMarket && ticker ? `${normalizedMarket}:${ticker}` : "";
+}
+
+function normalizePolicyValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isOptionalPolicyString(value) {
+  return value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "string";
+}
+
+export function buildProductionCatalogPolicyByIdentity(overlay = {}) {
+  const records = {};
+  for (const row of Array.isArray(overlay?.rows) ? overlay.rows : []) {
+    const identity = normalizeIdentity(row?.identity || `${row?.market || ""}:${row?.ticker || ""}`);
+    if (!identity) continue;
+    const dataStatus = normalizePolicyValue(row?.dataStatus);
+    const metricsStatus = normalizePolicyValue(row?.metricsStatus) || dataStatus;
+    const reviewSignals = [
+      row?.reviewFlag,
+      row?.reviewTag,
+    ].map(normalizePolicyValue).filter(Boolean);
+    const reviewFlag = reviewSignals.find((value) => value !== "none") ||
+      (reviewSignals.includes("none") ? "none" : "");
+    const reviewApprovalStatus = normalizePolicyValue(row?.reviewApprovalStatus);
+    const reviewPolicyValues = [
+      row?.reviewApprovalPolicyVersion,
+      row?.reviewPolicyVersion,
+      row?.reviewPolicy,
+    ];
+    const policyEvidenceValid = [
+      row?.dataStatus,
+      row?.metricsStatus,
+      row?.reviewFlag,
+      row?.reviewTag,
+      row?.reviewApprovalStatus,
+      ...reviewPolicyValues,
+    ].every(isOptionalPolicyString);
+    const reviewPolicy =
+      reviewPolicyValues.map(normalizePolicyValue).find(Boolean) || "";
+    const ordinaryDistribution =
+      normalizePolicyValue(row?.assetType) !== "cash" &&
+      !isNonOrdinaryDistribution(row);
+    records[identity] = Object.freeze({
+      identity,
+      dataStatus,
+      metricsStatus,
+      reviewFlag,
+      reviewApprovalPolicyVersion:
+        normalizePolicyValue(row?.reviewApprovalPolicyVersion),
+      reviewApprovalStatus,
+      reviewPolicy,
+      policyEvidenceValid,
+      ordinaryDistribution,
+      ordinaryLegacyEligible:
+        policyEvidenceValid &&
+        ordinaryDistribution &&
+        dataStatus === "ready" &&
+        metricsStatus === "ready" &&
+        reviewFlag === "none" &&
+        ["", "none"].includes(reviewApprovalStatus) &&
+        !reviewPolicy,
+    });
+  }
+  return Object.freeze(records);
 }
 
 function buildUrl(baseUrl, path) {
@@ -434,7 +502,12 @@ export function isProductionAppExportConfigured(overrides = {}) {
 export async function loadProductionAppExportCatalog(options = {}) {
   const config = getProductionAppExportRuntimeConfig(options);
   if (!config.enabled) {
-    return { enabled: false, status: "production_v1_fallback", release: null };
+    return {
+      enabled: false,
+      status: "production_v1_fallback",
+      release: null,
+      catalogPolicyByIdentity: Object.freeze({}),
+    };
   }
   if (!config.baseUrl ||
       !SHA256_PATTERN.test(config.releaseManifestSha256) ||
@@ -489,6 +562,8 @@ export async function loadProductionAppExportCatalog(options = {}) {
       ]);
       assertMetricsOverlay(overlay, release);
       const monthlyRowContract = assertMonthlyIndex(index, release, config);
+      const catalogPolicyByIdentity =
+        buildProductionCatalogPolicyByIdentity(overlay);
       return {
         enabled: true,
         status: "production_app_export_ready",
@@ -500,6 +575,7 @@ export async function loadProductionAppExportCatalog(options = {}) {
         monthlyRowContract,
         legacyProductionBindingVerified:
           monthlyRowContract === MONTHLY_ROW_CONTRACT_LEGACY_V1,
+        catalogPolicyByIdentity,
       };
     })().catch((error) => {
       catalogPromise = null;
@@ -601,6 +677,7 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
       rowsByIdentity: {},
       missingIdentities: normalizedIdentities,
       requestedShardPaths: [],
+      catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
     };
   }
   const missingIdentities = normalizedIdentities
@@ -612,6 +689,7 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
       rowsByIdentity: {},
       missingIdentities,
       requestedShardPaths: [],
+      catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
     };
   }
   const requestedShardPaths = [...new Set(
@@ -648,6 +726,7 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
     requestedShardPaths,
     monthlyRowContract: catalog.monthlyRowContract,
     legacyProductionBindingVerified: catalog.legacyProductionBindingVerified,
+    catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
   };
 }
 

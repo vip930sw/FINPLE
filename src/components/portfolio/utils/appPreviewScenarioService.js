@@ -118,14 +118,51 @@ function statusMarksProxy(value) {
   return typeof value === "string" && PROXY_STATUS_MARKER_PATTERN.test(value.trim());
 }
 
+function catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity) {
+  if (
+    !catalogPolicyByIdentity ||
+    typeof catalogPolicyByIdentity !== "object" ||
+    Array.isArray(catalogPolicyByIdentity) ||
+    !Object.isFrozen(catalogPolicyByIdentity) ||
+    !Object.prototype.hasOwnProperty.call(catalogPolicyByIdentity, identity)
+  ) {
+    return false;
+  }
+  const record = catalogPolicyByIdentity[identity];
+  if (
+    !record ||
+    typeof record !== "object" ||
+    !Object.isFrozen(record)
+  ) {
+    return false;
+  }
+  return (
+    normalizeMarket(record.identity?.split(":", 1)[0]) ===
+      normalizeMarket(identity.split(":", 1)[0]) &&
+    normalizeTicker(record.identity?.split(":").slice(1).join(":")) ===
+      normalizeTicker(identity.split(":").slice(1).join(":")) &&
+    record.policyEvidenceValid === true &&
+    record.ordinaryDistribution === true &&
+    record.ordinaryLegacyEligible === true &&
+    String(record.dataStatus || "").trim().toLowerCase() === "ready" &&
+    String(record.metricsStatus || "").trim().toLowerCase() === "ready" &&
+    String(record.reviewFlag || "").trim().toLowerCase() === "none" &&
+    ["", "none"].includes(
+      String(record.reviewApprovalStatus || "").trim().toLowerCase(),
+    ) &&
+    !String(record.reviewApprovalPolicyVersion || "").trim() &&
+    !String(record.reviewPolicy || "").trim()
+  );
+}
+
 function assertNonProxyMonthlyLineage(
   identity,
   rows = [],
   {
-    asset = {},
     runtimeMode = "internal_preview_review_only",
     monthlyRowContract = "proxy_aware_v2",
     legacyProductionBindingVerified = false,
+    catalogPolicyByIdentity = null,
   } = {},
 ) {
   const lineageStates = new Set();
@@ -155,7 +192,7 @@ function assertNonProxyMonthlyLineage(
         runtimeMode === "production_app_export_ready" &&
         monthlyRowContract === "legacy_v1" &&
         legacyProductionBindingVerified === true &&
-        !String(asset?.reviewApprovalPolicyVersion || "").trim();
+        catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity);
       if (!legacyAllowed) {
         throw new AppExportScenarioPolicyError({
           code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
@@ -256,6 +293,7 @@ export function buildAppExportScenarioResult({
   runtimeMode = "internal_preview_review_only",
   monthlyRowContract = "proxy_aware_v2",
   legacyProductionBindingVerified = false,
+  catalogPolicyByIdentity = null,
   simulationCount = 500,
   randomSeed = 1142,
 } = {}) {
@@ -264,12 +302,12 @@ export function buildAppExportScenarioResult({
     .filter((asset) => identityForAsset(asset))
     .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
   const identities = activeAssets.map(identityForAsset);
-  identities.forEach((identity, index) => {
+  identities.forEach((identity) => {
     assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity], {
-      asset: activeAssets[index],
       runtimeMode,
       monthlyRowContract,
       legacyProductionBindingVerified,
+      catalogPolicyByIdentity,
     });
   });
   const weights = normalizeWeights(activeAssets);
