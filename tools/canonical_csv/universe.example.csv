@@ -1,0 +1,5 @@
+market,ticker,name,benchmark,active,includeInSimulator,providerSymbol,benchmarkProviderSymbol,exposureType,distributionType
+US,SPY,SPDR S&P 500 ETF Trust,US:SPY,true,true,SPY,SPY,broad_market,ordinary_cash_dividend
+US,QQQ,Invesco QQQ Trust,US:SPY,true,true,QQQ,SPY,broad_market,ordinary_cash_dividend
+KR,069500,KODEX 200,KR:069500,true,true,069500.KS,069500.KS,broad_market,ordinary_cash_dividend
+US,AIPI,REX AI Equity Premium Income ETF,US:SPY,true,false,AIPI,SPY,single_stock_option_income,single_stock_option_income
