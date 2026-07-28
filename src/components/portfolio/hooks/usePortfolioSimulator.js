@@ -454,19 +454,26 @@ export default function usePortfolioSimulator() {
   function isRecentlyFetchedAsset(asset) { if (!asset?.lastUpdatedAt) return false; if (!String(asset?.dataSource || "").includes("alpha-vantage")) return false; const fetchedAt = new Date(asset.lastUpdatedAt).getTime(); if (!Number.isFinite(fetchedAt)) return false; return Date.now() - fetchedAt < 24 * 60 * 60 * 1000; }
   function isRateLimitMessage(message = "") { return /Alpha Vantage|호출 제한|rate limit|premium/i.test(String(message)); }
   function applyTickerCandidateToAsset(currentAsset, candidate = {}, index = assets.length) {
-    const ticker = normalizeTicker(candidate.ticker || currentAsset.ticker);
     const currentPrice = Number(currentAsset.price || 0);
-    const identityAppliedAsset = {
-      ...currentAsset,
-      ticker,
-      name: candidate.koreanName || candidate.name || currentAsset.name || ticker,
-      market: candidate.market || currentAsset.market || "US",
-      currency: currentAsset.currency || "KRW",
-      priceMode: currentPrice > 0 ? currentAsset.priceMode : "lookup-required",
-      cacheMode: null,
-    };
+    const candidateHydratedAsset = hydratePortfolioAssetFromActiveCatalog(
+      currentAsset,
+      { candidate },
+    );
+    const ticker = normalizeTicker(
+      candidateHydratedAsset.ticker || candidate.ticker || currentAsset.ticker,
+    );
     return normalizeAsset(
-      hydratePortfolioAssetFromActiveCatalog(identityAppliedAsset, { candidate }),
+      {
+        ...candidateHydratedAsset,
+        name:
+          candidate.koreanName ||
+          candidate.name ||
+          currentAsset.name ||
+          ticker,
+        priceMode:
+          currentPrice > 0 ? currentAsset.priceMode : "lookup-required",
+        cacheMode: null,
+      },
       index,
     );
   }
@@ -495,8 +502,15 @@ export default function usePortfolioSimulator() {
     const nonOrdinaryDistribution =
       isNonOrdinaryDistribution(currentAsset) ||
       isNonOrdinaryDistribution(assetData);
+    const identityBaseAsset = reconcileIdentityScopedAssetMetadata(
+      currentAsset,
+      {
+        market: assetData.market || currentAsset.market,
+        ticker: nextTicker,
+      },
+    );
     const priceAppliedAsset = {
-      ...currentAsset,
+      ...identityBaseAsset,
       ticker: nextTicker,
       name: nextName,
       market: assetData.market || currentAsset.market,

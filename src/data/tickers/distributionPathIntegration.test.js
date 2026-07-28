@@ -201,6 +201,67 @@ test("metric overlay follows the public App Preview path through save/reload and
     });
     assert.equal(snapshot.preview.status, "internal_preview_review_only");
 
+    const kodeX200Candidate = loader.findScreenerCandidateByTicker(
+      "069500",
+      "KR",
+    );
+    assert.ok(kodeX200Candidate);
+    const correctedKodeX200 = loader.hydratePortfolioAssetFromActiveCatalog(
+      {
+        id: "persisted-market-mismatch",
+        ticker: "069500",
+        market: "US",
+        quantity: 7,
+        price: 42_000,
+        targetEvaluationAmount: 294_000,
+        targetWeight: 20,
+        reviewApprovalPolicyVersion: "stale-us-policy",
+        reviewApprovalStatus: "blocked",
+        reviewApprovalAudit: { source: "US:069500" },
+        sourceHash: "stale-us-source",
+        proxyLineageStatus: "legacy_unproven",
+        isProxy: true,
+        proxyTicker: "SPY",
+        productionAppExportEnabled: true,
+        productionReleaseContractVersion: "stale-production-release",
+        productionPublishReady: true,
+        appExportApproved: true,
+      },
+      { candidate: kodeX200Candidate },
+    );
+    assert.equal(correctedKodeX200.market, "KR");
+    assert.equal(correctedKodeX200.ticker, "069500");
+    assert.equal(correctedKodeX200.quantity, 7);
+    assert.equal(correctedKodeX200.price, 42_000);
+    assert.equal(correctedKodeX200.targetEvaluationAmount, 294_000);
+    assert.equal(correctedKodeX200.targetWeight, 20);
+    assert.notEqual(
+      correctedKodeX200.reviewApprovalPolicyVersion,
+      "stale-us-policy",
+    );
+    assert.notDeepEqual(correctedKodeX200.reviewApprovalAudit, {
+      source: "US:069500",
+    });
+    assert.notEqual(correctedKodeX200.sourceHash, "stale-us-source");
+    assert.notEqual(correctedKodeX200.proxyLineageStatus, "legacy_unproven");
+    assert.notEqual(correctedKodeX200.proxyTicker, "SPY");
+    assert.notEqual(
+      correctedKodeX200.productionReleaseContractVersion,
+      "stale-production-release",
+    );
+    const reloadedCorrectedKodeX200 =
+      loader.hydratePortfolioAssetFromActiveCatalog(
+        roundTripSavedAsset(correctedKodeX200),
+      );
+    assert.equal(reloadedCorrectedKodeX200.market, "KR");
+    assert.equal(reloadedCorrectedKodeX200.ticker, "069500");
+    assert.notEqual(
+      reloadedCorrectedKodeX200.reviewApprovalPolicyVersion,
+      "stale-us-policy",
+    );
+    assert.notEqual(reloadedCorrectedKodeX200.sourceHash, "stale-us-source");
+    assert.notEqual(reloadedCorrectedKodeX200.proxyTicker, "SPY");
+
     for (const [ticker, expected] of TARGETS) {
       const candidate = loader.findScreenerCandidateByTicker(ticker, "US");
       assert.ok(candidate, ticker);

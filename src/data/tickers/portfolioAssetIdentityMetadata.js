@@ -115,15 +115,25 @@ export function reconcileIdentityScopedAssetMetadata(
   nextIdentity = {},
   metadataPatch = {},
 ) {
-  const identityChanged = hasPortfolioAssetIdentityChanged(asset, nextIdentity);
+  const resolvedIdentity = createPortfolioAssetIdentity(nextIdentity);
+  const identityChanged = hasPortfolioAssetIdentityChanged(
+    asset,
+    resolvedIdentity,
+  );
   const baseAsset = identityChanged
     ? resetIdentityScopedAssetMetadata(asset)
     : asset;
   const definedMetadata = Object.fromEntries(
-    Object.entries(metadataPatch).filter(([, value]) => value !== undefined),
+    Object.entries(metadataPatch).filter(
+      ([field, value]) =>
+        field !== "market" &&
+        field !== "ticker" &&
+        value !== undefined,
+    ),
   );
   return {
     ...baseAsset,
+    ...resolvedIdentity,
     ...definedMetadata,
   };
 }

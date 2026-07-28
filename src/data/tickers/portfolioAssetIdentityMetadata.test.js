@@ -149,6 +149,29 @@ test("market-only identity replacement clears prior policy metadata", () => {
   assert.equal(replacement.sourceHash, "");
 });
 
+test("resolved identity is applied after reset even when candidate metadata omits identity fields", () => {
+  const replacement = reconcileIdentityScopedAssetMetadata(
+    reviewAsset({ ticker: "069500", market: "US" }),
+    { market: "kr", ticker: "069500" },
+    {
+      reviewApprovalPolicyVersion: GAP_POLICY,
+      reviewApprovalStatus: "ready",
+      reviewApprovalAudit: { source: "KR:069500" },
+      sourceHash: "kr-source",
+    },
+  );
+
+  assert.equal(replacement.market, "KR");
+  assert.equal(replacement.ticker, "069500");
+  assert.equal(replacement.reviewApprovalPolicyVersion, GAP_POLICY);
+  assert.deepEqual(replacement.reviewApprovalAudit, {
+    source: "KR:069500",
+  });
+  assert.equal(replacement.sourceHash, "kr-source");
+  assert.equal(replacement.rawSourceSha256, "");
+  assert.equal(replacement.proxyLineageStatus, "");
+});
+
 test("save and hard reload cannot resurrect cleared identity metadata", () => {
   const replacement = reconcileIdentityScopedAssetMetadata(
     reviewAsset(),

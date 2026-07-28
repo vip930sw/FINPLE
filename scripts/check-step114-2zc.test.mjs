@@ -105,6 +105,11 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   assert.match(scenario, /failureDomain: identityUnavailable \? "identity_unavailable" : "scenario_loader"/);
   assert.match(scenario, /production_monthly_identity_unavailable/);
   assert.match(hook, /reconcileIdentityScopedAssetMetadata/);
+  assert.match(
+    hook,
+    /hydratePortfolioAssetFromActiveCatalog\(\s*currentAsset,\s*\{\s*candidate\s*\}/,
+  );
+  assert.doesNotMatch(hook, /identityAppliedAsset/);
   assert.match(loader, /reconcileIdentityScopedAssetMetadata/);
   assert.match(identityMetadata, /previousIdentity\.market !== nextIdentity\.market/);
   assert.match(identityMetadata, /previousIdentity\.ticker !== nextIdentity\.ticker/);
