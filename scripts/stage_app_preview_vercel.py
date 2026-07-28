@@ -27,6 +27,26 @@ import zipfile
 EXPECTED_EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z"
 MANIFEST_NAME = "app-preview-manifest.json"
 FORBIDDEN_SOURCE_ROLE_TOKENS = ("raw_daily_prices", "normalized_month_end")
+LEGACY_MONTHLY_ROW_ENCODING_V1 = [
+    "month",
+    "priceReturn",
+    "totalReturn",
+    "fxReturn",
+    "currency",
+    "benchmarkId",
+    "dataStatus",
+]
+PROXY_AWARE_MONTHLY_ROW_ENCODING_V2 = [
+    "month",
+    "priceReturn",
+    "totalReturn",
+    "fxReturn",
+    "currency",
+    "benchmarkId",
+    "dataStatus",
+    "isProxy",
+    "proxyTicker",
+]
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 PREVIEW_API_BASE_PATH = "/preview-api"
@@ -201,7 +221,21 @@ def validate_preview_api_bundle(static_output_dir: Path, api_upstream_base_url: 
         raise StagingError("Preview JavaScript bundle still contains the local API fallback")
 
 
-def validate_export(export_root: Path) -> dict[str, object]:
+def validate_export(
+    export_root: Path,
+    *,
+    monthly_row_encoding: list[str] | None = None,
+) -> dict[str, object]:
+    expected_monthly_row_encoding = (
+        list(monthly_row_encoding)
+        if monthly_row_encoding is not None
+        else list(PROXY_AWARE_MONTHLY_ROW_ENCODING_V2)
+    )
+    if expected_monthly_row_encoding not in (
+        LEGACY_MONTHLY_ROW_ENCODING_V1,
+        PROXY_AWARE_MONTHLY_ROW_ENCODING_V2,
+    ):
+        raise StagingError("unsupported monthly-return row encoding contract")
     manifest_path = export_root / MANIFEST_NAME
     if not manifest_path.is_file():
         raise StagingError(f"missing required {MANIFEST_NAME}")
@@ -367,6 +401,11 @@ def validate_export(export_root: Path) -> dict[str, object]:
         raise StagingError("monthly returns index must be a JSON object")
     _require_equal(monthly_index.get("assetCount"), monthly_asset_count, "monthly returns index asset count")
     _require_equal(monthly_index.get("rowCount"), monthly_row_count, "monthly returns index row count")
+    _require_equal(
+        monthly_index.get("rowEncoding"),
+        expected_monthly_row_encoding,
+        "monthly returns row encoding",
+    )
     index_assets = monthly_index.get("assets")
     index_shards = monthly_index.get("shards")
     if not isinstance(index_assets, dict) or not isinstance(index_shards, list):
@@ -374,6 +413,28 @@ def validate_export(export_root: Path) -> dict[str, object]:
     _require_equal(len(index_assets), monthly_asset_count, "monthly returns index identity count")
     _require_equal(len(index_shards), shard_count, "monthly returns index shard count")
     _require_equal({item.get("path") for item in index_shards if isinstance(item, dict)}, shard_paths, "monthly returns index shard paths")
+    for shard in index_shards:
+        relative = _validate_relative_path(str(shard.get("path", ""))).as_posix()
+        payload = load_json_strict(export_root.joinpath(*PurePosixPath(relative).parts))
+        series = payload.get("series") if isinstance(payload, dict) else None
+        if not isinstance(series, dict):
+            raise StagingError(f"monthly-return shard series are missing: {relative}")
+        for identity, rows in series.items():
+            if not isinstance(rows, list):
+                raise StagingError(f"monthly-return series is invalid: {identity}")
+            for row in rows:
+                if (
+                    not isinstance(row, list)
+                    or len(row) != len(expected_monthly_row_encoding)
+                ):
+                    raise StagingError(
+                        f"monthly-return row encoding is invalid: {identity}"
+                    )
+                if expected_monthly_row_encoding == PROXY_AWARE_MONTHLY_ROW_ENCODING_V2:
+                    if not isinstance(row[7], bool) or not isinstance(row[8], str):
+                        raise StagingError(
+                            f"monthly-return proxy lineage is invalid: {identity}"
+                        )
 
     return {
         "manifest": manifest,
@@ -383,6 +444,7 @@ def validate_export(export_root: Path) -> dict[str, object]:
         "monthlyReturnAssetCount": monthly_asset_count,
         "monthlyReturnRowCount": monthly_row_count,
         "shardCount": shard_count,
+        "monthlyRowEncoding": expected_monthly_row_encoding,
     }
 
 

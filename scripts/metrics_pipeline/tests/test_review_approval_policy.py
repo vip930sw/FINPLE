@@ -43,6 +43,8 @@ def monthly_rows(
                 "USD",
                 "US_SPY",
                 "candidate",
+                False,
+                "",
             ]
         )
     return rows
@@ -136,6 +138,311 @@ class LeveragedInverseReviewPolicyTest(unittest.TestCase):
             "source_overlay_full_period_actual_binding",
         )
         self.assertEqual(decision.audit["mddPolicy"], "full_period_actual")
+        self.assertTrue(
+            decision.audit["monthlyReturnProxyLineage"]["nonProxyProven"]
+        )
+        self.assertEqual(
+            decision.audit["monthlyReturnProxyLineage"]["proxyStatusMarkerCount"],
+            0,
+        )
+        self.assertEqual(
+            decision.audit["monthlyReturnProxyLineage"][
+                "statusLineageContradictionCount"
+            ],
+            0,
+        )
+
+    def test_proxy_lineage_contract_is_fail_closed(self) -> None:
+        benchmark = monthly_rows(220)
+        cases = []
+
+        proxy = monthly_rows(220, multiplier=3)
+        for row in proxy:
+            row[7], row[8] = True, "QQQ"
+        cases.append(("proxy_present", proxy, "unsupported_product_policy:proxy_monthly_return"))
+
+        proxy_without_ticker = monthly_rows(220, multiplier=3)
+        proxy_without_ticker[0][7] = True
+        cases.append(
+            (
+                "proxy_without_ticker",
+                proxy_without_ticker,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        ticker_without_proxy = monthly_rows(220, multiplier=3)
+        ticker_without_proxy[0][8] = "QQQ"
+        cases.append(
+            (
+                "ticker_without_proxy",
+                ticker_without_proxy,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        missing_flag = monthly_rows(220, multiplier=3)
+        missing_flag[0][7] = None
+        cases.append(
+            (
+                "missing_proxy_flag",
+                missing_flag,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        null_ticker = monthly_rows(220, multiplier=3)
+        null_ticker[0][8] = None
+        cases.append(
+            (
+                "null_proxy_ticker",
+                null_ticker,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        string_flag = monthly_rows(220, multiplier=3)
+        string_flag[0][7] = "false"
+        cases.append(
+            (
+                "string_proxy_flag",
+                string_flag,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        numeric_flag = monthly_rows(220, multiplier=3)
+        numeric_flag[0][7] = 0
+        cases.append(
+            (
+                "numeric_proxy_flag",
+                numeric_flag,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        missing_lineage = [row[:7] for row in monthly_rows(220, multiplier=3)]
+        cases.append(
+            (
+                "legacy_seven_field",
+                missing_lineage,
+                "missing_metric_lineage:monthly_return_proxy_status",
+            )
+        )
+
+        partially_proxy = monthly_rows(220, multiplier=3)
+        partially_proxy[-1][7], partially_proxy[-1][8] = True, "QQQ"
+        cases.append(
+            (
+                "partially_proxy",
+                partially_proxy,
+                "unsupported_product_policy:proxy_monthly_return",
+            )
+        )
+
+        mixed_proxy_ticker = monthly_rows(220, multiplier=3)
+        mixed_proxy_ticker[0][7], mixed_proxy_ticker[0][8] = True, "QQQ"
+        mixed_proxy_ticker[1][7], mixed_proxy_ticker[1][8] = True, "SPY"
+        cases.append(
+            (
+                "mixed_proxy_ticker",
+                mixed_proxy_ticker,
+                "unsupported_product_policy:proxy_monthly_return",
+            )
+        )
+
+        for label, asset, expected_reason in cases:
+            with self.subTest(label=label):
+                row = metric_row(asset, benchmark)
+                decision = evaluate_leveraged_inverse_review(
+                    row,
+                    asset,
+                    benchmark,
+                    product_metadata(),
+                )
+                self.assertFalse(decision.approved)
+                self.assertIn(expected_reason, decision.reasonCodes)
+                if label == "proxy_present":
+                    self.assertNotIn(
+                        "missing_metric_lineage:monthly_return_proxy_status",
+                        decision.reasonCodes,
+                    )
+
+    def test_proxy_status_and_explicit_lineage_are_reconciled_fail_closed(
+        self,
+    ) -> None:
+        benchmark = monthly_rows(220)
+        proxy_reason = "unsupported_product_policy:proxy_monthly_return"
+        lineage_reason = "missing_metric_lineage:monthly_return_proxy_status"
+        cases = (
+            ("candidate_non_proxy", "candidate", False, "", (), True, 0, (), 0),
+            (
+                "non_marker_substring",
+                "candidate_proxying",
+                False,
+                "",
+                (),
+                True,
+                0,
+                (),
+                0,
+            ),
+            (
+                "proxy_non_proxy_lineage",
+                "proxy",
+                False,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                1,
+                ("proxy",),
+                1,
+            ),
+            (
+                "candidate_proxy_non_proxy_lineage",
+                "candidate_proxy",
+                False,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                1,
+                ("candidate_proxy",),
+                1,
+            ),
+            (
+                "proxy_explicit_proxy",
+                "proxy",
+                True,
+                "SPY",
+                (proxy_reason,),
+                False,
+                1,
+                ("proxy",),
+                0,
+            ),
+            (
+                "candidate_explicit_proxy",
+                "candidate",
+                True,
+                "SPY",
+                (proxy_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_proxy_without_ticker",
+                "candidate",
+                True,
+                "",
+                (proxy_reason, lineage_reason),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_ticker_without_proxy",
+                "candidate",
+                False,
+                "SPY",
+                (proxy_reason, lineage_reason),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_string_false",
+                "candidate",
+                "false",
+                "",
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "candidate_null_ticker",
+                "candidate",
+                False,
+                None,
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+            (
+                "invalid_status_type",
+                None,
+                False,
+                "",
+                (lineage_reason,),
+                False,
+                0,
+                (),
+                0,
+            ),
+        )
+
+        for (
+            label,
+            status,
+            is_proxy,
+            proxy_ticker,
+            expected_reasons,
+            expected_approved,
+            expected_marker_count,
+            expected_status_values,
+            expected_contradiction_count,
+        ) in cases:
+            with self.subTest(label=label):
+                asset = monthly_rows(220, multiplier=3)
+                asset[0][6] = status
+                asset[0][7] = is_proxy
+                asset[0][8] = proxy_ticker
+                decision = evaluate_leveraged_inverse_review(
+                    metric_row(asset, benchmark),
+                    asset,
+                    benchmark,
+                    product_metadata(),
+                )
+
+                self.assertEqual(decision.approved, expected_approved)
+                for reason in (proxy_reason, lineage_reason):
+                    if reason in expected_reasons:
+                        self.assertIn(reason, decision.reasonCodes)
+                    else:
+                        self.assertNotIn(reason, decision.reasonCodes)
+                audit = decision.audit["monthlyReturnProxyLineage"]
+                self.assertEqual(
+                    audit["proxyStatusMarkerCount"],
+                    expected_marker_count,
+                )
+                self.assertEqual(
+                    audit["proxyStatusValues"],
+                    list(expected_status_values),
+                )
+                self.assertEqual(
+                    audit["statusLineageContradictionCount"],
+                    expected_contradiction_count,
+                )
+
+    def test_non_proxy_tqqq_and_soxl_remain_approvable(self) -> None:
+        benchmark = monthly_rows(220)
+        for ticker in ("TQQQ", "SOXL"):
+            with self.subTest(ticker=ticker):
+                asset = monthly_rows(220, multiplier=3)
+                decision = evaluate_leveraged_inverse_review(
+                    metric_row(asset, benchmark, identity=f"US:{ticker}"),
+                    asset,
+                    benchmark,
+                    product_metadata(identity=f"US:{ticker}"),
+                )
+                self.assertTrue(decision.approved)
 
     def test_inverse_direction_and_beta_sign_are_supported(self) -> None:
         benchmark = monthly_rows(220)
@@ -364,6 +671,9 @@ class InitialHistoryGapReviewPolicyTest(unittest.TestCase):
         self.assertEqual(decision.audit["continuousPostGapMonthCount"], 205)
         self.assertTrue(decision.audit["noForwardFillVerified"])
         self.assertTrue(decision.audit["windowsCrossingGapExcluded"])
+        self.assertTrue(
+            decision.audit["monthlyReturnProxyLineage"]["nonProxyProven"]
+        )
         self.assertEqual(decision.audit["selectedMdd"], -35)
         self.assertEqual(
             decision.audit["mddValidationMethod"],

@@ -11,10 +11,12 @@ import zipfile
 
 from scripts.stage_app_preview_vercel import (
     EXPECTED_EXPORT_VERSION,
+    LEGACY_MONTHLY_ROW_ENCODING_V1,
     StagingError,
     normalize_api_upstream_base_url,
     sha256_file,
     stage_app_preview,
+    validate_export,
 )
 
 
@@ -158,6 +160,17 @@ def make_export(root: Path, *, shard_count: int = EXPECTED_SHARD_COUNT) -> Path:
     monthly_index = {
         "exportVersion": EXPECTED_EXPORT_VERSION,
         "metricDataThroughMonth": EXPECTED_METRIC_DATA_THROUGH_MONTH,
+        "rowEncoding": [
+            "month",
+            "priceReturn",
+            "totalReturn",
+            "fxReturn",
+            "currency",
+            "benchmarkId",
+            "dataStatus",
+            "isProxy",
+            "proxyTicker",
+        ],
         "assetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
         "rowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
         "assets": index_assets,
@@ -297,6 +310,35 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
                 proxy_pattern.fullmatch(
                     "/app-preview-data/2026-07-22/app-preview-manifest.json"
                 )
+            )
+
+    def test_legacy_rows_require_an_explicit_non_preview_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            export = make_export(root)
+            index_path = export / "monthly-returns-index.json"
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+            index["rowEncoding"] = list(LEGACY_MONTHLY_ROW_ENCODING_V1)
+            _write_json(index_path, index)
+
+            manifest_path = export / "app-preview-manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            index_record = _record(index_path, export)
+            manifest["monthlyReturnsIndex"] = index_record
+            for record in manifest["files"]:
+                if record["path"] == "monthly-returns-index.json":
+                    record.update(index_record)
+            _write_json(manifest_path, manifest)
+
+            with self.assertRaisesRegex(StagingError, "monthly returns row encoding"):
+                validate_export(export)
+            validation = validate_export(
+                export,
+                monthly_row_encoding=LEGACY_MONTHLY_ROW_ENCODING_V1,
+            )
+            self.assertEqual(
+                validation["monthlyRowEncoding"],
+                LEGACY_MONTHLY_ROW_ENCODING_V1,
             )
 
     def test_dynamic_128_shard_export_stages_without_fixed_64_assumption(self) -> None:

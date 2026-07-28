@@ -27,6 +27,7 @@ from scripts.recover_production_app_export_source import (
     EXPORTER_COMMAND,
     EXPORTER_VERSION,
     GitState,
+    RECOVERY_EXPORT_CONTRACTS,
     RECEIPT_FIELDS,
     RecoveryDependencies,
     RecoveryError,
@@ -37,15 +38,59 @@ from scripts.recover_production_app_export_source import (
     build_parser,
     compare_artifacts,
     exporter_argv,
+    inspect_artifact,
     main,
+    recovery_monthly_row_encoding,
     recover_production_app_export_source,
     run_exporter_once,
     validate_receipt_contract,
 )
-from scripts.stage_app_preview_vercel import sha256_file
+from scripts.stage_app_preview_vercel import (
+    LEGACY_MONTHLY_ROW_ENCODING_V1,
+    PROXY_AWARE_MONTHLY_ROW_ENCODING_V2,
+    StagingError,
+    sha256_file,
+    validate_export,
+)
 
 
 FIXED_TIME = datetime(2026, 7, 26, 0, 0, 0, tzinfo=timezone.utc)
+
+
+def _write_json_canonical(path: Path, payload: object) -> None:
+    path.write_text(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def _set_monthly_row_encoding(bundle: Path, row_encoding: list[str]) -> None:
+    index_path = bundle / "monthly-returns-index.json"
+    monthly_index = json.loads(index_path.read_text(encoding="utf-8"))
+    monthly_index["rowEncoding"] = list(row_encoding)
+    _write_json_canonical(index_path, monthly_index)
+
+    index_record = {
+        "path": "monthly-returns-index.json",
+        "sha256": sha256_file(index_path),
+        "sizeBytes": index_path.stat().st_size,
+    }
+    manifest_path = bundle / "app-preview-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["monthlyReturnsIndex"] = index_record
+    manifest["files"] = [
+        index_record if record.get("path") == index_record["path"] else record
+        for record in manifest["files"]
+    ]
+    _write_json_canonical(manifest_path, manifest)
 
 
 class FakeExporter:
@@ -73,6 +118,7 @@ class FakeExporter:
         if self.fail_label == run_label:
             raise RuntimeError(f"synthetic Run {run_label} failure")
         bundle = make_production_export(output_dir)
+        _set_monthly_row_encoding(bundle, LEGACY_MONTHLY_ROW_ENCODING_V1)
         archive = output_dir / "export.zip"
         create_deterministic_zip(bundle, archive)
         return {"status": "ok", "zipSha256": sha256_file(archive)}
@@ -287,6 +333,102 @@ class ProductionSourceRecoveryTests(unittest.TestCase):
             "--shard-count 64 --max-rows-per-shard 12000 "
             "--target-shard-bytes 1048576",
         )
+
+    def test_recovery_contract_selects_legacy_only_for_exact_pinned_identity(self) -> None:
+        self.assertEqual(
+            RECOVERY_EXPORT_CONTRACTS,
+            {
+                (
+                    SOURCE_GIT_MAIN_SHA,
+                    EXPORTER_VERSION,
+                ): tuple(LEGACY_MONTHLY_ROW_ENCODING_V1),
+            },
+        )
+        self.assertEqual(
+            recovery_monthly_row_encoding(SOURCE_GIT_MAIN_SHA, EXPORTER_VERSION),
+            LEGACY_MONTHLY_ROW_ENCODING_V1,
+        )
+        for source_sha, exporter_version in (
+            ("0" * 40, EXPORTER_VERSION),
+            (SOURCE_GIT_MAIN_SHA, f"{EXPORTER_VERSION}-unknown"),
+        ):
+            with self.subTest(
+                source_sha=source_sha,
+                exporter_version=exporter_version,
+            ):
+                with self.assertRaisesRegex(
+                    RecoveryError,
+                    "^unsupported_recovery_export_contract$",
+                ):
+                    recovery_monthly_row_encoding(source_sha, exporter_version)
+
+    def test_recovery_inspection_accepts_only_pinned_legacy_encoding(self) -> None:
+        legacy_output = self.temp / "legacy-inspection"
+        legacy_output.mkdir()
+        legacy_bundle = make_production_export(legacy_output)
+        _set_monthly_row_encoding(
+            legacy_bundle,
+            LEGACY_MONTHLY_ROW_ENCODING_V1,
+        )
+        create_deterministic_zip(
+            legacy_bundle,
+            legacy_output / "export.zip",
+        )
+        snapshot = inspect_artifact(
+            legacy_output,
+            "a",
+            source_git_main_sha=SOURCE_GIT_MAIN_SHA,
+            exporter_version=EXPORTER_VERSION,
+        )
+        self.assertEqual(snapshot.manifest["shardCount"], 64)
+
+        for source_sha, exporter_version in (
+            ("0" * 40, EXPORTER_VERSION),
+            (SOURCE_GIT_MAIN_SHA, f"{EXPORTER_VERSION}-unknown"),
+        ):
+            with self.subTest(
+                source_sha=source_sha,
+                exporter_version=exporter_version,
+            ):
+                with self.assertRaisesRegex(
+                    RecoveryError,
+                    "^unsupported_recovery_export_contract$",
+                ):
+                    inspect_artifact(
+                        legacy_output,
+                        "a",
+                        source_git_main_sha=source_sha,
+                        exporter_version=exporter_version,
+                    )
+
+        with self.assertRaises(StagingError):
+            validate_export(legacy_bundle)
+
+        proxy_aware_output = self.temp / "proxy-aware-inspection"
+        proxy_aware_output.mkdir()
+        proxy_aware_bundle = make_production_export(proxy_aware_output)
+        create_deterministic_zip(
+            proxy_aware_bundle,
+            proxy_aware_output / "export.zip",
+        )
+        self.assertEqual(
+            json.loads(
+                proxy_aware_bundle.joinpath(
+                    "monthly-returns-index.json"
+                ).read_text(encoding="utf-8")
+            )["rowEncoding"],
+            PROXY_AWARE_MONTHLY_ROW_ENCODING_V2,
+        )
+        with self.assertRaisesRegex(
+            RecoveryError,
+            "^run_a_artifact_invalid$",
+        ):
+            inspect_artifact(
+                proxy_aware_output,
+                "a",
+                source_git_main_sha=SOURCE_GIT_MAIN_SHA,
+                exporter_version=EXPORTER_VERSION,
+            )
 
     def test_real_subprocess_module_import_creates_no_bytecode_and_keeps_git_clean(self) -> None:
         source = self.temp / "real-subprocess-source"

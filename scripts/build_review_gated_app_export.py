@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build a deterministic review-policy candidate from an approved source app-export.
+"""Build a deterministic review-policy candidate from a review-only source app-export.
 
 The command is deliberately post-provider: it reads an existing source
-app-export, replays only generic review approval policies, preserves every
-monthly-return shard byte-for-byte, and emits review-only candidate artifacts.
+app-export created from the immutable candidate package, requires explicit
+monthly-return proxy lineage, replays only generic review approval policies,
+preserves every source shard byte-for-byte, and emits review-only artifacts.
 It never calls a provider and never creates a Production-approved release.
 """
 
@@ -35,6 +36,17 @@ DIFF_REPORT = "review-state-diff.json"
 EXCEPTION_REPORT = "review-required-exceptions.json"
 RELEASE_CANDIDATE = "production-app-export-release-candidate.json"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+MONTHLY_ROW_ENCODING = [
+    "month",
+    "priceReturn",
+    "totalReturn",
+    "fxReturn",
+    "currency",
+    "benchmarkId",
+    "dataStatus",
+    "isProxy",
+    "proxyTicker",
+]
 
 
 class ReviewArtifactError(ValueError):
@@ -175,7 +187,20 @@ def series_for_identity(
     rows = shard_cache[shard_path].get("series", {}).get(identity)
     if not isinstance(rows, list) or len(rows) != record.get("rowCount"):
         raise ReviewArtifactError(f"monthly-return series binding mismatch: {identity}")
+    if any(not isinstance(row, list) or len(row) != len(MONTHLY_ROW_ENCODING) for row in rows):
+        raise ReviewArtifactError(f"monthly-return proxy lineage is missing: {identity}")
+    if any(type(row[7]) is not bool or not isinstance(row[8], str) for row in rows):
+        raise ReviewArtifactError(
+            f"monthly-return proxy lineage type is invalid: {identity}"
+        )
     return rows
+
+
+def validate_monthly_index_contract(index: Mapping[str, Any]) -> None:
+    if index.get("rowEncoding") != MONTHLY_ROW_ENCODING:
+        raise ReviewArtifactError(
+            "monthly-return row encoding must preserve explicit proxy lineage"
+        )
 
 
 def apply_review_policies(
@@ -472,6 +497,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     validate_source_inventory(files, source_manifest)
     overlay = load_json_bytes(files, OVERLAY)
     index = load_json_bytes(files, MONTHLY_INDEX)
+    validate_monthly_index_contract(index)
     source_qa = load_json_bytes(files, QA_SUMMARY)
     metadata = load_product_metadata(args.product_metadata.resolve(strict=True))
     new_overlay, audit, diff, exceptions = apply_review_policies(

@@ -17,11 +17,15 @@ from scripts.stage_app_preview_vercel import StagingError, sha256_file
 from scripts.stage_production_app_export_vercel import (
     CANDIDATE_PACKAGE_HASH,
     CANDIDATE_ZIP_SHA256,
+    PINNED_LEGACY_ARTIFACT_BINDING_SHA256,
+    PINNED_LEGACY_RELEASE_SHA256,
+    PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256,
     RELEASE_MANIFEST_NAME,
     RELEASE_CONTRACT_VERSION,
     SOURCE_GIT_MAIN_SHA,
     UNIVERSE_VERSION,
     build_parser,
+    is_pinned_legacy_production_binding,
     normalize_production_api_base_url,
     run_production_build,
     stage_production_app_export,
@@ -219,6 +223,23 @@ def fake_build(
 
 
 class ProductionAppExportStagingTests(unittest.TestCase):
+    def test_legacy_bridge_requires_every_pinned_production_binding(self) -> None:
+        exact = {
+            "release_manifest_sha256": PINNED_LEGACY_RELEASE_SHA256,
+            "source_app_export_sha256": PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256,
+            "contract_version": RELEASE_CONTRACT_VERSION,
+            "source_git_main_sha": SOURCE_GIT_MAIN_SHA,
+            "candidate_zip_sha256": CANDIDATE_ZIP_SHA256,
+            "candidate_package_hash": CANDIDATE_PACKAGE_HASH,
+            "artifact_binding_sha256": PINNED_LEGACY_ARTIFACT_BINDING_SHA256,
+        }
+        self.assertTrue(is_pinned_legacy_production_binding(**exact))
+        for field in exact:
+            with self.subTest(field=field):
+                tampered = dict(exact)
+                tampered[field] = "0" * 64
+                self.assertFalse(is_pinned_legacy_production_binding(**tampered))
+
     def _fixture(self, root: Path, *, release_overrides=None):
         export = make_production_export(root)
         archive = make_zip(export, root / "app-export.zip")

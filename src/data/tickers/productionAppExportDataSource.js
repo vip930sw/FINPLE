@@ -1,9 +1,32 @@
 import { sha256Hex } from "../../utils/sha256.js";
+import { isNonOrdinaryDistribution } from "./distributionPolicy.js";
 
 export const PRODUCTION_RELEASE_CONTRACT_VERSION =
   "finple-production-app-export-release-v1-step114-2zc";
 export const PRODUCTION_EXPORT_VERSION =
   "finple-app-preview-export-v1-step114-2z";
+export const LEGACY_MONTHLY_ROW_ENCODING_V1 = Object.freeze([
+  "month",
+  "priceReturn",
+  "totalReturn",
+  "fxReturn",
+  "currency",
+  "benchmarkId",
+  "dataStatus",
+]);
+export const PROXY_AWARE_MONTHLY_ROW_ENCODING_V2 = Object.freeze([
+  "month",
+  "priceReturn",
+  "totalReturn",
+  "fxReturn",
+  "currency",
+  "benchmarkId",
+  "dataStatus",
+  "isProxy",
+  "proxyTicker",
+]);
+export const MONTHLY_ROW_CONTRACT_LEGACY_V1 = "legacy_v1";
+export const MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2 = "proxy_aware_v2";
 export const PRODUCTION_UNIVERSE_VERSION =
   "finple-universe-v2-2026-07-24";
 export const PRODUCTION_SOURCE_GIT_MAIN_SHA =
@@ -12,6 +35,12 @@ export const PRODUCTION_CANDIDATE_ZIP_SHA256 =
   "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e";
 export const PRODUCTION_CANDIDATE_PACKAGE_HASH =
   "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276";
+export const PINNED_LEGACY_PRODUCTION_RELEASE_SHA256 =
+  "fd2ffd18f60753b5301dddf2df3a73d46195cf7f13581c697170e6e720409fa8";
+export const PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256 =
+  "603b426e175603ccfdf836c56de791377a1d554b4cfc498350612386b161ffd8";
+export const PINNED_LEGACY_ARTIFACT_BINDING_SHA256 =
+  "594684b2e1e7043e01171a40607a1073344a5491ee0bbdc7eaa071d6501097b8";
 
 const EXPECTED_COUNTS = Object.freeze({
   assetCount: 6029,
@@ -82,6 +111,73 @@ function normalizeIdentity(value) {
   return normalizedMarket && ticker ? `${normalizedMarket}:${ticker}` : "";
 }
 
+function normalizePolicyValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isOptionalPolicyString(value) {
+  return value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "string";
+}
+
+export function buildProductionCatalogPolicyByIdentity(overlay = {}) {
+  const records = {};
+  for (const row of Array.isArray(overlay?.rows) ? overlay.rows : []) {
+    const identity = normalizeIdentity(row?.identity || `${row?.market || ""}:${row?.ticker || ""}`);
+    if (!identity) continue;
+    const dataStatus = normalizePolicyValue(row?.dataStatus);
+    const metricsStatus = normalizePolicyValue(row?.metricsStatus) || dataStatus;
+    const reviewSignals = [
+      row?.reviewFlag,
+      row?.reviewTag,
+    ].map(normalizePolicyValue).filter(Boolean);
+    const reviewFlag = reviewSignals.find((value) => value !== "none") ||
+      (reviewSignals.includes("none") ? "none" : "");
+    const reviewApprovalStatus = normalizePolicyValue(row?.reviewApprovalStatus);
+    const reviewPolicyValues = [
+      row?.reviewApprovalPolicyVersion,
+      row?.reviewPolicyVersion,
+      row?.reviewPolicy,
+    ];
+    const policyEvidenceValid = [
+      row?.dataStatus,
+      row?.metricsStatus,
+      row?.reviewFlag,
+      row?.reviewTag,
+      row?.reviewApprovalStatus,
+      ...reviewPolicyValues,
+    ].every(isOptionalPolicyString);
+    const reviewPolicy =
+      reviewPolicyValues.map(normalizePolicyValue).find(Boolean) || "";
+    const ordinaryDistribution =
+      normalizePolicyValue(row?.assetType) !== "cash" &&
+      !isNonOrdinaryDistribution(row);
+    records[identity] = Object.freeze({
+      identity,
+      dataStatus,
+      metricsStatus,
+      reviewFlag,
+      reviewApprovalPolicyVersion:
+        normalizePolicyValue(row?.reviewApprovalPolicyVersion),
+      reviewApprovalStatus,
+      reviewPolicy,
+      policyEvidenceValid,
+      ordinaryDistribution,
+      ordinaryLegacyEligible:
+        policyEvidenceValid &&
+        ordinaryDistribution &&
+        dataStatus === "ready" &&
+        metricsStatus === "ready" &&
+        reviewFlag === "none" &&
+        ["", "none"].includes(reviewApprovalStatus) &&
+        !reviewPolicy,
+    });
+  }
+  return Object.freeze(records);
+}
+
 function buildUrl(baseUrl, path) {
   return `${baseUrl}/${String(path || "").replace(/^\/+/, "")}`;
 }
@@ -94,6 +190,49 @@ function stableJson(value) {
       .join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+function artifactBindingSha256(release) {
+  const binding = {
+    sourceManifest: release?.sourceManifest,
+    metricsOverlay: release?.metricsOverlay,
+    monthlyReturnsIndex: release?.monthlyReturnsIndex,
+    shardCount: release?.shardCount,
+    shardInventory: release?.shardInventory,
+  };
+  return sha256Hex(new TextEncoder().encode(stableJson(binding)));
+}
+
+export function isPinnedLegacyProductionBinding({
+  releaseManifestSha256,
+  sourceAppExportSha256,
+  contractVersion,
+  sourceGitMainSha,
+  candidateZipSha256,
+  candidatePackageHash,
+  artifactBindingSha256: bindingSha256,
+} = {}) {
+  return (
+    releaseManifestSha256 === PINNED_LEGACY_PRODUCTION_RELEASE_SHA256 &&
+    sourceAppExportSha256 === PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256 &&
+    contractVersion === PRODUCTION_RELEASE_CONTRACT_VERSION &&
+    sourceGitMainSha === PRODUCTION_SOURCE_GIT_MAIN_SHA &&
+    candidateZipSha256 === PRODUCTION_CANDIDATE_ZIP_SHA256 &&
+    candidatePackageHash === PRODUCTION_CANDIDATE_PACKAGE_HASH &&
+    bindingSha256 === PINNED_LEGACY_ARTIFACT_BINDING_SHA256
+  );
+}
+
+export function isPinnedLegacyProductionRelease(release, config = {}) {
+  return isPinnedLegacyProductionBinding({
+    releaseManifestSha256: config.releaseManifestSha256,
+    sourceAppExportSha256: config.sourceAppExportSha256,
+    contractVersion: release?.contractVersion,
+    sourceGitMainSha: release?.sourceGitMainSha,
+    candidateZipSha256: release?.candidateZipSha256,
+    candidatePackageHash: release?.candidatePackageHash,
+    artifactBindingSha256: artifactBindingSha256(release),
+  });
 }
 
 function assertSha256(value, label) {
@@ -268,7 +407,7 @@ function assertMetricsOverlay(overlay, release) {
   }
 }
 
-function assertMonthlyIndex(index, release) {
+function assertMonthlyIndex(index, release, config) {
   if (index?.exportVersion !== PRODUCTION_EXPORT_VERSION ||
       index?.metricDataThroughMonth !== release.metricDataThroughMonth ||
       index?.assetCount !== release.monthlyReturnAssetCount ||
@@ -285,6 +424,19 @@ function assertMonthlyIndex(index, release) {
       fail("production_monthly_index_mismatch", `invalid monthly-return identity ${identity}`);
     }
   }
+  if (stableJson(index.rowEncoding) === stableJson(PROXY_AWARE_MONTHLY_ROW_ENCODING_V2)) {
+    return MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2;
+  }
+  if (
+    stableJson(index.rowEncoding) === stableJson(LEGACY_MONTHLY_ROW_ENCODING_V1) &&
+    isPinnedLegacyProductionRelease(release, config)
+  ) {
+    return MONTHLY_ROW_CONTRACT_LEGACY_V1;
+  }
+  fail(
+    "production_monthly_index_mismatch",
+    "monthly-return row encoding is not approved for this Production release",
+  );
 }
 
 async function fetchVerifiedJson({
@@ -298,7 +450,7 @@ async function fetchVerifiedJson({
   let response;
   try {
     response = await fetchImpl(url, { credentials: "same-origin", cache: "no-store" });
-  } catch (error) {
+  } catch {
     fail(failureCode, `request failed for ${url}`);
   }
   if (!response.ok) fail(failureCode, `request returned ${response.status} for ${url}`);
@@ -311,7 +463,7 @@ async function fetchVerifiedJson({
   }
   try {
     return JSON.parse(new TextDecoder("utf-8").decode(bytes));
-  } catch (error) {
+  } catch {
     fail(failureCode, `invalid JSON for ${url}`);
   }
 }
@@ -350,7 +502,12 @@ export function isProductionAppExportConfigured(overrides = {}) {
 export async function loadProductionAppExportCatalog(options = {}) {
   const config = getProductionAppExportRuntimeConfig(options);
   if (!config.enabled) {
-    return { enabled: false, status: "production_v1_fallback", release: null };
+    return {
+      enabled: false,
+      status: "production_v1_fallback",
+      release: null,
+      catalogPolicyByIdentity: Object.freeze({}),
+    };
   }
   if (!config.baseUrl ||
       !SHA256_PATTERN.test(config.releaseManifestSha256) ||
@@ -404,7 +561,9 @@ export async function loadProductionAppExportCatalog(options = {}) {
         }),
       ]);
       assertMetricsOverlay(overlay, release);
-      assertMonthlyIndex(index, release);
+      const monthlyRowContract = assertMonthlyIndex(index, release, config);
+      const catalogPolicyByIdentity =
+        buildProductionCatalogPolicyByIdentity(overlay);
       return {
         enabled: true,
         status: "production_app_export_ready",
@@ -413,6 +572,10 @@ export async function loadProductionAppExportCatalog(options = {}) {
         sourceManifest,
         overlay,
         index,
+        monthlyRowContract,
+        legacyProductionBindingVerified:
+          monthlyRowContract === MONTHLY_ROW_CONTRACT_LEGACY_V1,
+        catalogPolicyByIdentity,
       };
     })().catch((error) => {
       catalogPromise = null;
@@ -423,9 +586,25 @@ export async function loadProductionAppExportCatalog(options = {}) {
   return catalogPromise;
 }
 
-function decodeSeries(identity, encodedRows, rowEncoding) {
+export function decodeProductionMonthlySeries(
+  identity,
+  encodedRows,
+  rowEncoding,
+  monthlyRowContract,
+) {
   const [market, ticker] = identity.split(":", 2);
+  if (![MONTHLY_ROW_CONTRACT_LEGACY_V1, MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2]
+    .includes(monthlyRowContract)) {
+    fail("production_monthly_shard_mismatch", `unknown row contract for ${identity}`);
+  }
+  const legacy = monthlyRowContract === MONTHLY_ROW_CONTRACT_LEGACY_V1;
+  const expectedEncoding = legacy
+    ? LEGACY_MONTHLY_ROW_ENCODING_V1
+    : PROXY_AWARE_MONTHLY_ROW_ENCODING_V2;
   return (Array.isArray(encodedRows) ? encodedRows : []).map((encodedRow) => {
+    if (!Array.isArray(encodedRow) || encodedRow.length !== expectedEncoding.length) {
+      fail("production_monthly_shard_mismatch", `proxy lineage missing for ${identity}`);
+    }
     const values = Object.fromEntries(
       rowEncoding.map((field, index) => [field, encodedRow[index] ?? null]),
     );
@@ -433,6 +612,10 @@ function decodeSeries(identity, encodedRows, rowEncoding) {
       if (values[field] !== null && !Number.isFinite(Number(values[field]))) {
         fail("production_monthly_shard_mismatch", `non-finite ${identity}.${field}`);
       }
+    }
+    if (!legacy &&
+        (typeof values.isProxy !== "boolean" || typeof encodedRow[8] !== "string")) {
+      fail("production_monthly_shard_mismatch", `proxy lineage invalid for ${identity}`);
     }
     return {
       market,
@@ -444,6 +627,13 @@ function decodeSeries(identity, encodedRows, rowEncoding) {
       currency: values.currency,
       benchmarkId: values.benchmarkId,
       dataStatus: values.dataStatus,
+      isProxy: legacy ? null : values.isProxy,
+      proxyTicker: legacy ? null : values.proxyTicker,
+      proxyLineageStatus: legacy
+        ? "legacy_unproven"
+        : values.isProxy || values.proxyTicker
+          ? "proxy_declared"
+          : "non_proxy_proven",
       returnBasis: "price_return",
       sourceHash: null,
     };
@@ -487,6 +677,7 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
       rowsByIdentity: {},
       missingIdentities: normalizedIdentities,
       requestedShardPaths: [],
+      catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
     };
   }
   const missingIdentities = normalizedIdentities
@@ -498,6 +689,7 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
       rowsByIdentity: {},
       missingIdentities,
       requestedShardPaths: [],
+      catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
     };
   }
   const requestedShardPaths = [...new Set(
@@ -517,7 +709,12 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
       notifyProductionAppExportFailure("production_monthly_shard_mismatch");
       fail("production_monthly_shard_mismatch", `row count mismatch for ${identity}`);
     }
-    rowsByIdentity[identity] = decodeSeries(identity, encodedRows, catalog.index.rowEncoding);
+    rowsByIdentity[identity] = decodeProductionMonthlySeries(
+      identity,
+      encodedRows,
+      catalog.index.rowEncoding,
+      catalog.monthlyRowContract,
+    );
   }
   return {
     enabled: true,
@@ -527,6 +724,9 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
     rowsByIdentity,
     missingIdentities: [],
     requestedShardPaths,
+    monthlyRowContract: catalog.monthlyRowContract,
+    legacyProductionBindingVerified: catalog.legacyProductionBindingVerified,
+    catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
   };
 }
 

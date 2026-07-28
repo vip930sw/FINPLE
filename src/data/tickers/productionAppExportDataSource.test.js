@@ -1,3 +1,4 @@
+/* global process */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -16,6 +17,12 @@ import {
   getChartComparisonPortfolios,
 } from "../../components/portfolio/utils/portfolioCalculations.js";
 import {
+  LEGACY_MONTHLY_ROW_ENCODING_V1,
+  MONTHLY_ROW_CONTRACT_LEGACY_V1,
+  MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2,
+  PINNED_LEGACY_ARTIFACT_BINDING_SHA256,
+  PINNED_LEGACY_PRODUCTION_RELEASE_SHA256,
+  PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256,
   PRODUCTION_CANDIDATE_PACKAGE_HASH,
   PRODUCTION_CANDIDATE_ZIP_SHA256,
   PRODUCTION_EXPORT_VERSION,
@@ -23,9 +30,12 @@ import {
   PRODUCTION_SOURCE_GIT_MAIN_SHA,
   PRODUCTION_UNIVERSE_VERSION,
   assertProductionReleaseManifest,
+  buildProductionCatalogPolicyByIdentity,
+  decodeProductionMonthlySeries,
   getProductionAppExportRequestLog,
   loadProductionAppExportCatalog,
   loadProductionMonthlyReturnsForIdentities,
+  isPinnedLegacyProductionBinding,
   resetProductionAppExportDataSourceForTests,
 } from "./productionAppExportDataSource.js";
 
@@ -90,7 +100,10 @@ function distribute(total, buckets) {
   );
 }
 
-function makeFixture() {
+function makeFixture({
+  legacyLineage = false,
+  overlayRowOverrides = {},
+} = {}) {
   const identities = canonicalIdentities();
   assert.equal(identities.length, 6029);
   const dividendYields = new Map([
@@ -134,6 +147,7 @@ function makeFixture() {
       internalPreviewReviewOnly: true,
       productionPublishReady: false,
       appExportApproved: false,
+      ...(overlayRowOverrides[identity] || {}),
     };
   });
   const overlay = {
@@ -155,8 +169,10 @@ function makeFixture() {
     const series = index === 0
       ? {
           "US:QQQ": [
-            ["2020-01", 0.01, null, null, "USD", "US:SPY", "ready"],
-            ["2020-02", -0.02, null, null, "USD", "US:SPY", "ready"],
+            ["2020-01", 0.01, null, null, "USD", "US:SPY", "ready", false, ""]
+              .slice(0, legacyLineage ? 7 : 9),
+            ["2020-02", -0.02, null, null, "USD", "US:SPY", "ready", false, ""]
+              .slice(0, legacyLineage ? 7 : 9),
           ],
         }
       : {};
@@ -189,15 +205,19 @@ function makeFixture() {
     metricDataThroughMonth: "2026-06",
     assetCount: 5347,
     rowCount: 701485,
-    rowEncoding: [
-      "month",
-      "priceReturn",
-      "totalReturn",
-      "fxReturn",
-      "currency",
-      "benchmarkId",
-      "dataStatus",
-    ],
+    rowEncoding: legacyLineage
+      ? [...LEGACY_MONTHLY_ROW_ENCODING_V1]
+      : [
+          "month",
+          "priceReturn",
+          "totalReturn",
+          "fxReturn",
+          "currency",
+          "benchmarkId",
+          "dataStatus",
+          "isProxy",
+          "proxyTicker",
+        ],
     assets,
     shards: shardInventory,
   };
@@ -305,6 +325,38 @@ test("exact production release and source review manifest are mutually non-subst
   }
 });
 
+test("pinned legacy Production identity requires every release and artifact binding", () => {
+  const exact = {
+    releaseManifestSha256: PINNED_LEGACY_PRODUCTION_RELEASE_SHA256,
+    sourceAppExportSha256: PINNED_LEGACY_SOURCE_APP_EXPORT_SHA256,
+    contractVersion: PRODUCTION_RELEASE_CONTRACT_VERSION,
+    sourceGitMainSha: PRODUCTION_SOURCE_GIT_MAIN_SHA,
+    candidateZipSha256: PRODUCTION_CANDIDATE_ZIP_SHA256,
+    candidatePackageHash: PRODUCTION_CANDIDATE_PACKAGE_HASH,
+    artifactBindingSha256: PINNED_LEGACY_ARTIFACT_BINDING_SHA256,
+  };
+  assert.equal(isPinnedLegacyProductionBinding(exact), true);
+  for (const field of Object.keys(exact)) {
+    assert.equal(
+      isPinnedLegacyProductionBinding({ ...exact, [field]: "0".repeat(64) }),
+      false,
+      field,
+    );
+  }
+});
+
+test("legacy rows decode as unproven without inventing non-proxy defaults", () => {
+  const rows = decodeProductionMonthlySeries(
+    "US:QQQ",
+    [["2020-01", 0.01, null, null, "USD", "US:SPY", "ready"]],
+    LEGACY_MONTHLY_ROW_ENCODING_V1,
+    MONTHLY_ROW_CONTRACT_LEGACY_V1,
+  );
+  assert.equal(rows[0].isProxy, null);
+  assert.equal(rows[0].proxyTicker, null);
+  assert.equal(rows[0].proxyLineageStatus, "legacy_unproven");
+});
+
 test("production catalog validates 6029 rows and fixed RM/monthly bindings", async () => {
   resetProductionAppExportDataSourceForTests();
   const fixture = makeFixture();
@@ -313,9 +365,83 @@ test("production catalog validates 6029 rows and fixed RM/monthly bindings", asy
   assert.equal(catalog.overlay.rows.length, 6029);
   assert.equal(Object.keys(catalog.index.assets).length, 5347);
   assert.equal(catalog.release.monthlyReturnRowCount, 701485);
+  assert.equal(catalog.monthlyRowContract, MONTHLY_ROW_CONTRACT_PROXY_AWARE_V2);
+  assert.equal(Object.keys(catalog.catalogPolicyByIdentity).length, 6029);
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity), true);
+  assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity["US:QQQ"]), true);
   assert.equal(
     catalog.overlay.rows.find((row) => row.identity === "US:QQQ").selectedCagr,
     17.11,
+  );
+});
+
+test("verified overlay identity policy owns pinned legacy eligibility", async () => {
+  resetProductionAppExportDataSourceForTests();
+  const fixture = makeFixture({
+    overlayRowOverrides: {
+      "US:TQQQ": {
+        reviewFlag: "review_required",
+        reviewApprovalPolicyVersion:
+          "leveraged-inverse-review-policy-v1-step114",
+      },
+      "US:AIPI": {
+        dataStatus: "insufficient_history",
+        reviewFlag: "review_required",
+        exposureType: "single_stock_option_income",
+      },
+      "US:SPY": {
+        reviewApprovalPolicyVersion: false,
+      },
+    },
+  });
+  const catalog = await loadProductionAppExportCatalog(options(fixture));
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:TQQQ"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:TQQQ"].reviewFlag,
+    "review_required",
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:AIPI"].ordinaryDistribution,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:AIPI"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:SPY"].policyEvidenceValid,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:SPY"].ordinaryLegacyEligible,
+    false,
+  );
+  assert.equal(
+    catalog.catalogPolicyByIdentity["US:NOT-IN-CATALOG"],
+    undefined,
+  );
+
+  const rebuilt = buildProductionCatalogPolicyByIdentity(fixture.overlay);
+  assert.deepEqual(rebuilt, catalog.catalogPolicyByIdentity);
+});
+
+test("an arbitrary seven-field Production artifact is rejected", async () => {
+  resetProductionAppExportDataSourceForTests();
+  const fixture = makeFixture({ legacyLineage: true });
+  await assert.rejects(
+    loadProductionAppExportCatalog(options(fixture)),
+    /row encoding is not approved/,
   );
 });
 
@@ -364,6 +490,14 @@ test("production monthly loader lazy-loads one shard and deduplicates concurrent
   ]);
   assert.deepEqual(first.requestedShardPaths, ["monthly-returns/monthly-returns-00.json"]);
   assert.equal(first.rowsByIdentity["US:QQQ"].length, 2);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].isProxy, false);
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyTicker, "");
+  assert.equal(first.rowsByIdentity["US:QQQ"][0].proxyLineageStatus, "non_proxy_proven");
+  assert.equal(
+    first.catalogPolicyByIdentity["US:QQQ"].ordinaryLegacyEligible,
+    true,
+  );
+  assert.equal(Object.keys(first.catalogPolicyByIdentity).length, 6029);
   assert.deepEqual(second.rowsByIdentity, first.rowsByIdentity);
   assert.equal(
     requestCounts.get(`${BASE_URL}/monthly-returns/monthly-returns-00.json`),

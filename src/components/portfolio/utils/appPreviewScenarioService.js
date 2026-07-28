@@ -75,6 +75,214 @@ function intersectMonths(seriesMaps) {
   );
 }
 
+const PROXY_STATUS_MARKER_PATTERN = /(?:^|[*:_\-\s])proxy(?:$|[*:_\-\s])/i;
+
+export const APP_EXPORT_SCENARIO_ERROR_CODES = Object.freeze({
+  PROXY_MONTHLY_RETURN: "unsupported_product_policy:proxy_monthly_return",
+  MISSING_PROXY_LINEAGE: "missing_metric_lineage:monthly_return_proxy_status",
+  IDENTITY_UNAVAILABLE: "production_monthly_identity_unavailable",
+});
+
+const APP_EXPORT_SCENARIO_POLICY_MESSAGES = Object.freeze({
+  [APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN]:
+    "Proxy-marked monthly-return rows are unavailable for scenario generation.",
+  [APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE]:
+    "Monthly-return proxy lineage is unavailable for scenario generation.",
+});
+
+export class AppExportScenarioPolicyError extends TypeError {
+  constructor({ code, identity }) {
+    super(APP_EXPORT_SCENARIO_POLICY_MESSAGES[code] || "Scenario policy rejected the input.");
+    this.name = "AppExportScenarioPolicyError";
+    this.code = code;
+    this.identity = identity;
+    this.domain = "scenario_policy";
+    this.catalogFallbackEligible = false;
+  }
+}
+
+export function getAppExportScenarioErrorMessage(error) {
+  switch (error?.code) {
+    case APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN:
+      return "프록시 월수익률이 포함된 자산은 확률분석을 제공할 수 없습니다.";
+    case APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE:
+      return "월수익률 출처 정보를 확인할 수 없어 확률분석을 제공할 수 없습니다.";
+    case APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE:
+      return "확률분석에 사용할 수 있는 월수익률이 없는 자산이 포함되어 있습니다.";
+    default:
+      return "확률분석 시나리오를 계산하지 못했습니다.";
+  }
+}
+
+function statusMarksProxy(value) {
+  return typeof value === "string" && PROXY_STATUS_MARKER_PATTERN.test(value.trim());
+}
+
+function catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity) {
+  if (
+    !catalogPolicyByIdentity ||
+    typeof catalogPolicyByIdentity !== "object" ||
+    Array.isArray(catalogPolicyByIdentity) ||
+    !Object.isFrozen(catalogPolicyByIdentity) ||
+    !Object.prototype.hasOwnProperty.call(catalogPolicyByIdentity, identity)
+  ) {
+    return false;
+  }
+  const record = catalogPolicyByIdentity[identity];
+  if (
+    !record ||
+    typeof record !== "object" ||
+    !Object.isFrozen(record)
+  ) {
+    return false;
+  }
+  return (
+    normalizeMarket(record.identity?.split(":", 1)[0]) ===
+      normalizeMarket(identity.split(":", 1)[0]) &&
+    normalizeTicker(record.identity?.split(":").slice(1).join(":")) ===
+      normalizeTicker(identity.split(":").slice(1).join(":")) &&
+    record.policyEvidenceValid === true &&
+    record.ordinaryDistribution === true &&
+    record.ordinaryLegacyEligible === true &&
+    String(record.dataStatus || "").trim().toLowerCase() === "ready" &&
+    String(record.metricsStatus || "").trim().toLowerCase() === "ready" &&
+    String(record.reviewFlag || "").trim().toLowerCase() === "none" &&
+    ["", "none"].includes(
+      String(record.reviewApprovalStatus || "").trim().toLowerCase(),
+    ) &&
+    !String(record.reviewApprovalPolicyVersion || "").trim() &&
+    !String(record.reviewPolicy || "").trim()
+  );
+}
+
+function assertNonProxyMonthlyLineage(
+  identity,
+  rows = [],
+  {
+    runtimeMode = "internal_preview_review_only",
+    monthlyRowContract = "proxy_aware_v2",
+    legacyProductionBindingVerified = false,
+    catalogPolicyByIdentity = null,
+  } = {},
+) {
+  const lineageStates = new Set();
+  for (const row of rows) {
+    if (typeof row?.dataStatus !== "string") {
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+        identity,
+      });
+    }
+    const statusMarksMonthlyProxy = statusMarksProxy(row?.dataStatus);
+    const legacyUnproven =
+      row?.isProxy === null &&
+      row?.proxyTicker === null &&
+      row?.proxyLineageStatus === "legacy_unproven";
+    lineageStates.add(legacyUnproven ? "legacy_unproven" : "proxy_aware");
+    if (statusMarksMonthlyProxy ||
+        row?.isProxy === true ||
+        (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
+        identity,
+      });
+    }
+    if (legacyUnproven) {
+      const legacyAllowed =
+        runtimeMode === "production_app_export_ready" &&
+        monthlyRowContract === "legacy_v1" &&
+        legacyProductionBindingVerified === true &&
+        catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity);
+      if (!legacyAllowed) {
+        throw new AppExportScenarioPolicyError({
+          code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+          identity,
+        });
+      }
+      continue;
+    }
+    if (row?.isProxy !== false ||
+        typeof row?.proxyTicker !== "string" ||
+        row.proxyTicker.trim() ||
+        row?.proxyLineageStatus === "legacy_unproven") {
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+        identity,
+      });
+    }
+  }
+  if (lineageStates.size > 1) {
+    throw new AppExportScenarioPolicyError({
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+      identity,
+    });
+  }
+}
+
+export async function resolveAppExportScenarioState({
+  identities = [],
+  loadMonthlyReturns,
+  buildScenario,
+  isCancelled = () => false,
+} = {}) {
+  let monthlyReturns;
+  try {
+    monthlyReturns = await loadMonthlyReturns(identities);
+  } catch (error) {
+    if (isCancelled()) return { status: "cancelled", result: null, error: null };
+    const identityUnavailable =
+      error?.code === APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE;
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage(error),
+      errorCode: error?.code || null,
+      failureDomain: identityUnavailable ? "identity_unavailable" : "scenario_loader",
+      catalogFallbackEligible: false,
+    };
+  }
+
+  if (isCancelled()) return { status: "cancelled", result: null, error: null };
+  const missingIdentities = Array.isArray(monthlyReturns?.missingIdentities)
+    ? monthlyReturns.missingIdentities
+    : [];
+  if (missingIdentities.length > 0) {
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      }),
+      errorCode: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      identity: missingIdentities.join(","),
+      failureDomain: "identity_unavailable",
+      catalogFallbackEligible: false,
+    };
+  }
+
+  try {
+    return {
+      status: "ready",
+      result: buildScenario(monthlyReturns),
+      error: null,
+      errorCode: null,
+      failureDomain: null,
+      catalogFallbackEligible: false,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      result: null,
+      error: getAppExportScenarioErrorMessage(error),
+      errorCode: error?.code || null,
+      identity: error?.identity || null,
+      failureDomain:
+        error?.domain === "scenario_policy" ? "scenario_policy" : "scenario_execution",
+      catalogFallbackEligible: false,
+    };
+  }
+}
+
 export function buildAppExportScenarioResult({
   activePortfolio = {},
   assets = [],
@@ -83,6 +291,9 @@ export function buildAppExportScenarioResult({
   manifest = {},
   release = null,
   runtimeMode = "internal_preview_review_only",
+  monthlyRowContract = "proxy_aware_v2",
+  legacyProductionBindingVerified = false,
+  catalogPolicyByIdentity = null,
   simulationCount = 500,
   randomSeed = 1142,
 } = {}) {
@@ -91,6 +302,14 @@ export function buildAppExportScenarioResult({
     .filter((asset) => identityForAsset(asset))
     .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
   const identities = activeAssets.map(identityForAsset);
+  identities.forEach((identity) => {
+    assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity], {
+      runtimeMode,
+      monthlyRowContract,
+      legacyProductionBindingVerified,
+      catalogPolicyByIdentity,
+    });
+  });
   const weights = normalizeWeights(activeAssets);
   const configuredStartValue = Number(settings.startValue);
   const assetStartValue = activeAssets.reduce((sum, asset) => sum + getAssetValue(asset), 0);
@@ -104,7 +323,6 @@ export function buildAppExportScenarioResult({
   const monthlyReturnMatrix = [];
   for (const month of contiguousMonths) {
     activeAssets.forEach((asset, index) => {
-      const identity = identities[index];
       const row = seriesMaps[index].get(month);
       monthlyReturnMatrix.push({
         month: row.month,
@@ -113,6 +331,8 @@ export function buildAppExportScenarioResult({
         returnBasis: "price_return",
         currencyMode: row.currency,
         priceReturn: row.priceReturn,
+        isProxy: row.isProxy,
+        proxyTicker: row.proxyTicker,
         sourceHash: manifest.sourceCandidatePackageHash,
       });
     });
@@ -178,6 +398,8 @@ export function buildAppExportScenarioResult({
       identities,
       universeVersion: release.universeVersion,
       releaseContractVersion: release.contractVersion,
+      monthlyRowContract,
+      legacyProductionBindingVerified,
       sourceAppExportSha256: release.sourceAppExportSha256,
       metricDataThroughMonth: release.metricDataThroughMonth,
       commonObservedMonthCount: commonMonths.length,
