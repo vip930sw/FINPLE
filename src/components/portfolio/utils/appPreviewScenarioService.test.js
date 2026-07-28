@@ -208,6 +208,44 @@ test("bounded proxy status markers reject scenario rows without inferring lineag
   assert.equal(result.status, "ready", JSON.stringify(result.dataQuality));
 });
 
+test("monthly data status requires an uncoerced string before scenario calculation", () => {
+  const base = {
+    activePortfolio: { id: "portfolio-status-type", name: "Status type" },
+    assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+    settings: {
+      startValue: 10000,
+      monthlyCashFlow: 0,
+      years: 5,
+      inflationRate: 0,
+    },
+    manifest,
+    simulationCount: 24,
+  };
+  for (const dataStatus of [null, undefined, 1, { value: "candidate" }]) {
+    assertScenarioPolicyError(
+      () => buildAppPreviewScenarioResult({
+        ...base,
+        rowsByIdentity: {
+          "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus })),
+        },
+      }),
+      {
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+        identity: "US:QQQ",
+      },
+    );
+  }
+  for (const dataStatus of ["candidate", "ready"]) {
+    const result = buildAppPreviewScenarioResult({
+      ...base,
+      rowsByIdentity: {
+        "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus })),
+      },
+    });
+    assert.equal(result.status, "ready", dataStatus);
+  }
+});
+
 test("explicit monthly lineage keeps proxy and type contradictions fail-closed", () => {
   const base = {
     activePortfolio: { id: "portfolio-lineage-types", name: "Lineage types" },
@@ -522,6 +560,31 @@ test("scenario lineage, execution, and Preview policy failures stay scenario-loc
     APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
   );
   assert.equal(productionLineage.failureDomain, "scenario_policy");
+
+  const invalidStatusType = await resolveAppExportScenarioState({
+    identities: ["US:QQQ"],
+    loadMonthlyReturns: async () => ({
+      rowsByIdentity: {
+        "US:QQQ": rows("US", "QQQ").map((row) => ({ ...row, dataStatus: null })),
+      },
+      missingIdentities: [],
+    }),
+    buildScenario: (monthlyReturns) => buildAppPreviewScenarioResult({
+      activePortfolio: { id: "invalid-status", name: "Invalid status" },
+      assets: [{ market: "US", ticker: "QQQ", targetEvaluationAmount: 10000 }],
+      settings: { startValue: 10000, monthlyCashFlow: 0, years: 5, inflationRate: 0 },
+      rowsByIdentity: monthlyReturns.rowsByIdentity,
+      manifest,
+      simulationCount: 24,
+    }),
+  });
+  assert.equal(invalidStatusType.status, "unavailable");
+  assert.equal(
+    invalidStatusType.errorCode,
+    APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+  );
+  assert.equal(invalidStatusType.failureDomain, "scenario_policy");
+  assert.equal(invalidStatusType.catalogFallbackEligible, false);
 
   const executionFailure = await resolveAppExportScenarioState({
     identities: ["US:QQQ"],

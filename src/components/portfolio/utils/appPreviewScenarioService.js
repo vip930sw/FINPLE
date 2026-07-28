@@ -130,6 +130,12 @@ function assertNonProxyMonthlyLineage(
 ) {
   const lineageStates = new Set();
   for (const row of rows) {
+    if (typeof row?.dataStatus !== "string") {
+      throw new AppExportScenarioPolicyError({
+        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
+        identity,
+      });
+    }
     const statusMarksMonthlyProxy = statusMarksProxy(row?.dataStatus);
     const legacyUnproven =
       row?.isProxy === null &&
