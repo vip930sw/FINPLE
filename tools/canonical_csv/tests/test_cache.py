@@ -42,6 +42,8 @@ def _asset(ticker: str, benchmark_symbol: str = "SPY") -> UniverseAsset:
         active=True,
         include_in_simulator=True,
         provider_symbol=ticker,
+        market_data_provider="yfinance",
+        market_data_provider_symbol=ticker,
         benchmark_provider_symbol=benchmark_symbol,
         exposure_type="broad_market",
         distribution_type="ordinary_cash_dividend",
@@ -133,6 +135,69 @@ class PersistentCacheTests(unittest.TestCase):
                 [request[0] for request in fetcher.requests],
                 ["SPY"],
             )
+
+    def test_asset_fetch_uses_adapter_symbol_not_canonical_symbol(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fetcher = FakeFetcher()
+            fetcher.responses["005930.KS"] = _bundle(1, 2)
+            provider = PersistentCachedMarketDataProvider(
+                fetcher,
+                temporary,
+                history_start=date(2024, 1, 1),
+                retry_count=0,
+            )
+            asset = UniverseAsset(
+                market="KR",
+                ticker="005930",
+                name="Samsung",
+                benchmark="KR:069500",
+                active=True,
+                include_in_simulator=True,
+                provider_symbol="005930",
+                market_data_provider="yfinance",
+                market_data_provider_symbol="005930.KS",
+                benchmark_provider_symbol="069500.KS",
+                exposure_type="ordinary_equity",
+                distribution_type="ordinary_cash_dividend",
+                distribution_frequency="quarterly",
+                row_data={},
+            )
+            provider.load_asset(asset, date(2024, 1, 2))
+            self.assertEqual(
+                fetcher.requests,
+                [("005930.KS", date(2024, 1, 1), date(2024, 1, 2))],
+            )
+
+    def test_unresolved_adapter_symbol_fails_before_provider_call(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fetcher = FakeFetcher()
+            provider = PersistentCachedMarketDataProvider(
+                fetcher,
+                temporary,
+                retry_count=0,
+            )
+            asset = UniverseAsset(
+                market="KR",
+                ticker="005930",
+                name="Samsung",
+                benchmark="KR:069500",
+                active=True,
+                include_in_simulator=True,
+                provider_symbol="005930",
+                market_data_provider="yfinance",
+                market_data_provider_symbol="",
+                benchmark_provider_symbol="069500.KS",
+                exposure_type="ordinary_equity",
+                distribution_type="ordinary_cash_dividend",
+                distribution_frequency="quarterly",
+                row_data={},
+            )
+            with self.assertRaisesRegex(
+                MarketDataError,
+                "market_data_provider_symbol_unresolved:KR:005930",
+            ):
+                provider.load_asset(asset, date(2024, 1, 2))
+            self.assertEqual(fetcher.requests, [])
 
     def test_retry_uses_exponential_backoff(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

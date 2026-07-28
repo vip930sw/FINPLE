@@ -138,6 +138,8 @@ def _execution_contract(config: PipelineConfig) -> dict[str, object]:
 def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
     return {
         "providerSymbol": asset.provider_symbol,
+        "marketDataProvider": asset.market_data_provider,
+        "marketDataProviderSymbol": asset.market_data_provider_symbol,
         "benchmark": asset.benchmark,
         "benchmarkProviderSymbol": asset.benchmark_provider_symbol,
         "active": asset.active,
@@ -227,6 +229,8 @@ def _base_update(
         "ticker": asset.ticker,
         "name": asset.name,
         "benchmark": asset.benchmark,
+        "marketDataProvider": asset.market_data_provider,
+        "marketDataProviderSymbol": asset.market_data_provider_symbol,
         "benchmarkProviderSymbol": asset.benchmark_provider_symbol,
         "active": "true" if asset.active else "false",
         "includeInSimulator": (
@@ -289,17 +293,33 @@ def _calculate_update(
 ]:
     update = _base_update(asset, source_row)
     if not asset.active:
+        reason_code = (
+            asset.row_data.get("reasonCode")
+            or "inactive_universe_asset"
+        )
+        reason_message = (
+            asset.row_data.get("reasonMessage")
+            or "active is false in the universe"
+        )
         update, failure = _failure(
             update,
-            "inactive_universe_asset",
-            "active is false in the universe",
+            reason_code,
+            reason_message,
         )
         return update, failure, True
     if not asset.include_in_simulator:
+        reason_code = (
+            asset.row_data.get("reasonCode")
+            or "excluded_from_simulator"
+        )
+        reason_message = (
+            asset.row_data.get("reasonMessage")
+            or "includeInSimulator is false in the universe"
+        )
         update, failure = _failure(
             update,
-            "excluded_from_simulator",
-            "includeInSimulator is false in the universe",
+            reason_code,
+            reason_message,
         )
         return update, failure, True
 

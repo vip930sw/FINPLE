@@ -381,7 +381,19 @@ class YFinanceMarketDataProvider:
         return self._cache[key]
 
     def load_asset(self, asset: UniverseAsset, as_of_date: date) -> MarketDataBundle:
-        return self._load_cached(asset.provider_symbol, as_of_date)
+        if asset.market_data_provider != "yfinance":
+            raise MarketDataError(
+                "unsupported_market_data_provider:"
+                f"{asset.market_data_provider or 'blank'}"
+            )
+        if not asset.market_data_provider_symbol:
+            raise MarketDataError(
+                f"market_data_provider_symbol_unresolved:{asset.identity}"
+            )
+        return self._load_cached(
+            asset.market_data_provider_symbol,
+            as_of_date,
+        )
 
     def load_benchmark(
         self,

@@ -17,6 +17,22 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact PR head checkout
+        shell: bash
+        env:
+          EXPECTED_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          actual_head="$(git rev-parse HEAD)"
+          expected_head="${EXPECTED_PR_HEAD:-$actual_head}"
+          echo "expected PR head SHA: $expected_head"
+          echo "checked-out HEAD SHA: $actual_head"
+          if [ "$actual_head" != "$expected_head" ]; then
+            echo "exact-head match: false"
+            exit 1
+          fi
+          echo "exact-head match: true"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

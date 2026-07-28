@@ -38,10 +38,14 @@ UNIVERSE_HEADERS = (
     "active",
     "includeInSimulator",
     "providerSymbol",
+    "marketDataProvider",
+    "marketDataProviderSymbol",
     "benchmarkProviderSymbol",
     "exposureType",
     "distributionType",
     "distributionFrequency",
+    "reasonCode",
+    "reasonMessage",
 )
 SOURCE_HEADERS = (
     "market",
@@ -82,8 +86,11 @@ def _asset_row(
     include: str = "true",
     exposure_type: str = "broad_market",
     distribution_type: str = "ordinary_cash_dividend",
+    reason_code: str = "",
+    reason_message: str = "",
 ) -> dict[str, str]:
-    provider_symbol = f"{ticker}.KS" if market == "KR" else ticker
+    provider_symbol = ticker
+    adapter_symbol = f"{ticker}.KS" if market == "KR" else ticker
     benchmark_symbol = "069500.KS" if market == "KR" else "SPY"
     return {
         "market": market,
@@ -93,10 +100,14 @@ def _asset_row(
         "active": active,
         "includeInSimulator": include,
         "providerSymbol": provider_symbol,
+        "marketDataProvider": "yfinance",
+        "marketDataProviderSymbol": adapter_symbol,
         "benchmarkProviderSymbol": benchmark_symbol,
         "exposureType": exposure_type,
         "distributionType": distribution_type,
         "distributionFrequency": "monthly",
+        "reasonCode": reason_code,
+        "reasonMessage": reason_message,
     }
 
 
@@ -245,6 +256,42 @@ class FullSchemaBuildTests(unittest.TestCase):
                 rows = list(csv.DictReader(handle))
             self.assertEqual([row["ticker"] for row in rows], ["SPY", "QQQ"])
             self.assertEqual(rows[1]["providerSymbol"], "QQQ")
+
+    def test_operator_exclusion_reason_is_preserved_in_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("SPY")],
+                [
+                    _asset_row(
+                        "SPY",
+                        include="false",
+                        reason_code="new_asset_pending_metrics",
+                        reason_message=(
+                            "new asset requires metrics and operator activation"
+                        ),
+                    )
+                ],
+            )
+
+            class NoProvider:
+                def load_asset(self, asset, as_of_date):
+                    raise AssertionError("provider must not be called")
+
+                def load_benchmark(self, asset, as_of_date):
+                    raise AssertionError("provider must not be called")
+
+            build_canonical_candidate(
+                _config(source, universe, candidate),
+                NoProvider(),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertEqual(
+                row["reasonCode"],
+                "new_asset_pending_metrics",
+            )
 
     def test_nonordinary_asset_keeps_price_metrics_and_cash_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -431,6 +478,21 @@ class UniverseTests(unittest.TestCase):
                 [asset.ticker for asset in assets],
                 ["069500", "0000D0"],
             )
+
+    def test_canonical_kr_symbol_is_not_a_live_adapter_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "universe.csv"
+            row = _asset_row(
+                "005930",
+                market="KR",
+                benchmark="KR:069500",
+            )
+            row["providerSymbol"] = "005930"
+            row["marketDataProviderSymbol"] = ""
+            _write_csv(path, UNIVERSE_HEADERS, [row])
+            asset = load_universe(path)[0]
+        self.assertEqual(asset.provider_symbol, "005930")
+        self.assertEqual(asset.market_data_provider_symbol, "")
 
     def test_short_korean_ticker_is_rejected_instead_of_zfilled(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -17,8 +17,44 @@ from .canonical import load_canonical_source
 from .universe import normalize_market, normalize_ticker
 
 
-MANUAL_FIELDS = frozenset(
-    {"providerSymbol", "benchmark", "benchmarkProviderSymbol"}
+OPERATOR_MANAGED_FIELDS = frozenset(
+    {
+        "active",
+        "includeInSimulator",
+        "marketDataProvider",
+        "marketDataProviderSymbol",
+        "providerSymbol",
+        "benchmark",
+        "benchmarkProviderSymbol",
+        "exposureType",
+        "distributionType",
+        "distributionFrequency",
+    }
+)
+
+SOURCE_MANAGED_FIELDS = frozenset(
+    {
+        "name",
+        "assetType",
+        "sourceUniverse",
+        "listingStatus",
+        "tags",
+        "marketCap",
+        "aum",
+        "sizeSource",
+        "issuer",
+        "inceptionDate",
+        "firstListedDate",
+        "lastTradingDate",
+    }
+)
+
+SYSTEM_STATUS_FIELDS = frozenset(
+    {
+        "providerSymbolStatus",
+        "marketDataProviderSymbolStatus",
+        "benchmarkStatus",
+    }
 )
 
 
@@ -60,11 +96,19 @@ def update_universe_rows(
             row["active"] = "false"
             row["includeInSimulator"] = "false"
             row["sourcePresent"] = "false"
+            row["reasonCode"] = "source_asset_removed"
+            row["reasonMessage"] = (
+                "asset is absent from the latest canonical source"
+            )
             excluded_count += 1
         else:
-            for field, value in source.items():
-                if field not in MANUAL_FIELDS:
+            for field in SOURCE_MANAGED_FIELDS:
+                if field in source:
+                    value = source[field]
                     row[field] = value
+            for field in OPERATOR_MANAGED_FIELDS | SYSTEM_STATUS_FIELDS:
+                if field not in row and field in source:
+                    row[field] = source[field]
             row["sourcePresent"] = "true"
         if row != existing:
             changed_count += 1
@@ -74,7 +118,16 @@ def update_universe_rows(
         for identity in source_by_identity
         if identity not in existing_by_identity
     ]
-    output.extend(source_by_identity[identity] for identity in new_identities)
+    for identity in new_identities:
+        row = dict(source_by_identity[identity])
+        row["active"] = "true"
+        row["includeInSimulator"] = "false"
+        row["sourcePresent"] = "true"
+        row["reasonCode"] = "new_asset_pending_metrics"
+        row["reasonMessage"] = (
+            "new asset requires metrics and operator activation"
+        )
+        output.append(row)
     return output, {
         "existingRowCount": len(existing_rows),
         "outputRowCount": len(output),

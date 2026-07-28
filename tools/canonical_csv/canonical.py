@@ -12,6 +12,8 @@ from .universe import normalize_market, normalize_ticker
 APPENDED_CANONICAL_FIELDS = (
     "name",
     "benchmark",
+    "marketDataProvider",
+    "marketDataProviderSymbol",
     "benchmarkProviderSymbol",
     "includeInSimulator",
     "simulatorReady",
@@ -55,6 +57,8 @@ CALCULATED_OR_OPERATIONAL_FIELDS = frozenset(
         "mdd",
         "dividendYield",
         "benchmark",
+        "marketDataProvider",
+        "marketDataProviderSymbol",
         "benchmarkProviderSymbol",
         "includeInSimulator",
         "simulatorReady",

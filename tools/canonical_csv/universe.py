@@ -14,6 +14,10 @@ REQUIRED_UNIVERSE_COLUMNS = (
     "benchmark",
     "active",
     "includeInSimulator",
+    "providerSymbol",
+    "marketDataProvider",
+    "marketDataProviderSymbol",
+    "benchmarkProviderSymbol",
 )
 
 
@@ -70,6 +74,8 @@ class UniverseAsset:
     active: bool
     include_in_simulator: bool
     provider_symbol: str
+    market_data_provider: str
+    market_data_provider_symbol: str
     benchmark_provider_symbol: str
     exposure_type: str
     distribution_type: str
@@ -114,10 +120,15 @@ def load_universe(path: Path | str) -> list[UniverseAsset]:
                     row.get("includeInSimulator"),
                     field="includeInSimulator",
                 ),
-                provider_symbol=str(row.get("providerSymbol") or ticker).strip(),
+                provider_symbol=str(row.get("providerSymbol") or "").strip(),
+                market_data_provider=str(
+                    row.get("marketDataProvider") or ""
+                ).strip().lower(),
+                market_data_provider_symbol=str(
+                    row.get("marketDataProviderSymbol") or ""
+                ).strip(),
                 benchmark_provider_symbol=str(
-                    row.get("benchmarkProviderSymbol")
-                    or benchmark.split(":", 1)[1]
+                    row.get("benchmarkProviderSymbol") or ""
                 ).strip(),
                 exposure_type=str(row.get("exposureType") or "").strip().lower(),
                 distribution_type=str(

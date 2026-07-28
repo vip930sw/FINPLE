@@ -35,6 +35,8 @@ def _asset() -> UniverseAsset:
         active=True,
         include_in_simulator=True,
         provider_symbol="SPLT",
+        market_data_provider="yfinance",
+        market_data_provider_symbol="SPLT",
         benchmark_provider_symbol="SPY",
         exposure_type="broad_market",
         distribution_type="ordinary_cash_dividend",

@@ -135,14 +135,42 @@ python -m tools.canonical_csv.bootstrap_universe `
   --output path\to\editable-universe.csv
 ```
 
-Benchmark selection is data-driven by the policy CSV. Existing provider symbols
-are preserved. Missing US symbols may use the canonical ticker; missing KR
-symbols are derived only with explicit KOSPI/KOSDAQ evidence. Unknown KR market
-segments remain unresolved.
+Benchmark selection is data-driven by the policy CSV. Canonical
+`providerSymbol` is always preserved independently from live adapter settings.
+The editable universe stores `marketDataProvider=yfinance` and a separate
+`marketDataProviderSymbol`. US class-share forms such as `BRK.B` are converted
+to Yahoo's `BRK-B` only in the adapter field. Bare six-character KR canonical
+symbols are never considered Yahoo-ready: KOSPI becomes `.KS`, KOSDAQ becomes
+`.KQ`, and KR ETF snapshot evidence becomes `.KS`. Unsupported or ambiguous
+segments such as KONEX remain explicitly unresolved.
+
+The bootstrap report distinguishes canonical presence from adapter readiness:
+`canonicalProviderSymbolCount`, `adapterReadySymbolCount`,
+`derivedAdapterSymbolCount`, `unresolvedAdapterSymbolCount`, and
+`adapterSymbolUnresolvedByMarket`. The compatibility
+`providerSymbolUnresolvedCount` also means unresolved adapter symbol, not a
+blank canonical field.
 
 The monthly updater adds new source assets and marks removed source assets
-inactive while preserving manual `providerSymbol`, `benchmark`, and
-`benchmarkProviderSymbol` choices:
+inactive. It refreshes descriptive source fields while preserving the following
+operator-managed settings:
+
+- `active`
+- `includeInSimulator`
+- `marketDataProvider`
+- `marketDataProviderSymbol`
+- `providerSymbol`
+- `benchmark`
+- `benchmarkProviderSymbol`
+- `exposureType`
+- `distributionType`
+- `distributionFrequency`
+
+Newly discovered assets default to `active=true`,
+`includeInSimulator=false`, and `reasonCode=new_asset_pending_metrics`.
+They cannot enter Simulator calculations until metrics are complete and an
+operator explicitly enables them. Removed source assets become inactive with
+an explicit removal reason.
 
 ```powershell
 python -m tools.canonical_csv.update_universe `
