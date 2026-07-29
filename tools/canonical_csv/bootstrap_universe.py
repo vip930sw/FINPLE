@@ -479,7 +479,9 @@ def load_leverage_metadata_registry(
                 "exposureScope": {
                     "single_stock", "sector_index", "thematic_index",
                     "concentrated_index", "broad_market_index",
-                    "multi_asset_index", "unresolved_scope",
+                    "multi_asset_index", "currency_futures",
+                    "sovereign_bond_futures", "commodity_futures",
+                    "unresolved_scope",
                 },
                 "diversificationTier": {
                     "none", "low", "medium", "high", "unresolved",

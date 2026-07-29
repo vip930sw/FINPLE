@@ -460,3 +460,24 @@ publishable
 - PR #363: 포트폴리오 eligibility 및 분배 시뮬레이션 정책
 - PR #365: 차등 레버리지·인버스 메타데이터 정책과 registry lifecycle
 - `FINPLE - PR 검토 및 준비사항.pdf`: 과도한 provenance·승인 gate, 다중 CSV 경로, 가격·수량 조회, 반복 전수검토를 단순화하기 위한 운영 방향
+
+---
+
+## 13. 비주식 선물 exposureScope
+
+공식 상품정보에서 기초자산이 확인된 경우 다음 값을 사용한다.
+
+- 통화선물: `currency_futures`
+- 국채선물: `sovereign_bond_futures`
+- 원자재선물: `commodity_futures`
+
+정방향 비주식 선물 레버리지는 Tier 2, `high_caution`, `high`,
+`standard`, `높은 주의 필요`로 분류한다. 모든 비주식 선물 인버스는
+기초자산 종류와 관계없이 Tier 4를 적용한다.
+
+비주식 선물 경고에는 일일 재설정과 경로의존성, 선물 롤오버를 포함한다.
+통화는 환율, 국채는 금리·듀레이션, 원자재는 집중도·만기교체와
+현물가격 대비 장기 성과 차이를 함께 설명한다.
+
+이 분류는 경고 확인 후 포트폴리오 추가를 허용하는 기존 confirm 정책이며,
+새로운 deny 또는 승인 gate를 추가하지 않는다.

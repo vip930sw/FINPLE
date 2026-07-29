@@ -17,6 +17,7 @@ from tools.canonical_csv.bootstrap_universe import (
 from tools.canonical_csv.build import build_canonical_candidate
 from tools.canonical_csv.canonical import CanonicalSource, load_canonical_source
 from tools.canonical_csv.config import PipelineConfig
+from tools.canonical_csv.merge_leverage_registry import merge_registry
 from tools.canonical_csv.update_universe import update_universe_rows
 
 
@@ -80,9 +81,39 @@ class BootstrapUniverseTests(unittest.TestCase):
             / "leverage_inverse_metadata_registry.csv"
         )
         registry = load_leverage_metadata_registry(registry_path)
-        self.assertEqual(len(registry), 14)
+        self.assertEqual(len(registry), 102)
         self.assertEqual(registry["US:TQQQ"]["leverageRiskTier"], "2")
         self.assertEqual(registry["US:SQQQ"]["leverageRiskTier"], "4")
+        kr_identities = sorted(
+            identity for identity in registry if identity.startswith("KR:")
+        )
+        self.assertEqual(len(kr_identities), 88)
+        self.assertEqual(
+            hashlib.sha256(
+                "\n".join(kr_identities).encode("utf-8")
+            ).hexdigest(),
+            "1f7cc74ee27968987927da6d8451b8af9c240dec3ec26921d6e4f5de62af8345",
+        )
+        self.assertTrue(
+            all(
+                row["leverageRiskTier"] == "4"
+                for row in registry.values()
+                if row["direction"] == "inverse"
+            )
+        )
+        self.assertTrue(
+            all(
+                row["leverageRiskTier"] == "2"
+                for row in registry.values()
+                if row["market"] == "KR"
+                and row["direction"] == "long"
+                and row["exposureScope"] in {
+                    "currency_futures",
+                    "sovereign_bond_futures",
+                    "commodity_futures",
+                }
+            )
+        )
         runtime_path = (
             REPOSITORY_ROOT
             / "src"
@@ -97,8 +128,8 @@ class BootstrapUniverseTests(unittest.TestCase):
                 "US": ("US:SPY", "SPY"),
             },
         )
-        self.assertEqual(report["verifiedLeverageMetadataCount"], 14)
-        self.assertEqual(report["pendingLeverageMetadataCount"], 197)
+        self.assertEqual(report["verifiedLeverageMetadataCount"], 102)
+        self.assertEqual(report["pendingLeverageMetadataCount"], 109)
         pending_identities = sorted(
             f"{row['market']}:{row['ticker']}"
             for row in rows
@@ -109,7 +140,7 @@ class BootstrapUniverseTests(unittest.TestCase):
             hashlib.sha256(
                 "\n".join(pending_identities).encode("utf-8")
             ).hexdigest(),
-            "c51cf51288427a8e7d66dcbaac5db7d0eb2efb9a767281115ce2f8dc6f8c37d9",
+            "a3a3fb67d37b5d1ad9ebe21a3043d6668ec30279bc5d6099cc16581bba59595b",
         )
         self.assertEqual(
             report["verifiedLeverageMetadataCount"]
@@ -129,7 +160,49 @@ class BootstrapUniverseTests(unittest.TestCase):
         )
         self.assertEqual(
             by_identity["KR:114800"]["metadataVerificationStatus"],
-            "pending_official_source",
+            "verified",
+        )
+        self.assertEqual(
+            sum(
+                row["market"] == "KR"
+                and row["metadataVerificationStatus"]
+                == "pending_official_source"
+                for row in rows
+            ),
+            0,
+        )
+        self.assertEqual(
+            sum(
+                row["market"] == "US"
+                and row["metadataVerificationStatus"]
+                == "pending_official_source"
+                for row in rows
+            ),
+            109,
+        )
+        self.assertEqual(
+            {
+                issuer: sum(
+                    row["market"] == "KR"
+                    and f"KR:{row['ticker']}" in kr_identities
+                    and row["name"].startswith(f"{issuer} ")
+                    for row in rows
+                )
+                for issuer in (
+                    "TIGER", "KODEX", "RISE", "KIWOOM",
+                    "ACE", "PLUS", "HANARO", "SOL",
+                )
+            },
+            {
+                "TIGER": 25,
+                "KODEX": 21,
+                "RISE": 15,
+                "KIWOOM": 9,
+                "ACE": 9,
+                "PLUS": 5,
+                "HANARO": 3,
+                "SOL": 1,
+            },
         )
 
         with registry_path.open(encoding="utf-8", newline="") as handle:
@@ -138,7 +211,15 @@ class BootstrapUniverseTests(unittest.TestCase):
         for changed, message in (
             ([*source_rows, source_rows[0]], "duplicate"),
             ([{**source_rows[0], "officialSourceUrl": ""}], "URL"),
-            ([{**source_rows[1], "leverageRiskTier": "2"}], "tier4"),
+            ([
+                {
+                    **next(
+                        row for row in source_rows
+                        if row["direction"] == "inverse"
+                    ),
+                    "leverageRiskTier": "2",
+                }
+            ], "tier4"),
             ([{**source_rows[0], "resetFrequency": ""}], "reset frequency"),
             ([{**source_rows[0], "leverageMultiple": "not-a-number"}], "value"),
         ):
@@ -150,6 +231,46 @@ class BootstrapUniverseTests(unittest.TestCase):
                     writer.writerows(changed)
                 with self.assertRaisesRegex(ValueError, message):
                     load_leverage_metadata_registry(path)
+
+    def test_korean_registry_merge_is_deterministic(self) -> None:
+        registry_path = (
+            REPOSITORY_ROOT
+            / "tools"
+            / "canonical_csv"
+            / "leverage_inverse_metadata_registry.csv"
+        )
+        with registry_path.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+            headers = tuple(rows[0])
+        korean = [row for row in rows if row["market"] == "KR"]
+        existing = [row for row in rows if row["market"] == "US"]
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "registry.csv"
+            resolutions = root / "resolutions.csv"
+            worklist = root / "worklist.csv"
+            for path, source_rows in (
+                (base, existing),
+                (resolutions, korean),
+            ):
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=headers)
+                    writer.writeheader()
+                    writer.writerows(source_rows)
+            with worklist.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=("market", "ticker"))
+                writer.writeheader()
+                writer.writerows(
+                    {"market": row["market"], "ticker": row["ticker"]}
+                    for row in korean
+                )
+            merged = merge_registry(worklist, resolutions, base)
+            self.assertEqual(len(merged), 102)
+            self.assertEqual(
+                [f"{row['market']}:{row['ticker']}" for row in merged],
+                sorted(f"{row['market']}:{row['ticker']}" for row in rows),
+            )
 
     def test_leverage_registry_active_state_reconciles_only_derived_values(
         self,

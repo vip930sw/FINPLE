@@ -59,6 +59,15 @@ const SEVERITY_LABELS = Object.freeze({
   critical: "위험강도 매우 높음",
 });
 
+const NON_EQUITY_FUTURES_COPY = Object.freeze({
+  currency_futures:
+    "통화선물의 일일 수익률을 배수로 추종합니다. 일일 재설정, 선물 롤오버와 경로의존성 때문에 장기 성과가 단순 배수와 달라질 수 있습니다.",
+  sovereign_bond_futures:
+    "국채선물의 일일 금리·듀레이션 움직임을 배수로 추종합니다. 일일 재설정, 장기채 금리민감도, 선물 롤오버와 경로의존성을 확인하세요.",
+  commodity_futures:
+    "단일 원자재선물의 일일 수익률을 배수로 추종합니다. 높은 변동성, 만기교체·롤오버, 경로의존성과 현물가격 대비 장기 성과 차이를 확인하세요.",
+});
+
 function dailyMultipleLabel(asset = {}) {
   const leverage = finiteNumber(asset.leverageMultiple);
   if (String(asset.resetFrequency || "").toLowerCase() !== "daily" || leverage === null) {
@@ -93,7 +102,16 @@ export function resolveLeverageRiskProfile(asset = {}) {
   if (status === "verified" && TIER_COPY[tier]) {
     const sectorOrTheme = tier === 2
       && ["sector_index", "thematic_index"].includes(asset.exposureScope);
-    const base = sectorOrTheme
+    const futuresMessage = tier === 2
+      ? NON_EQUITY_FUTURES_COPY[asset.exposureScope]
+      : "";
+    const base = futuresMessage
+      ? {
+          label: "높은 주의 필요",
+          scope: "비주식 선물",
+          message: futuresMessage,
+        }
+      : sectorOrTheme
       ? {
           label: "높은 주의 필요",
           scope: "섹터·테마 집중",
