@@ -243,6 +243,11 @@ test("verified leverage tiers vary by diversification while inverse is always ti
     assert.equal(decision.reasonCode, `leverage_risk_tier_${tier}`);
     assert.equal(decision.riskProfile.confirmationMode, mode);
     assert.equal(decision.title, label);
+    assert.match(
+      decision.riskProfile.badges.join(" "),
+      new RegExp(`일일 ${leverageMultiple > 0 ? "\\+" : ""}${leverageMultiple}X`),
+    );
+    assert.match(decision.message, /일일/);
   }
 });
 
@@ -329,27 +334,66 @@ test("non-equity scopes use distinct tier 2 warnings and persist", () => {
   }
 });
 
-test("verified ETN adds issuer credit risk without changing confirmation", () => {
-  const asset = {
+test("non-daily ETNs show their actual reset frequency", () => {
+  for (const asset of [
+    {
+      ...readyAsset,
+      ticker: "DZZ",
+      metadataVerificationStatus: "verified",
+      exposureType: "commodity_futures_inverse_etn",
+      leverageRiskTier: "4",
+      leverageMultiple: -2,
+      direction: "inverse",
+      resetFrequency: "monthly",
+      exposureScope: "commodity_futures",
+      confirmationMode: "strong",
+      expectedBadge: "월간 -2X",
+      expectedReset: "월간",
+    },
+    {
+      ...readyAsset,
+      ticker: "SCDL",
+      metadataVerificationStatus: "verified",
+      exposureType: "index_leveraged_etn",
+      leverageRiskTier: "2",
+      leverageMultiple: 2,
+      direction: "long",
+      resetFrequency: "quarterly",
+      exposureScope: "concentrated_index",
+      confirmationMode: "standard",
+      expectedBadge: "분기 +2X",
+      expectedReset: "분기",
+    },
+  ]) {
+    const decision = getPortfolioAddDecision(asset);
+    assert.equal(decision.policy, "confirm");
+    assert.equal(
+      decision.riskProfile.confirmationMode,
+      asset.confirmationMode,
+    );
+    assert.match(
+      decision.riskProfile.badges.join(" "),
+      new RegExp(asset.expectedBadge.replace("+", "\\+")),
+    );
+    assert.match(decision.message, new RegExp(asset.expectedReset));
+    assert.doesNotMatch(decision.message, /일일/);
+    assert.match(decision.message, /ETN은 발행사 신용위험/);
+  }
+});
+
+test("unknown reset frequency is shown without inventing a daily reset", () => {
+  const profile = resolveLeverageRiskProfile({
     ...readyAsset,
     metadataVerificationStatus: "verified",
-    exposureType: "index_leveraged_etn",
     leverageRiskTier: "2",
     leverageMultiple: 2,
     direction: "long",
-    resetFrequency: "quarterly",
+    resetFrequency: "custom_cycle",
     exposureScope: "concentrated_index",
-    longTermSuitability: "caution",
-    portfolioWarningSeverity: "high",
-    confirmationMode: "standard",
-  };
-  const profile = resolveLeverageRiskProfile(
-    JSON.parse(JSON.stringify(asset)),
-  );
-  assert.match(profile.badges.join(" "), /ETN 발행사 신용위험/);
-  assert.match(profile.message, /발행사의 상환능력/);
-  assert.equal(profile.confirmationMode, "standard");
-  assert.equal(getPortfolioAddDecision(asset).policy, "confirm");
+  });
+  assert.match(profile.badges.join(" "), /custom_cycle \+2X/);
+  assert.match(profile.message, /custom_cycle/);
+  assert.doesNotMatch(profile.message, /일일/);
 });
 
 test("official rejected metadata restores the general asset policy", () => {
