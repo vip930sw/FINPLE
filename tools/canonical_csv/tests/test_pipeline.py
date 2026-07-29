@@ -48,6 +48,20 @@ UNIVERSE_HEADERS = (
     "direction",
     "leverageMultiple",
     "resetFrequency",
+    "metadataVerificationStatus",
+    "metadataVerificationSource",
+    "metadataVerifiedBy",
+    "metadataVerifiedAt",
+    "metadataVerificationReason",
+    "exposureScope",
+    "diversificationTier",
+    "leverageRiskTier",
+    "longTermSuitability",
+    "portfolioWarningSeverity",
+    "confirmationMode",
+    "leverageWarningLabelKo",
+    "officialSourceUrl",
+    "referenceSourceUrl",
     "distributionDataQualityStatus",
     "distributionDataQualityReason",
     "cashEventBasis",
@@ -462,6 +476,20 @@ class FullSchemaBuildTests(unittest.TestCase):
             ("direction", "inverse"),
             ("leverageMultiple", "-3"),
             ("resetFrequency", "daily"),
+            ("metadataVerificationStatus", "pending_official_source"),
+            ("metadataVerificationSource", "operator_review"),
+            ("metadataVerifiedBy", "operator"),
+            ("metadataVerifiedAt", "2026-07-30T02:30:00+09:00"),
+            ("metadataVerificationReason", "official verification"),
+            ("exposureScope", "broad_market_index"),
+            ("diversificationTier", "high"),
+            ("leverageRiskTier", "1"),
+            ("longTermSuitability", "caution"),
+            ("portfolioWarningSeverity", "caution"),
+            ("confirmationMode", "standard"),
+            ("leverageWarningLabelKo", "주의 요함"),
+            ("officialSourceUrl", "https://example.com/product"),
+            ("referenceSourceUrl", "https://example.com/factsheet"),
             ("distributionDataQualityStatus", "provider_event_error"),
             ("cashEventBasis", "provider_reported_cash_event"),
             ("cashEventNormalizationStatus", "unresolved"),
@@ -1086,6 +1114,74 @@ class PublishabilityTests(unittest.TestCase):
             self.assertTrue(report["structuralValid"])
             self.assertFalse(report["publishable"])
             self.assertFalse(report["valid"])
+
+    def test_leverage_metadata_completeness_and_registry_match(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, row, source, asset, headers = self._validate(root)
+            row.update(
+                {
+                    "metadataVerificationStatus": "pending_official_source",
+                    "portfolioAddPolicy": "allow",
+                }
+            )
+            pending_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            self.assertIn(
+                "pending_leverage_metadata_must_confirm",
+                {issue["code"] for issue in pending_report["issues"]},
+            )
+            row.update(
+                {
+                    "metadataVerificationStatus": "",
+                    "metadataVerificationSource": "name_pattern_candidate",
+                }
+            )
+            missing_status_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            self.assertIn(
+                "leverage_metadata_verification_status_missing",
+                {issue["code"] for issue in missing_status_report["issues"]},
+            )
+
+            verified = {
+                "metadataVerificationStatus": "verified",
+                "leverageMultiple": "3",
+                "resetFrequency": "daily",
+                "officialSourceUrl": "https://example.com/product",
+                "direction": "long",
+                "exposureType": "index_leveraged",
+                "exposureScope": "broad_market_index",
+                "diversificationTier": "high",
+                "leverageRiskTier": "1",
+                "longTermSuitability": "caution",
+                "portfolioWarningSeverity": "caution",
+                "confirmationMode": "standard",
+                "portfolioAddPolicy": "confirm",
+            }
+            row.update(verified)
+            asset.row_data.update(verified)
+            row["resetFrequency"] = ""
+            incomplete_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            codes = {issue["code"] for issue in incomplete_report["issues"]}
+            self.assertIn("verified_leverage_metadata_incomplete", codes)
+            self.assertIn("leverage_registry_candidate_mismatch", codes)
 
     def test_missing_common_metric_is_not_publishable(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

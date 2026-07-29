@@ -9,6 +9,7 @@ from pathlib import Path
 from tools.canonical_csv.bootstrap_universe import (
     build_universe_rows,
     load_distribution_data_quality_overrides,
+    load_leverage_metadata_registry,
     write_universe,
 )
 from tools.canonical_csv.build import build_canonical_candidate
@@ -69,6 +70,68 @@ def _source_row(
 
 
 class BootstrapUniverseTests(unittest.TestCase):
+    def test_leverage_registry_contract_and_runtime_worklist_counts(self) -> None:
+        registry_path = (
+            REPOSITORY_ROOT
+            / "tools"
+            / "canonical_csv"
+            / "leverage_inverse_metadata_registry.csv"
+        )
+        registry = load_leverage_metadata_registry(registry_path)
+        self.assertEqual(len(registry), 14)
+        self.assertEqual(registry["US:TQQQ"]["leverageRiskTier"], "2")
+        self.assertEqual(registry["US:SQQQ"]["leverageRiskTier"], "4")
+        runtime_path = (
+            REPOSITORY_ROOT
+            / "src"
+            / "data"
+            / "tickers"
+            / "finple_app_candidates_v2.csv"
+        )
+        rows, report = build_universe_rows(
+            load_canonical_source(runtime_path),
+            {
+                "KR": ("KR:069500", "069500.KS"),
+                "US": ("US:SPY", "SPY"),
+            },
+        )
+        self.assertEqual(report["verifiedLeverageMetadataCount"], 14)
+        self.assertEqual(report["pendingLeverageMetadataCount"], 197)
+        self.assertEqual(
+            sum(row["metadataVerificationStatus"] == "rejected" for row in rows),
+            0,
+        )
+        by_identity = {
+            f"{row['market']}:{row['ticker']}": row for row in rows
+        }
+        self.assertEqual(
+            by_identity["US:UPRO"]["metadataVerificationStatus"],
+            "verified",
+        )
+        self.assertEqual(
+            by_identity["KR:114800"]["metadataVerificationStatus"],
+            "pending_official_source",
+        )
+
+        with registry_path.open(encoding="utf-8", newline="") as handle:
+            source_rows = list(csv.DictReader(handle))
+            headers = tuple(source_rows[0])
+        for changed, message in (
+            ([*source_rows, source_rows[0]], "duplicate"),
+            ([{**source_rows[0], "officialSourceUrl": ""}], "URL"),
+            ([{**source_rows[1], "leverageRiskTier": "2"}], "tier4"),
+            ([{**source_rows[0], "resetFrequency": ""}], "reset frequency"),
+            ([{**source_rows[0], "leverageMultiple": "not-a-number"}], "value"),
+        ):
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "registry.csv"
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=headers)
+                    writer.writeheader()
+                    writer.writerows(changed)
+                with self.assertRaisesRegex(ValueError, message):
+                    load_leverage_metadata_registry(path)
+
     def test_distribution_override_csv_validates_and_active_false_unlocks(self) -> None:
         headers = (
             "market", "ticker", "distributionDataQualityStatus", "cashEventBasis",

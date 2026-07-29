@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   getPortfolioAddDecision,
   isLeveragedOrInverse,
+  resolveLeverageRiskProfile,
 } from "./portfolioEligibilityPolicy.js";
 import { buildMonthlyBaselineProjection } from "../../components/portfolio/utils/monthlyBaselineEngine.js";
 import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
@@ -211,4 +212,73 @@ test("explicit short-history deny wins over leveraged confirmation", () => {
   });
   assert.equal(decision.policy, "deny");
   assert.equal(decision.reasonCode, "insufficient_price_and_rolling_history");
+});
+
+test("verified leverage tiers vary by diversification while inverse is always tier 4", () => {
+  const cases = [
+    ["UPRO", "broad_market_index", 3, "long", "1", "standard", "주의 요함"],
+    ["TQQQ", "concentrated_index", 3, "long", "2", "standard", "주의 필요"],
+    ["SOXL", "sector_index", 3, "long", "2", "standard", "높은 주의 필요"],
+    ["AAPU", "single_stock", 2, "long", "3", "strong", "장기보유를 권장하지 않음"],
+    ["SH", "broad_market_index", -1, "inverse", "4", "strong", "장기투자에 적절하지 않음"],
+    ["SQQQ", "concentrated_index", -3, "inverse", "4", "strong", "장기투자에 적절하지 않음"],
+  ];
+  for (const [ticker, exposureScope, leverageMultiple, direction, tier, mode, label] of cases) {
+    const asset = {
+      ...readyAsset,
+      ticker,
+      usablePriceHistoryYears: 10,
+      rollingCagrWindowYears: 3,
+      metadataVerificationStatus: "verified",
+      leverageRiskTier: tier,
+      exposureScope,
+      leverageMultiple,
+      direction,
+      resetFrequency: "daily",
+      confirmationMode: mode,
+      leverageWarningLabelKo: label,
+    };
+    const decision = getPortfolioAddDecision(asset);
+    assert.equal(decision.policy, "confirm");
+    assert.equal(decision.reasonCode, `leverage_risk_tier_${tier}`);
+    assert.equal(decision.riskProfile.confirmationMode, mode);
+    assert.equal(decision.title, label);
+  }
+});
+
+test("pending metadata is not described as verified and requires strong confirmation", () => {
+  const decision = getPortfolioAddDecision({
+    ...readyAsset,
+    ticker: "PENDING2X",
+    usablePriceHistoryYears: 10,
+    rollingCagrWindowYears: 3,
+    metadataVerificationStatus: "pending_official_source",
+    leverageRiskTier: "pending",
+  });
+  assert.equal(decision.policy, "confirm");
+  assert.equal(decision.reasonCode, "leverage_metadata_verification_pending");
+  assert.equal(decision.riskProfile.confirmationMode, "strong");
+  assert.match(decision.message, /검증이 완료되지 않았습니다/);
+  assert.doesNotMatch(decision.message, /Tier [1-4]/);
+});
+
+test("tier metadata survives persistence and appears in reports", () => {
+  const source = {
+    ...readyAsset,
+    ticker: "UPRO",
+    metadataVerificationStatus: "verified",
+    leverageRiskTier: "1",
+    exposureScope: "broad_market_index",
+    leverageMultiple: 3,
+    direction: "long",
+    resetFrequency: "daily",
+    confirmationMode: "standard",
+    leverageWarningLabelKo: "주의 요함",
+  };
+  const reloaded = {
+    ...source,
+    ...normalizePersistedMetricFields(JSON.parse(JSON.stringify(source))),
+  };
+  assert.equal(resolveLeverageRiskProfile(reloaded).tier, "1");
+  assert.match(createPortfolioReportText({ assets: [reloaded], result: {} }), /UPRO.*주의 요함/);
 });

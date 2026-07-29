@@ -15,10 +15,7 @@ import {
   resolveDistributionDisplayPolicy,
 } from "../data/tickers/distributionPolicy";
 import { resolveMetricReviewDisplay } from "../data/tickers/metricReviewPolicy";
-import {
-  getPortfolioAddDecision,
-  isLeveragedOrInverse,
-} from "../data/tickers/portfolioEligibilityPolicy";
+import { getPortfolioAddDecision } from "../data/tickers/portfolioEligibilityPolicy";
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
@@ -269,6 +266,7 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const metricReview = resolveMetricReviewDisplay(item);
   const distributionDisplay = resolveDistributionDisplayPolicy(item);
   const addDecision = getPortfolioAddDecision(item);
+  const leverageRiskProfile = addDecision.riskProfile;
   const addDenied = !canAdd || addDecision.policy === "deny";
   const addReason = addDenied
     ? addDecision.message || "현재 포트폴리오에 추가할 수 없습니다."
@@ -281,8 +279,6 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   if (["insufficient_rolling_window_history", "insufficient_price_and_rolling_history"].includes(addDecision.reasonCode)) {
     historyBadges.push(`장기 RM 표본 부족, 적용 RM ${addDecision.rollingCagrWindowYears.toFixed(0)}년, 최소 ${addDecision.minimumPortfolioHistoryYears}년 필요`);
   }
-  const leverage = Number(item.leverageMultiple);
-  const leveragedOrInverse = isLeveragedOrInverse(item);
   return (
     <article className={cardClassName}>
       <div className="tickerResultMain">
@@ -301,8 +297,9 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
           </button>
         </span>
       </div>
-      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{historyBadges.map((text) => <span key={text}>{text}</span>)}{addDenied ? <span>신뢰도 낮음, 포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leveragedOrInverse ? <span>레버리지·인버스 위험 확인</span> : null}{item.resetFrequency === "daily" && Number.isFinite(leverage) && Math.abs(leverage) >= 2 ? <span>일일 {leverage > 0 ? "+" : ""}{leverage}X</span> : null}{String(item.direction).toLowerCase() === "inverse" ? <span>인버스</span> : null}{leveragedOrInverse ? <span>장기보유 주의</span> : null}{leveragedOrInverse ? <span>극단 변동성</span> : null}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{historyBadges.map((text) => <span key={text}>{text}</span>)}{addDenied ? <span>신뢰도 낮음, 포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leverageRiskProfile ? <span>{leverageRiskProfile.label}</span> : null}{leverageRiskProfile?.badges.map((text) => <span key={text}>{text}</span>)}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
       {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addReason}</p> : null}
+      {!addDenied && leverageRiskProfile ? <p className="tickerResultRiskNotice">{addDecision.message}</p> : null}
       {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
       {isNonOrdinaryDistribution(item) ? (

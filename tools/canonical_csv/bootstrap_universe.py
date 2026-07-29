@@ -36,6 +36,20 @@ UNIVERSE_OUTPUT_FIELDS = (
     "leverageMultiple",
     "direction",
     "resetFrequency",
+    "metadataVerificationStatus",
+    "metadataVerificationSource",
+    "metadataVerifiedBy",
+    "metadataVerifiedAt",
+    "metadataVerificationReason",
+    "exposureScope",
+    "diversificationTier",
+    "leverageRiskTier",
+    "longTermSuitability",
+    "portfolioWarningSeverity",
+    "confirmationMode",
+    "leverageWarningLabelKo",
+    "officialSourceUrl",
+    "referenceSourceUrl",
     "distributionType",
     "distributionFrequency",
     "cashEventBasis",
@@ -64,6 +78,9 @@ UNIVERSE_OUTPUT_FIELDS = (
 
 DEFAULT_DISTRIBUTION_DATA_QUALITY_OVERRIDES_PATH = (
     Path(__file__).with_name("distribution_data_quality_overrides.csv")
+)
+DEFAULT_LEVERAGE_METADATA_REGISTRY_PATH = (
+    Path(__file__).with_name("leverage_inverse_metadata_registry.csv")
 )
 ALLOWED_DISTRIBUTION_DATA_QUALITY_OVERRIDE_STATUSES = frozenset(
     {"provider_event_error"}
@@ -266,6 +283,157 @@ def load_benchmark_policy(
         }
 
 
+def load_leverage_metadata_registry(
+    path: Path | str = DEFAULT_LEVERAGE_METADATA_REGISTRY_PATH,
+) -> dict[str, dict[str, str]]:
+    with Path(path).open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        required = {
+            "market", "ticker", "metadataVerificationStatus",
+            "exposureType", "underlyingTicker", "leverageMultiple", "direction",
+            "resetFrequency", "exposureScope", "diversificationTier",
+            "leverageRiskTier", "longTermSuitability",
+            "portfolioWarningSeverity", "confirmationMode",
+            "leverageWarningLabelKo", "officialSourceUrl",
+            "referenceSourceUrl", "verifiedBy", "verifiedAt",
+            "reason", "active",
+        }
+        missing = required - set(reader.fieldnames or ())
+        if missing:
+            raise ValueError(
+                f"leverage metadata registry missing: {','.join(sorted(missing))}"
+            )
+        registry: dict[str, dict[str, str]] = {}
+        for row_number, raw in enumerate(reader, start=2):
+            row = {
+                str(key): str(value or "").strip()
+                for key, value in raw.items()
+                if key is not None
+            }
+            market = row["market"].upper()
+            ticker = row["ticker"].upper()
+            identity = f"{market}:{ticker}"
+            if not market or not ticker or identity in registry:
+                raise ValueError(
+                    f"invalid or duplicate leverage metadata identity at row {row_number}"
+                )
+            if row["active"].lower() not in {"true", "false"}:
+                raise ValueError(f"invalid leverage metadata active: {identity}")
+            if row["metadataVerificationStatus"] != "verified":
+                raise ValueError(f"invalid leverage metadata status: {identity}")
+            if (
+                not _valid_http_url(row["officialSourceUrl"])
+                or not _valid_http_url(row["referenceSourceUrl"])
+            ):
+                raise ValueError(f"invalid leverage metadata URL: {identity}")
+            try:
+                leverage = abs(float(row["leverageMultiple"]))
+                verified_at = datetime.fromisoformat(row["verifiedAt"])
+            except ValueError as error:
+                raise ValueError(f"invalid leverage metadata value: {identity}") from error
+            if leverage <= 0 or verified_at.utcoffset() is None:
+                raise ValueError(f"invalid leverage metadata value: {identity}")
+            if (
+                not row["verifiedBy"]
+                or not row["reason"]
+                or not row["underlyingTicker"]
+                or not row["leverageWarningLabelKo"]
+            ):
+                raise ValueError(f"incomplete leverage metadata audit: {identity}")
+            allowed_values = {
+                "exposureScope": {
+                    "single_stock", "sector_index", "thematic_index",
+                    "concentrated_index", "broad_market_index",
+                    "multi_asset_index", "unresolved_scope",
+                },
+                "diversificationTier": {
+                    "none", "low", "medium", "high", "unresolved",
+                },
+                "leverageRiskTier": {"1", "2", "3", "4"},
+                "longTermSuitability": {
+                    "caution", "high_caution", "not_recommended", "unsuitable",
+                },
+                "portfolioWarningSeverity": {"caution", "high", "critical"},
+                "confirmationMode": {"standard", "strong"},
+            }
+            for field, allowed in allowed_values.items():
+                if row[field] not in allowed:
+                    raise ValueError(
+                        f"invalid leverage metadata {field}: {identity}"
+                    )
+            if row["direction"] == "inverse" and row["leverageRiskTier"] != "4":
+                raise ValueError(f"inverse metadata must be tier4: {identity}")
+            if (
+                row["direction"] == "long"
+                and row["exposureScope"] == "single_stock"
+                and int(row["leverageRiskTier"]) < 3
+            ):
+                raise ValueError(
+                    f"single-stock leverage metadata must be tier3+: {identity}"
+                )
+            if (
+                row["direction"] == "long"
+                and row["exposureScope"] == "broad_market_index"
+                and row["leverageRiskTier"] == "4"
+            ):
+                raise ValueError(
+                    f"broad-market long metadata cannot be tier4: {identity}"
+                )
+            if (
+                row["direction"] == "long"
+                and leverage >= 4
+                and int(row["leverageRiskTier"]) < 3
+            ):
+                raise ValueError(
+                    f"4x long leverage metadata must be tier3+: {identity}"
+                )
+            if not row["resetFrequency"]:
+                raise ValueError(f"leverage reset frequency is required: {identity}")
+            if row["direction"] not in {"long", "inverse"}:
+                raise ValueError(f"invalid leverage metadata direction: {identity}")
+            registry[identity] = row
+        return registry
+
+
+_PENDING_LEVERAGE_IDENTITIES = frozenset(
+    {
+        "US:AAPX", "US:AMZO", "US:AMZZ", "US:GOOX", "US:METU",
+        "US:MSFX", "US:NVDU", "US:NVDX", "US:TSLT",
+    }
+)
+_PENDING_LEVERAGE_NAME_PATTERNS = (
+    re.compile(r"레버리지|인버스"),
+    re.compile(r"\b(?:2X|3X)\s+(?:LONG|SHORT|LEVERAGED)\b", re.I),
+    re.compile(r"\bDOUBLE SHORT\b", re.I),
+    re.compile(r"\bDIREXION DAILY .+ (?:BULL|BEAR) (?:2X|3X)\b", re.I),
+    re.compile(r"\bPROSHARES (?:ULTRAPRO|ULTRASHORT)\b", re.I),
+    re.compile(r"\bMICROSECTORS\b.+(?:2X|3X|-2X|-3X)", re.I),
+)
+
+
+def _is_pending_leverage_candidate(
+    identity: str,
+    source_row: dict[str, str],
+) -> bool:
+    if identity in _PENDING_LEVERAGE_IDENTITIES:
+        return True
+    if str(source_row.get("exposureType") or "").strip() not in {"", "ordinary_etf"}:
+        return False
+    name = " ".join(
+        str(source_row.get(field) or "")
+        for field in ("name", "nameKr", "nameEn")
+    )
+    if re.search(r"\bPROSHARES SHORT\b", name, re.I) and not re.search(
+        r"\bSHORT[- ](?:TERM|DURATION)\b", name, re.I
+    ):
+        return True
+    if re.search(r"\bPROSHARES ULTRA\b", name, re.I) and not re.search(
+        r"\bULTRASHORT\b|\bSHORT[- ]TERM\b", name, re.I
+    ):
+        return True
+    return any(pattern.search(name) for pattern in _PENDING_LEVERAGE_NAME_PATTERNS)
+
+
 def _resolve_kr_yfinance_symbol(row: dict[str, str]) -> str:
     ticker = str(row.get("ticker") or "").strip().upper()
     evidence = " ".join(
@@ -324,9 +492,12 @@ def build_universe_rows(
     source: CanonicalSource,
     benchmark_policy: dict[str, tuple[str, str]],
     distribution_overrides: dict[str, dict[str, str]] | None = None,
+    leverage_metadata_registry: dict[str, dict[str, str]] | None = None,
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
     if distribution_overrides is None:
         distribution_overrides = load_distribution_data_quality_overrides()
+    if leverage_metadata_registry is None:
+        leverage_metadata_registry = load_leverage_metadata_registry()
     rows: list[dict[str, str]] = []
     canonical_provider_count = 0
     adapter_ready_count = 0
@@ -334,10 +505,25 @@ def build_universe_rows(
     adapter_unresolved_count = 0
     adapter_unresolved_by_market: dict[str, int] = {}
     benchmark_unresolved = 0
+    verified_leverage_count = 0
+    pending_leverage_count = 0
     market_counts: dict[str, int] = {}
     for source_row in source.rows:
         market, ticker = row_identity(source_row).split(":", 1)
         identity = f"{market}:{ticker}"
+        leverage_metadata = leverage_metadata_registry.get(identity, {})
+        leverage_metadata_active = _parse_bool(
+            leverage_metadata.get("active")
+        )
+        leverage_verified = bool(leverage_metadata) and leverage_metadata_active
+        leverage_pending = (
+            not leverage_verified
+            and _is_pending_leverage_candidate(identity, source_row)
+        )
+        if leverage_verified:
+            verified_leverage_count += 1
+        elif leverage_pending:
+            pending_leverage_count += 1
         distribution_override = distribution_overrides.get(identity, {})
         distribution_override_values = {
             output_field: distribution_override.get(input_field, "")
@@ -433,20 +619,104 @@ def build_universe_rows(
                     source_row.get("sizeSource") or ""
                 ).strip(),
                 "exposureType": str(
-                    source_row.get("exposureType") or ""
+                    leverage_metadata.get("exposureType")
+                    if leverage_verified
+                    else source_row.get("exposureType") or ""
                 ).strip(),
                 "underlyingTicker": str(
-                    source_row.get("underlyingTicker") or ""
+                    leverage_metadata.get("underlyingTicker")
+                    if leverage_verified
+                    else source_row.get("underlyingTicker") or ""
                 ).strip(),
                 "leverageMultiple": str(
-                    source_row.get("leverageMultiple") or ""
+                    leverage_metadata.get("leverageMultiple")
+                    if leverage_verified
+                    else source_row.get("leverageMultiple") or ""
                 ).strip(),
                 "direction": str(
-                    source_row.get("direction") or ""
+                    leverage_metadata.get("direction")
+                    if leverage_verified
+                    else source_row.get("direction") or ""
                 ).strip(),
                 "resetFrequency": str(
-                    source_row.get("resetFrequency") or ""
+                    leverage_metadata.get("resetFrequency")
+                    if leverage_verified
+                    else source_row.get("resetFrequency") or ""
                 ).strip(),
+                "metadataVerificationStatus": (
+                    "verified"
+                    if leverage_verified
+                    else "pending_official_source"
+                    if leverage_pending
+                    else str(source_row.get("metadataVerificationStatus") or "")
+                ),
+                "metadataVerificationSource": (
+                    "official_registry"
+                    if leverage_verified
+                    else "name_pattern_candidate"
+                    if leverage_pending
+                    else str(source_row.get("metadataVerificationSource") or "")
+                ),
+                "metadataVerifiedBy": (
+                    leverage_metadata.get("verifiedBy", "")
+                    if leverage_verified
+                    else ""
+                ),
+                "metadataVerifiedAt": (
+                    leverage_metadata.get("verifiedAt", "")
+                    if leverage_verified
+                    else ""
+                ),
+                "metadataVerificationReason": (
+                    leverage_metadata.get("reason", "")
+                    if leverage_verified
+                    else "official source verification pending"
+                    if leverage_pending
+                    else str(source_row.get("metadataVerificationReason") or "")
+                ),
+                "exposureScope": (
+                    leverage_metadata.get("exposureScope", "")
+                    if leverage_verified else "unresolved_scope"
+                    if leverage_pending else str(source_row.get("exposureScope") or "")
+                ),
+                "diversificationTier": (
+                    leverage_metadata.get("diversificationTier", "")
+                    if leverage_verified else "unresolved"
+                    if leverage_pending else str(source_row.get("diversificationTier") or "")
+                ),
+                "leverageRiskTier": (
+                    leverage_metadata.get("leverageRiskTier", "")
+                    if leverage_verified else "pending"
+                    if leverage_pending else str(source_row.get("leverageRiskTier") or "")
+                ),
+                "longTermSuitability": (
+                    leverage_metadata.get("longTermSuitability", "")
+                    if leverage_verified else "pending"
+                    if leverage_pending else str(source_row.get("longTermSuitability") or "")
+                ),
+                "portfolioWarningSeverity": (
+                    leverage_metadata.get("portfolioWarningSeverity", "")
+                    if leverage_verified else "high"
+                    if leverage_pending else str(source_row.get("portfolioWarningSeverity") or "")
+                ),
+                "confirmationMode": (
+                    leverage_metadata.get("confirmationMode", "")
+                    if leverage_verified else "strong"
+                    if leverage_pending else str(source_row.get("confirmationMode") or "")
+                ),
+                "leverageWarningLabelKo": (
+                    leverage_metadata.get("leverageWarningLabelKo", "")
+                    if leverage_verified else "상품 구조 확인 필요"
+                    if leverage_pending else str(source_row.get("leverageWarningLabelKo") or "")
+                ),
+                "officialSourceUrl": (
+                    leverage_metadata.get("officialSourceUrl", "")
+                    if leverage_verified else str(source_row.get("officialSourceUrl") or "")
+                ),
+                "referenceSourceUrl": (
+                    leverage_metadata.get("referenceSourceUrl", "")
+                    if leverage_verified else str(source_row.get("referenceSourceUrl") or "")
+                ),
                 "distributionType": str(
                     source_row.get("distributionType") or "unknown"
                 ).strip(),
@@ -566,6 +836,8 @@ def build_universe_rows(
         # than merely checking whether canonical providerSymbol is blank.
         "providerSymbolUnresolvedCount": adapter_unresolved_count,
         "benchmarkUnresolvedCount": benchmark_unresolved,
+        "verifiedLeverageMetadataCount": verified_leverage_count,
+        "pendingLeverageMetadataCount": pending_leverage_count,
         "identityMatch": tuple(identities) == source.identities,
     }
     return rows, report

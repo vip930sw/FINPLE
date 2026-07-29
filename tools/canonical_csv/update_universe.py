@@ -40,6 +40,25 @@ OPERATOR_MANAGED_FIELDS = frozenset(
     }
 )
 
+LEVERAGE_REGISTRY_MANAGED_FIELDS = frozenset(
+    {
+        "metadataVerificationStatus",
+        "metadataVerificationSource",
+        "metadataVerifiedBy",
+        "metadataVerifiedAt",
+        "metadataVerificationReason",
+        "exposureScope",
+        "diversificationTier",
+        "leverageRiskTier",
+        "longTermSuitability",
+        "portfolioWarningSeverity",
+        "confirmationMode",
+        "leverageWarningLabelKo",
+        "officialSourceUrl",
+        "referenceSourceUrl",
+    }
+)
+
 _DISTRIBUTION_OVERRIDE_VALUE_FIELDS = frozenset(
     {
         "cashEventBasis",
@@ -177,6 +196,17 @@ def update_universe_rows(
             for field in OPERATOR_MANAGED_FIELDS | SYSTEM_STATUS_FIELDS:
                 if field not in row and field in source:
                     row[field] = source[field]
+            for field in LEVERAGE_REGISTRY_MANAGED_FIELDS:
+                row[field] = source.get(field, "")
+            if source.get("metadataVerificationStatus") == "verified":
+                for field in (
+                    "exposureType",
+                    "underlyingTicker",
+                    "leverageMultiple",
+                    "direction",
+                    "resetFrequency",
+                ):
+                    row[field] = source.get(field, "")
             provenance_present = _override_provenance_present(existing)
             expected_values = (
                 _override_values(existing) or _override_values(source)

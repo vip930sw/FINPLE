@@ -6,6 +6,7 @@ import {
   resolveDistributionDisplayPolicy,
   resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy.js";
+import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy.js";
 import {
   formatPortfolioEligibilityBlocks,
   formatUserFacingBaselineBlockReasons,
@@ -170,6 +171,12 @@ export function createPortfolioReportText({
       return `${asset.ticker || "-"} / ${asset.name || "-"} / 평가금액 ${formatNumber(
         assetValue
       )}원 / 비중 ${formatPercent(weight)} / CAGR ${cagr} / BETA ${beta} / MDD ${mdd} / ${describeAssetDistribution(asset)}`;
+    }),
+    ...safeAssets.flatMap((asset) => {
+      const profile = resolveLeverageRiskProfile(asset);
+      return profile
+        ? [`위험 확인: ${asset.ticker || "-"} / ${profile.label} / ${profile.badges.join(" / ")} / ${profile.message}`]
+        : [];
     }),
     ...createNonOrdinaryDistributionLines(safeAssets),
     ``,
