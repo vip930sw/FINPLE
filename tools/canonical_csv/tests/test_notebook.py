@@ -31,8 +31,36 @@ class NotebookStructureTests(unittest.TestCase):
         self.assertIn("RESUME", source)
         self.assertIn("RETRY_COUNT", source)
         self.assertIn("PersistentCachedMarketDataProvider", source)
+        self.assertIn('REPO_REF = "main"', source)
+        self.assertIn("drive.mount", source)
+        self.assertIn('"git", "clone"', source)
+        self.assertIn('"git", "-C"', source)
+        self.assertIn("bootstrap_universe", source)
+        self.assertIn("update_universe", source)
+        self.assertIn("marketDataProviderSymbol", source)
+        self.assertIn("write_non_publishable_candidate=True", source)
+        self.assertIn("operator-summary.json", source)
+        self.assertIn("checkoutSha", source)
+        self.assertIn("ZipFile", source)
+        self.assertIn("VALIDATION_PATH", source)
+        self.assertIn("FAILED_PATH", source)
+        self.assertIn("SUMMARY_PATH", source)
+        self.assertIn("CHECKPOINT_PATH", source)
+        self.assertIn("files.download", source)
+        self.assertIn("runtimeCsvReplacementPerformed", source)
+        self.assertNotIn(
+            "7e9b1e66a0f179c573d164cb48b9192a3494b9ac",
+            source,
+        )
         self.assertNotIn("Adj Close", source)
         self.assertNotIn("Total Return", source)
+        for index, cell in enumerate(notebook["cells"]):
+            if cell.get("cell_type") == "code":
+                compile(
+                    "".join(cell.get("source", [])),
+                    f"{NOTEBOOK_PATH.name}:cell-{index}",
+                    "exec",
+                )
 
     def test_ci_checks_out_and_asserts_the_exact_pr_head(self) -> None:
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")

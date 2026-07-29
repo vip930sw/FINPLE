@@ -26,6 +26,7 @@ class PipelineConfig:
     resume: bool = True
     retry_count: int = 3
     retry_backoff_seconds: float = 5.0
+    write_non_publishable_candidate: bool = False
     rolling_cagr_window_years: tuple[int, ...] = DEFAULT_ROLLING_CAGR_WINDOW_YEARS
     min_rolling_windows: int = 6
     beta_lookback_observations: int = 1_260
