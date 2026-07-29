@@ -66,7 +66,7 @@ test("price and rolling history produce accurate deny reasons at the configured 
       usablePriceHistoryYears: asset.usablePriceHistoryYears,
       rollingCagrWindowYears: asset.rollingCagrWindowYears,
       minimumPortfolioHistoryYears: 3,
-      eligibleAfter: asset.portfolioEligibleAfterDate || "",
+      portfolioEligibleAfterDate: asset.portfolioEligibleAfterDate || "",
     }]);
   }
 });

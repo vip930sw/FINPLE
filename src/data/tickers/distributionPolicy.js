@@ -60,21 +60,21 @@ export function resolveDistributionDisplayPolicy(asset = {}) {
     return {
       kind: "special",
       title: "특별·청산 분배",
-      notices: ["자산 매각·청산 지급", "반복 수익 아님", "시뮬레이션 재투자 제외"],
+      notices: ["자산매각·청산 관련 지급", "반복 지급 아님", "시뮬레이션 재투자 제외"],
     };
   }
   if (type === "futures_mixed_distribution") {
     return {
       kind: "futures",
       title: "선물·파생 분배",
-      notices: ["자본이득 포함 가능", "롤오버 영향", "변동 분배율"],
+      notices: ["자본이득 포함 가능", "롤오버 영향", "분배율 변동 가능"],
     };
   }
   if (isNonOrdinaryDistribution(asset)) {
     return {
       kind: "mixed",
-      title: "옵션 분배",
-      notices: ["원금환급 가능", "변동 분배율"],
+      title: "옵션분배",
+      notices: ["ROC(원금환급) 포함 가능", "분배율 변동 가능"],
     };
   }
   return { kind: "ordinary", title: "일반 배당", notices: [] };

@@ -83,7 +83,7 @@ def load_distribution_data_quality_overrides(
         required = {
             "market",
             "ticker",
-            "status",
+            "distributionDataQualityStatus",
             "cashEventBasis",
             "cashEventNormalizationStatus",
             "cashEventNormalizationMethod",
@@ -116,7 +116,9 @@ def load_distribution_data_quality_overrides(
                     f"duplicate distribution data quality override: {identity}"
                 )
             seen.add(identity)
-            status = str(row.get("status") or "").strip().lower()
+            status = str(
+                row.get("distributionDataQualityStatus") or ""
+            ).strip().lower()
             if status not in ALLOWED_DISTRIBUTION_DATA_QUALITY_OVERRIDE_STATUSES:
                 raise ValueError(
                     f"invalid distribution data quality status: {status}"
@@ -347,7 +349,9 @@ def build_universe_rows(
                 ).strip(),
                 "distributionDataQualityStatus": str(
                     source_row.get("distributionDataQualityStatus")
-                    or distribution_override.get("status")
+                    or distribution_override.get(
+                        "distributionDataQualityStatus"
+                    )
                     or ""
                 ).strip(),
                 "distributionDataQualityReason": str(

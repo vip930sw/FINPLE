@@ -64,14 +64,14 @@ test("distribution display resolver distinguishes provider, special, mixed, and 
     distributionType: "special_or_liquidating_distribution",
   });
   assert.equal(special.title, "특별·청산 분배");
-  assert.match(special.notices.join("|"), /자산 매각·청산 지급/);
+  assert.match(special.notices.join("|"), /자산매각·청산 관련 지급/);
   assert.doesNotMatch(special.notices.join("|"), /옵션/);
 
   const mixed = resolveDistributionDisplayPolicy({
     distributionType: "mixed_distribution",
   });
-  assert.equal(mixed.title, "옵션 분배");
-  assert.match(mixed.notices.join("|"), /원금환급 가능/);
+  assert.equal(mixed.title, "옵션분배");
+  assert.match(mixed.notices.join("|"), /ROC\(원금환급\) 포함 가능/);
 
   const futures = resolveDistributionDisplayPolicy({
     distributionType: "futures_mixed_distribution",
@@ -360,10 +360,10 @@ test("saved portfolio reload and report text preserve non-ordinary distribution 
   assert.equal(reloaded.dividendYield, null);
 
   const pdfLine = describeAssetDistribution(reloaded);
-  assert.match(pdfLine, /옵션 분배/);
+  assert.match(pdfLine, /옵션분배/);
   assert.match(pdfLine, /최근 12개월 분배율 34\.98%/);
   assert.match(pdfLine, /주간 분배/);
-  assert.match(pdfLine, /원금환급 가능/);
-  assert.match(pdfLine, /변동 분배율/);
+  assert.match(pdfLine, /ROC\(원금환급\) 포함 가능/);
+  assert.match(pdfLine, /분배율 변동 가능/);
   assert.doesNotMatch(pdfLine, /일반 배당률 34\.98%/);
 });

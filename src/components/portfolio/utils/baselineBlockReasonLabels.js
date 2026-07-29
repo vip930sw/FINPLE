@@ -38,6 +38,9 @@ export function formatUserFacingBaselineBlockReason(reason = "") {
   if (code === "asset_baseline_contract_missing") {
     return `${ticker}: 승인된 baseline 계산 정책이 없습니다.`;
   }
+  if (code === "portfolio_add_denied") {
+    return `${ticker}: 포트폴리오에 사용할 수 없는 자산입니다.`;
+  }
   return USER_FACING_BLOCK_REASON_LABELS[code] || "지표 계산 계약을 확인할 수 없습니다.";
 }
 
@@ -66,7 +69,9 @@ function formatYears(value, digits = 1) {
 export function formatPortfolioEligibilityBlock(block = {}) {
   const identity = [block.market, block.ticker].filter(Boolean).join(":") || "자산";
   const minimum = formatYears(block.minimumPortfolioHistoryYears, 0);
-  const after = block.eligibleAfter ? ` ${block.eligibleAfter} 이후 다시 확인할 수 있습니다.` : "";
+  const after = block.portfolioEligibleAfterDate
+    ? ` ${block.portfolioEligibleAfterDate} 이후 다시 확인할 수 있습니다.`
+    : "";
   const detail = block.reasonCode === "insufficient_usable_price_history"
     ? `가격 이력 ${formatYears(block.usablePriceHistoryYears)}년, 최소 ${minimum}년 필요`
     : block.reasonCode === "insufficient_rolling_window_history"

@@ -358,8 +358,8 @@ test("metric overlay follows the public App Preview path through save/reload and
       assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
       assert.match(report, /최근 12개월 분배율 34\.98%/);
       assert.match(report, /주간 분배/);
-      assert.match(report, /옵션 분배/);
-      assert.match(report, /원금환급 가능/);
+      assert.match(report, /옵션분배/);
+      assert.match(report, /ROC\(원금환급\) 포함 가능/);
       assert.doesNotMatch(report, /예상 배당률|예상 연배당금|배당 순위|배당 매력/);
     }
     assert.match(fullReport, /현금흐름 순위: 1위/);

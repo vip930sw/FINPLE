@@ -1,3 +1,3 @@
-market,ticker,status,cashEventBasis,cashEventNormalizationStatus,cashEventNormalizationMethod,asOfDate,sourceUrl,reason,appliedBy,appliedAt,active
+market,ticker,distributionDataQualityStatus,cashEventBasis,cashEventNormalizationStatus,cashEventNormalizationMethod,asOfDate,sourceUrl,reason,appliedBy,appliedAt,active
 KR,381560,provider_event_error,provider_reported_cash_event,unresolved,,2026-07-28,https://finance.yahoo.com/quote/381560.KS/history/,provider cash event share basis requires operator verification,FINPLE operator,2026-07-29T00:00:00+09:00,true
 US,SOXS,provider_event_error,provider_reported_cash_event,unresolved,,2026-07-28,https://finance.yahoo.com/quote/SOXS/history/,provider cash event share basis requires operator verification,FINPLE operator,2026-07-29T00:00:00+09:00,true

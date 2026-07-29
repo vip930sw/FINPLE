@@ -71,7 +71,7 @@ def _source_row(
 class BootstrapUniverseTests(unittest.TestCase):
     def test_distribution_override_csv_validates_and_active_false_unlocks(self) -> None:
         headers = (
-            "market", "ticker", "status", "cashEventBasis",
+            "market", "ticker", "distributionDataQualityStatus", "cashEventBasis",
             "cashEventNormalizationStatus", "cashEventNormalizationMethod",
             "asOfDate", "sourceUrl", "reason", "appliedBy", "appliedAt",
             "active",
@@ -79,7 +79,7 @@ class BootstrapUniverseTests(unittest.TestCase):
         base = {
             "market": "US",
             "ticker": "SOXS",
-            "status": "provider_event_error",
+            "distributionDataQualityStatus": "provider_event_error",
             "cashEventBasis": "provider_reported_cash_event",
             "cashEventNormalizationStatus": "unresolved",
             "cashEventNormalizationMethod": "",
@@ -104,7 +104,7 @@ class BootstrapUniverseTests(unittest.TestCase):
             write([{**base, "active": "true"}, base])
             with self.assertRaisesRegex(ValueError, "duplicate"):
                 load_distribution_data_quality_overrides(path)
-            write([{**base, "status": "ready"}])
+            write([{**base, "distributionDataQualityStatus": "ready"}])
             with self.assertRaisesRegex(ValueError, "invalid.*status"):
                 load_distribution_data_quality_overrides(path)
 

@@ -497,7 +497,7 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
         usablePriceHistoryYears: addDecision.usablePriceHistoryYears,
         rollingCagrWindowYears: addDecision.rollingCagrWindowYears,
         minimumPortfolioHistoryYears: addDecision.minimumPortfolioHistoryYears,
-        eligibleAfter: addDecision.eligibleAfterDate || "",
+        portfolioEligibleAfterDate: addDecision.eligibleAfterDate || "",
       }
       : null,
   };
