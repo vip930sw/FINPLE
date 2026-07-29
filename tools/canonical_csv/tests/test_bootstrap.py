@@ -271,6 +271,38 @@ class BootstrapUniverseTests(unittest.TestCase):
                 [f"{row['market']}:{row['ticker']}" for row in merged],
                 sorted(f"{row['market']}:{row['ticker']}" for row in rows),
             )
+            self.assertEqual(
+                [row for row in merged if row["market"] == "US"],
+                existing,
+            )
+
+            with resolutions.open(
+                "w",
+                encoding="utf-8",
+                newline="",
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows([*korean, existing[0]])
+            with self.assertRaisesRegex(ValueError, "KR rows only"):
+                merge_registry(worklist, resolutions, base)
+
+            with resolutions.open(
+                "w",
+                encoding="utf-8",
+                newline="",
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows([
+                    {
+                        **korean[0],
+                        "verifiedAt": "9999-12-31T23:59:59+00:00",
+                    },
+                    *korean[1:],
+                ])
+            with self.assertRaisesRegex(ValueError, "not in the future"):
+                merge_registry(worklist, resolutions, base)
 
     def test_leverage_registry_active_state_reconciles_only_derived_values(
         self,

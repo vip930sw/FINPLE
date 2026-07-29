@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from tools.canonical_csv.bootstrap_universe import (
@@ -45,6 +46,25 @@ def merge_registry(
     headers, existing = _read_rows(registry_path)
     _, worklist = _read_rows(worklist_path)
     resolution_headers, resolutions = _read_rows(resolutions_path)
+    if any(
+        row.get("market", "").strip().upper() != "KR"
+        for row in resolutions
+    ):
+        raise ValueError("Korean resolution file must contain KR rows only")
+    now = datetime.now(timezone.utc)
+    for row in resolutions:
+        try:
+            verified_at = datetime.fromisoformat(row.get("verifiedAt", ""))
+        except ValueError as error:
+            raise ValueError("invalid Korean resolution verifiedAt") from error
+        if (
+            verified_at.utcoffset() is None
+            or verified_at.astimezone(timezone.utc) > now + timedelta(minutes=5)
+        ):
+            raise ValueError(
+                "Korean resolution verifiedAt must be timezone-aware "
+                "and not in the future"
+            )
     kr_worklist = _identities(worklist, market="KR")
     kr_resolved = _identities(resolutions, market="KR")
     if (
