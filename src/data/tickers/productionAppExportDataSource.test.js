@@ -645,10 +645,10 @@ test("production loader applies RM and distribution policy through saved hydrati
           },
           assets: [saved],
         });
-        assert.equal(result.status, "blocked", ticker);
-        assert.match(
-          result.blockReasons.join("|"),
-          /unsupported_distribution_calculation_policy/,
+        assert.equal(result.status, "ready", ticker);
+        assert.equal(
+          result.assets[0].annualDividendYield,
+          expected.distributionYield,
           ticker,
         );
       } else if (expected.dividendYield !== undefined) {

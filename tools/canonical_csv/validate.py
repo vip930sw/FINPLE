@@ -33,6 +33,8 @@ ALL_NUMERIC_FIELDS = (
     "rollingCagrMedian",
     "rollingCagrWindowYears",
     "rollingCagrWindowCount",
+    "usablePriceHistoryYears",
+    "minimumPortfolioHistoryYears",
     "beta",
     "mdd",
     "annualizedVolatility",
@@ -41,6 +43,7 @@ ALL_NUMERIC_FIELDS = (
     "cashDistributionYieldTtm",
     "trailingDistributionYield",
     "reinvestmentCashYield",
+    "simulationCashYield",
 )
 NON_ORDINARY_EXPOSURE_TYPES = frozenset(
     {
@@ -54,6 +57,21 @@ NON_ORDINARY_EXPOSURE_TYPES = frozenset(
 )
 ORDINARY_DISTRIBUTION_TYPES = frozenset(
     {"", "unknown", "ordinary_cash_dividend", "none"}
+)
+PORTFOLIO_ELIGIBILITY_STATUSES = frozenset(
+    {
+        "eligible",
+        "insufficient_long_horizon_history",
+        "provider_data_unavailable",
+        "inactive",
+        "excluded_by_operator",
+    }
+)
+PORTFOLIO_ADD_POLICIES = frozenset({"allow", "confirm", "deny"})
+PORTFOLIO_CAGR_CONFIDENCE = frozenset({"low", "medium", "high"})
+SPECIAL_DISTRIBUTION_TYPE = "special_or_liquidating_distribution"
+REPEATED_DISTRIBUTION_TYPES = frozenset(
+    {"mixed_distribution", "futures_mixed_distribution"}
 )
 
 # Compatibility export retained for existing callers and fixtures.
@@ -99,8 +117,26 @@ def _is_non_ordinary(row: dict[str, object]) -> bool:
         str(row.get("distributionType") or "").strip().lower()
     )
     return (
+        str(row.get("distributionDataQualityStatus") or "")
+        .strip()
+        .lower()
+        == "provider_event_error"
+        or
         exposure_type in NON_ORDINARY_EXPOSURE_TYPES
         or distribution_type not in ORDINARY_DISTRIBUTION_TYPES
+    )
+
+
+def _same_number(left: object, right: object) -> bool:
+    return (
+        _finite_number(left)
+        and _finite_number(right)
+        and math.isclose(
+            float(str(left)),
+            float(str(right)),
+            rel_tol=0,
+            abs_tol=1e-8,
+        )
     )
 
 
@@ -186,10 +222,12 @@ def validate_candidate_rows(
         active = _parse_bool(row.get("active"))
         include = _parse_bool(row.get("includeInSimulator"))
         ready = _parse_bool(row.get("simulatorReady"))
+        portfolio_eligible = _parse_bool(row.get("portfolioEligible"))
         for field, parsed in (
             ("active", active),
             ("includeInSimulator", include),
             ("simulatorReady", ready),
+            ("portfolioEligible", portfolio_eligible),
         ):
             if parsed is None:
                 _issue(
@@ -240,6 +278,67 @@ def validate_candidate_rows(
                         f"{identity}:{end_date_text}",
                         "structural",
                     )
+        for field in ("priceHistoryStartDate", "portfolioEligibleAfterDate"):
+            value = str(row.get(field) or "").strip()
+            if value:
+                try:
+                    date.fromisoformat(value)
+                except ValueError:
+                    _issue(
+                        structural_issues,
+                        "date_value_invalid",
+                        f"{identity}.{field}",
+                        "structural",
+                    )
+
+        eligibility_status = str(
+            row.get("portfolioEligibilityStatus") or ""
+        ).strip()
+        add_policy = str(row.get("portfolioAddPolicy") or "").strip()
+        confidence = str(row.get("cagrConfidence") or "").strip()
+        if eligibility_status not in PORTFOLIO_ELIGIBILITY_STATUSES:
+            _issue(
+                structural_issues,
+                "portfolio_eligibility_status_invalid",
+                identity,
+                "structural",
+            )
+        if add_policy not in PORTFOLIO_ADD_POLICIES:
+            _issue(
+                structural_issues,
+                "portfolio_add_policy_invalid",
+                identity,
+                "structural",
+            )
+        if confidence not in PORTFOLIO_CAGR_CONFIDENCE:
+            _issue(
+                structural_issues,
+                "cagr_confidence_invalid",
+                identity,
+                "structural",
+            )
+        if (portfolio_eligible is True) != (eligibility_status == "eligible"):
+            _issue(
+                structural_issues,
+                "portfolio_eligibility_mismatch",
+                identity,
+                "structural",
+            )
+        if eligibility_status == "insufficient_long_horizon_history":
+            if add_policy != "deny" or confidence != "low":
+                _issue(
+                    structural_issues,
+                    "short_history_policy_mismatch",
+                    identity,
+                    "structural",
+                )
+        if not _same_number(row.get("minimumPortfolioHistoryYears"), 3):
+            _issue(
+                structural_issues,
+                "minimum_portfolio_history_years_invalid",
+                identity,
+                "structural",
+            )
 
         if active is True and include is False:
             if (
@@ -290,12 +389,7 @@ def validate_candidate_rows(
                 trailing = row.get("trailingDistributionYield")
                 cash_yield = row.get("cashDistributionYieldTtm")
                 if _finite_number(trailing) and _finite_number(cash_yield):
-                    if not math.isclose(
-                        float(str(trailing)),
-                        float(str(cash_yield)),
-                        rel_tol=0,
-                        abs_tol=1e-8,
-                    ):
+                    if not _same_number(trailing, cash_yield):
                         _issue(
                             structural_issues,
                             "distribution_yield_mismatch",
@@ -306,6 +400,64 @@ def validate_candidate_rows(
                 _issue(
                     publishability_issues,
                     "dividend_yield_missing",
+                    identity,
+                    "publishability",
+                )
+
+            distribution_type = str(
+                row.get("distributionType") or ""
+            ).strip().lower()
+            simulation_policy = str(
+                row.get("distributionSimulationPolicy") or ""
+            ).strip()
+            simulation_yield = row.get("simulationCashYield")
+            reinvestment_yield = row.get("reinvestmentCashYield")
+            data_quality_status = str(
+                row.get("distributionDataQualityStatus") or ""
+            ).strip().lower()
+            if data_quality_status == "provider_event_error":
+                expected_policy = "blocked_data_quality"
+                expected_yield: object = 0
+            elif distribution_type == SPECIAL_DISTRIBUTION_TYPE:
+                expected_policy = "exclude_non_recurring_distribution"
+                expected_yield = 0
+                if (
+                    str(row.get("distributionCalculationStatus") or "").strip()
+                    != "non_recurring_distribution_excluded"
+                ):
+                    _issue(
+                        publishability_issues,
+                        "special_distribution_status_inconsistent",
+                        identity,
+                        "publishability",
+                    )
+            elif (
+                distribution_type in REPEATED_DISTRIBUTION_TYPES
+                or _is_non_ordinary(row)
+            ):
+                expected_policy = "repeat_ttm_distribution"
+                expected_yield = row.get("cashDistributionYieldTtm")
+            else:
+                expected_policy = "ordinary_cash_dividend"
+                expected_yield = row.get("dividendYield")
+            if simulation_policy != expected_policy:
+                _issue(
+                    publishability_issues,
+                    "distribution_simulation_policy_inconsistent",
+                    identity,
+                    "publishability",
+                )
+            if not _same_number(simulation_yield, expected_yield):
+                _issue(
+                    publishability_issues,
+                    "simulation_cash_yield_inconsistent",
+                    identity,
+                    "publishability",
+                )
+            if not _same_number(reinvestment_yield, expected_yield):
+                _issue(
+                    publishability_issues,
+                    "reinvestment_cash_yield_inconsistent",
                     identity,
                     "publishability",
                 )

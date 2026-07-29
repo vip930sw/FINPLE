@@ -38,9 +38,77 @@ export function isNonOrdinaryDistribution(asset = {}) {
   const distributionType = String(asset.distributionType || "").trim().toLowerCase();
   const exposureType = String(asset.exposureType || "").trim().toLowerCase();
   return (
+    normalizeDividendState(asset.distributionDataQualityStatus) ===
+      "provider_event_error" ||
     !ORDINARY_DISTRIBUTION_TYPES.has(distributionType) ||
     OPTION_DISTRIBUTION_EXPOSURE_TYPES.has(exposureType)
   );
+}
+
+export function resolveDistributionDisplayPolicy(asset = {}) {
+  asset = asset || {};
+  const status = normalizeDividendState(asset.distributionDataQualityStatus);
+  const type = normalizeDividendState(asset.distributionType);
+  if (status === "provider_event_error") {
+    return {
+      kind: "provider_error",
+      title: "분배 데이터 확인 필요",
+      notices: ["공급자 현금 이벤트 기준 불일치", "시뮬레이션 재투자 제외"],
+    };
+  }
+  if (type === "special_or_liquidating_distribution") {
+    return {
+      kind: "special",
+      title: "특별·청산 분배",
+      notices: ["자산매각·청산 관련 지급", "반복 지급 아님", "시뮬레이션 재투자 제외"],
+    };
+  }
+  if (type === "futures_mixed_distribution") {
+    return {
+      kind: "futures",
+      title: "선물·파생 분배",
+      notices: ["자본이득 포함 가능", "롤오버 영향", "분배율 변동 가능"],
+    };
+  }
+  if (isNonOrdinaryDistribution(asset)) {
+    return {
+      kind: "mixed",
+      title: "옵션분배",
+      notices: ["ROC(원금환급) 포함 가능", "분배율 변동 가능"],
+    };
+  }
+  return { kind: "ordinary", title: "일반 배당", notices: [] };
+}
+
+export function resolvePortfolioCashFlowDisplayPolicy(assets = []) {
+  const kinds = (assets || []).map((asset) => resolveDistributionDisplayPolicy(asset).kind);
+  const hasOrdinary = kinds.includes("ordinary");
+  const hasNonOrdinary = kinds.some((kind) => kind !== "ordinary");
+  if (hasOrdinary && !hasNonOrdinary) {
+    return {
+      kind: "dividend",
+      yieldLabel: "예상 배당률",
+      annualLabel: "예상 연배당금",
+      rankLabel: "배당 순위",
+      focusLabel: "배당",
+    };
+  }
+  if (!hasOrdinary && hasNonOrdinary) {
+    return {
+      kind: "cash_distribution",
+      yieldLabel: "시뮬레이션 적용 현금분배율",
+      annualLabel: "예상 연간 현금분배금",
+      rankLabel: "현금흐름 순위",
+      focusLabel: "현금흐름",
+    };
+  }
+  return {
+    kind: "cash_flow",
+    yieldLabel: "예상 현금수익률",
+    annualLabel: "예상 연간 현금지급액",
+    rankLabel: "현금흐름 순위",
+    focusLabel: "현금흐름",
+  };
 }
 
 export function resolveDividendYieldDisplay(asset = {}) {
@@ -115,19 +183,50 @@ export function resolveDistributionYieldFields(
       cashDistributionYieldTtm: toNullableNumber(asset.cashDistributionYieldTtm),
       distributionYieldPolicy: asset.distributionYieldPolicy || "",
       distributionCalculationStatus: asset.distributionCalculationStatus || "",
+      reinvestmentCashYield: toNullableNumber(asset.reinvestmentCashYield),
+      simulationCashYield:
+        toNullableNumber(asset.simulationCashYield) ?? numericYield,
+      distributionSimulationPolicy:
+        asset.distributionSimulationPolicy || "ordinary_cash_dividend",
     };
   }
 
+  const cashYield =
+    toNullableNumber(asset.cashDistributionYieldTtm) ??
+    toNullableNumber(asset.trailingDistributionYield) ??
+    numericYield;
+  const simulationExcluded =
+    normalizeDividendState(asset.distributionDataQualityStatus) === "provider_event_error" ||
+    normalizeDividendState(asset.distributionType) === "special_or_liquidating_distribution";
+  const defaultSimulationPolicy =
+    normalizeDividendState(asset.distributionDataQualityStatus) === "provider_event_error"
+      ? "blocked_data_quality"
+      : normalizeDividendState(asset.distributionType) === "special_or_liquidating_distribution"
+        ? "exclude_non_recurring_distribution"
+        : "repeat_ttm_distribution";
   return {
     dividendYield: null,
     displayDividendYield: "",
     trailingDistributionYield:
-      toNullableNumber(asset.trailingDistributionYield) ?? numericYield,
-    cashDistributionYieldTtm:
-      toNullableNumber(asset.cashDistributionYieldTtm) ?? numericYield,
+      toNullableNumber(asset.trailingDistributionYield) ?? cashYield,
+    cashDistributionYieldTtm: cashYield,
     distributionYieldPolicy:
       asset.distributionYieldPolicy || TRAILING_DISTRIBUTION_YIELD_POLICY,
-    distributionCalculationStatus: "review_only_no_approved_reinvestment_model",
+    distributionCalculationStatus:
+      asset.distributionCalculationStatus ||
+      "review_only_no_approved_reinvestment_model",
+    reinvestmentCashYield:
+      simulationExcluded
+        ? 0
+        : toNullableNumber(asset.reinvestmentCashYield) ?? cashYield,
+    simulationCashYield:
+      simulationExcluded
+        ? 0
+        : toNullableNumber(asset.simulationCashYield) ??
+          toNullableNumber(asset.reinvestmentCashYield) ??
+          cashYield,
+    distributionSimulationPolicy:
+      asset.distributionSimulationPolicy || defaultSimulationPolicy,
   };
 }
 

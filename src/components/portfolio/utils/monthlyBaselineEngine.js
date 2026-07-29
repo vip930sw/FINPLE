@@ -1,4 +1,8 @@
-import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy.js";
+import {
+  isNonOrdinaryDistribution,
+  resolvePortfolioCashFlowDisplayPolicy,
+} from "../../../data/tickers/distributionPolicy.js";
+import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy.js";
 
 export const MONTHLY_BASELINE_ENGINE_VERSION = "monthly-baseline-v1-step114-2e";
 export const LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION = "legacy-may-app-ready-compat-v1-step114-2e";
@@ -347,13 +351,21 @@ function getAnnualCagr(asset = {}) {
   );
 }
 
-function getAnnualDividendYield(asset = {}) {
-  if (isNonOrdinaryDistribution(asset)) return null;
+function getAnnualSimulationCashYield(asset = {}) {
+  const explicit = toFiniteNumber(asset.simulationCashYield);
+  if (explicit !== null) return explicit;
+  if (isNonOrdinaryDistribution(asset)) {
+    return toFiniteNumber(
+      asset.reinvestmentCashYield ??
+      asset.cashDistributionYieldTtm ??
+      asset.trailingDistributionYield,
+    );
+  }
   return toFiniteNumber(asset.dividendYieldAnnual ?? asset.dividendYield);
 }
 
-function isDividendMissing(asset = {}) {
-  return isBlank(asset.dividendYieldAnnual ?? asset.dividendYield);
+function isSimulationCashYieldMissing(asset = {}) {
+  return getAnnualSimulationCashYield(asset) === null;
 }
 
 function sortAssetsForDeterminism(assets) {
@@ -402,9 +414,17 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
   const reasons = [];
   const metadata = adaptMetricMetadata(rawAsset || {});
   const ticker = normalizeTicker(metadata.ticker) || `asset_${index}`;
+  const addDecision = getPortfolioAddDecision(metadata);
 
   if (isBlank(metadata.ticker)) {
     addBlockReason(reasons, "missing_ticker", `asset_${index}`);
+  }
+  if (addDecision.policy === "deny") {
+    addBlockReason(
+      reasons,
+      "portfolio_add_denied",
+      `${ticker}.${addDecision.reasonCode || "portfolio_add_denied"}`,
+    );
   }
 
   validateReadyStatus(metadata, "dataStatus", new Set(["ready"]), reasons, ticker);
@@ -452,30 +472,41 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
 
   validateAnnualPercentValue(getAnnualCagr(metadata), `${ticker}.selectedCagrAnnual`, reasons);
 
-  if (isNonOrdinaryDistribution(metadata)) {
-    addBlockReason(
-      reasons,
-      "unsupported_distribution_calculation_policy",
-      `${ticker}.${metadata.distributionType || metadata.exposureType || "non_ordinary_distribution"}`,
-    );
-    return { reasons, metadata };
+  const simulationCashYield = getAnnualSimulationCashYield(metadata);
+  if (dividendReinvest && isSimulationCashYieldMissing(metadata)) {
+    addBlockReason(reasons, "missing_cash_yield_for_reinvestment", ticker);
+  } else if (simulationCashYield !== null) {
+    validateAnnualPercentValue(simulationCashYield, `${ticker}.simulationCashYield`, reasons);
+    if (simulationCashYield < 0) {
+      addBlockReason(
+        reasons,
+        "invalid_simulation_cash_yield",
+        `${ticker}=${simulationCashYield}`,
+      );
+    }
   }
 
-  const dividendYield = getAnnualDividendYield(metadata);
-  if (dividendReinvest && isDividendMissing(metadata)) {
-    addBlockReason(reasons, "missing_dividend_yield_for_reinvestment", ticker);
-  } else if (dividendYield !== null) {
-    validateAnnualPercentValue(dividendYield, `${ticker}.dividendYieldAnnual`, reasons);
-    if (dividendYield < 0) addBlockReason(reasons, "invalid_dividend_yield", `${ticker}=${dividendYield}`);
-  }
-
-  return { reasons, metadata };
+  return {
+    reasons,
+    metadata,
+    portfolioEligibilityBlock: addDecision.policy === "deny"
+      ? {
+        market: normalizeMarket(metadata.market),
+        ticker,
+        reasonCode: addDecision.reasonCode,
+        usablePriceHistoryYears: addDecision.usablePriceHistoryYears,
+        rollingCagrWindowYears: addDecision.rollingCagrWindowYears,
+        minimumPortfolioHistoryYears: addDecision.minimumPortfolioHistoryYears,
+        portfolioEligibleAfterDate: addDecision.eligibleAfterDate || "",
+      }
+      : null,
+  };
 }
 
 function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
   const ticker = normalizeTicker(asset.ticker);
   const annualPriceCagr = getAnnualCagr(asset);
-  const annualDividendYield = getAnnualDividendYield(asset);
+  const annualDividendYield = getAnnualSimulationCashYield(asset);
   const dividendYieldForCalculation = annualDividendYield === null ? null : annualDividendYield;
 
   return {
@@ -497,6 +528,8 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
     distributionType: asset.distributionType || "unknown",
     distributionFrequency: asset.distributionFrequency || "unknown",
     trailingDistributionYield: toFiniteNumber(asset.trailingDistributionYield),
+    simulationCashYield: dividendYieldForCalculation,
+    distributionSimulationPolicy: asset.distributionSimulationPolicy || "",
     distributionYieldPolicy: asset.distributionYieldPolicy || "",
     metricLineage: {
       compatibilityAdapter: asset.compatibilityAdapter || "",
@@ -534,12 +567,14 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
   };
 }
 
-function createBlockedResult({ settings, assets, blockReasons, totalAssetValue, simulationStartValue, weightBaseValue }) {
+function createBlockedResult({ settings, assets, blockReasons, portfolioEligibilityBlocks, totalAssetValue, simulationStartValue, weightBaseValue }) {
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(assets);
   return {
     baselineEngineVersion: MONTHLY_BASELINE_ENGINE_VERSION,
     status: "blocked",
     ready: false,
     blockReasons,
+    portfolioEligibilityBlocks,
     settings,
     assets,
     totalAssetValue,
@@ -548,11 +583,14 @@ function createBlockedResult({ settings, assets, blockReasons, totalAssetValue, 
     yearlyContribution: Number(settings.monthlyCashFlow || 0) * 12,
     expectedCagr: null,
     expectedDividendYield: null,
+    expectedSimulationCashYield: null,
     totalReturnStatus: "blocked",
     expectedBeta: null,
     simpleMdd: null,
     expectedCalmar: null,
     expectedAnnualDividend: null,
+    expectedAnnualCashDistribution: null,
+    cashFlowMetricLabel: cashFlowDisplay.yieldLabel,
     monthlyBaselinePoints: [],
     performanceRows: [],
     futureValue: null,
@@ -743,11 +781,20 @@ export function buildMonthlyBaselineProjection({
   validateAnnualPercentValue(rawSettings.rawInflationRate, "inflationRate", blockReasons);
 
   const validatedAssets = [];
+  const portfolioEligibilityBlocks = [];
+  const portfolioEligibilityBlockIdentities = new Set();
   const assetIdentitySet = new Set();
   for (const [index, asset] of assetList.entries()) {
     if (!asset || typeof asset !== "object" || Array.isArray(asset)) continue;
     const validation = validateAssetMetricSource(asset, index, rawSettings.dividendReinvest);
     blockReasons.push(...validation.reasons);
+    const blockIdentity = validation.portfolioEligibilityBlock
+      ? `${validation.portfolioEligibilityBlock.market}:${validation.portfolioEligibilityBlock.ticker}`
+      : "";
+    if (validation.portfolioEligibilityBlock && !portfolioEligibilityBlockIdentities.has(blockIdentity)) {
+      portfolioEligibilityBlocks.push(validation.portfolioEligibilityBlock);
+      portfolioEligibilityBlockIdentities.add(blockIdentity);
+    }
     const identity = `${normalizeMarket(validation.metadata.market)}:${normalizeTicker(validation.metadata.ticker)}`;
     if (assetIdentitySet.has(identity)) {
       addBlockReason(blockReasons, "duplicate_asset_identity", identity);
@@ -770,6 +817,7 @@ export function buildMonthlyBaselineProjection({
       settings: baseSettings,
       assets: validatedAssets.length > 0 ? validatedAssets : assetList,
       blockReasons,
+      portfolioEligibilityBlocks,
       totalAssetValue,
       simulationStartValue,
       weightBaseValue,
@@ -801,6 +849,7 @@ export function buildMonthlyBaselineProjection({
     }, 0);
   const expectedAnnualDividend =
     expectedMonthlyDividendOnInitial === null ? null : expectedMonthlyDividendOnInitial * 12;
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(normalizedAssets);
 
   const actualSleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
   const pricePerformanceSleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
@@ -952,6 +1001,7 @@ export function buildMonthlyBaselineProjection({
     status: "ready",
     ready: true,
     blockReasons: [],
+    portfolioEligibilityBlocks: [],
     settings: baseSettings,
     assets: normalizedAssets,
     totalAssetValue,
@@ -960,11 +1010,14 @@ export function buildMonthlyBaselineProjection({
     yearlyContribution: monthlyContribution * 12,
     expectedCagr,
     expectedDividendYield,
+    expectedSimulationCashYield: expectedDividendYield,
     totalReturnStatus,
     expectedBeta,
     simpleMdd,
     expectedCalmar,
     expectedAnnualDividend: expectedAnnualDividendResult,
+    expectedAnnualCashDistribution: expectedAnnualDividendResult,
+    cashFlowMetricLabel: cashFlowDisplay.yieldLabel,
     monthlyBaselinePoints,
     performanceRows,
     futureValue: lastPoint.portfolioValueNominal,

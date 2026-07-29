@@ -3,8 +3,13 @@ import { formatNumber, formatPercent, getAssetValue, getAssetWeight } from "./po
 import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
+  resolveDistributionDisplayPolicy,
+  resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy.js";
-import { formatUserFacingBaselineBlockReasons } from "./baselineBlockReasonLabels.js";
+import {
+  formatPortfolioEligibilityBlocks,
+  formatUserFacingBaselineBlockReasons,
+} from "./baselineBlockReasonLabels.js";
 
 function formatNullablePercent(value, digits = 2) {
   if (value === null || value === undefined || value === "") return "-";
@@ -41,12 +46,21 @@ function createReportAnalysis(assets, result, blocked) {
 function createBlockReasonLines(result, blocked) {
   if (!blocked) return [];
   const reasons = Array.isArray(result?.blockReasons) ? result.blockReasons : [];
+  const eligibilityBlocks = Array.isArray(result?.portfolioEligibilityBlocks)
+    ? result.portfolioEligibilityBlocks
+    : [];
+  const labels = eligibilityBlocks.length > 0
+    ? formatPortfolioEligibilityBlocks(eligibilityBlocks)
+    : formatUserFacingBaselineBlockReasons(reasons);
   return [
     "",
     "차단 사유",
-    ...(reasons.length > 0
-      ? formatUserFacingBaselineBlockReasons(reasons).map((reason) => `- ${reason}`)
+    ...(labels.length > 0
+      ? labels.map((reason) => `- ${reason}`)
       : ["- 확인 필요"]),
+    ...(eligibilityBlocks.length > 0
+      ? ["- 차단 자산을 제거하거나 이용 가능한 자산으로 교체하세요."]
+      : []),
   ];
 }
 
@@ -69,14 +83,17 @@ function formatRank(value, blocked) {
 }
 
 export function describeAssetDistribution(asset = {}) {
-  if (!isNonOrdinaryDistribution(asset)) {
+  const display = resolveDistributionDisplayPolicy(asset);
+  if (display.kind === "ordinary") {
     return `일반 배당률 ${formatNullablePercent(asset.dividendYield)}`;
   }
   return [
-    `최근 12개월 분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`,
+    display.title,
+    ...(display.kind === "provider_error"
+      ? []
+      : [`최근 12개월 분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`]),
     `${getDistributionFrequencyLabel(asset.distributionFrequency)} 분배`,
-    "일반 배당수익률·총수익률과 다름",
-    "옵션 프리미엄 및 원금환급 가능성 있음",
+    ...display.notices,
   ].join(" / ");
 }
 
@@ -90,6 +107,9 @@ export function createPortfolioReportText({
   const safeAssets = Array.isArray(assets) ? assets : [];
   const blocked = isBlockedResult(result);
   const portfolioAnalysis = createReportAnalysis(safeAssets, result, blocked);
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);
+  const expectedCashYield = result.expectedSimulationCashYield ?? result.expectedDividendYield;
+  const expectedAnnualCash = result.expectedAnnualCashDistribution ?? result.expectedAnnualDividend;
 
   return [
     `FINPLE 포트폴리오 리포트`,
@@ -111,7 +131,7 @@ export function createPortfolioReportText({
     `위험도`,
     `${detailReport?.riskText || "-"}`,
     ``,
-    `배당`,
+    `${cashFlowDisplay.focusLabel}`,
     `${detailReport?.dividendText || "-"}`,
     ``,
     `활용 방향`,
@@ -134,8 +154,8 @@ export function createPortfolioReportText({
     `예상 CAGR: ${blocked ? "-" : formatNullablePercent(result.expectedCagr)}`,
     `예상 BETA: ${blocked ? "-" : formatNullableDecimal(result.expectedBeta)}`,
     `예상 MDD: ${blocked ? "-" : formatNullablePercent(result.simpleMdd)}`,
-    `예상 일반 배당률: ${blocked ? "-" : formatNullablePercent(result.expectedDividendYield)}`,
-    `예상 연배당금: ${blocked ? "-" : formatNullableCurrency(result.expectedAnnualDividend)}`,
+    `${cashFlowDisplay.yieldLabel}: ${blocked ? "-" : formatNullablePercent(expectedCashYield)}`,
+    `${cashFlowDisplay.annualLabel}: ${blocked ? "-" : formatNullableCurrency(expectedAnnualCash)}`,
     `최종 예상 평가금액: ${blocked ? "-" : formatNullableCurrency(result.futureValue)}`,
     `물가 반영 실질 평가금액: ${blocked ? "-" : formatNullableCurrency(result.inflationAdjustedFutureValue)}`,
     ``,
@@ -157,10 +177,10 @@ export function createPortfolioReportText({
     `실질가치 순위: ${formatRank(detailPortfolio?.realValueRank, blocked)}`,
     `성장성 순위: ${formatRank(detailPortfolio?.growthRank, blocked)}`,
     `안정성 순위: ${formatRank(detailPortfolio?.stabilityRank, blocked)}`,
-    `배당 순위: ${formatRank(detailPortfolio?.dividendRank, blocked)}`,
+    `${cashFlowDisplay.rankLabel}: ${formatRank(detailPortfolio?.cashFlowRank ?? detailPortfolio?.dividendRank, blocked)}`,
     ``,
     `유의사항`,
-    `본 리포트는 사용자가 입력한 CAGR, BETA, MDD, 일반 배당률과 공통 조건을 기준으로 계산한 시뮬레이션 결과입니다. 실제 투자 수익률을 보장하지 않습니다.`,
+    `본 리포트는 사용자가 입력한 CAGR, BETA, MDD, ${cashFlowDisplay.yieldLabel}과 공통 조건을 기준으로 계산한 시뮬레이션 결과입니다. 실제 투자 수익률을 보장하지 않습니다.`,
   ].join("\n");
 }
 export function createReportSummaryText({
@@ -172,6 +192,9 @@ export function createReportSummaryText({
   const safeAssets = Array.isArray(assets) ? assets : [];
   const blocked = isBlockedResult(result);
   const portfolioAnalysis = createReportAnalysis(safeAssets, result, blocked);
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);
+  const expectedCashYield = result.expectedSimulationCashYield ?? result.expectedDividendYield;
+  const expectedAnnualCash = result.expectedAnnualCashDistribution ?? result.expectedAnnualDividend;
 
   return [
     `[FINPLE 포트폴리오 리포트]`,
@@ -191,8 +214,8 @@ export function createReportSummaryText({
     `예상 CAGR: ${blocked ? "-" : formatNullablePercent(result.expectedCagr)}`,
     `예상 BETA: ${blocked ? "-" : formatNullableDecimal(result.expectedBeta)}`,
     `예상 MDD: ${blocked ? "-" : formatNullablePercent(result.simpleMdd)}`,
-    `예상 일반 배당률: ${blocked ? "-" : formatNullablePercent(result.expectedDividendYield)}`,
-    `예상 연배당금: ${blocked ? "-" : formatNullableCurrency(result.expectedAnnualDividend)}`,
+    `${cashFlowDisplay.yieldLabel}: ${blocked ? "-" : formatNullablePercent(expectedCashYield)}`,
+    `${cashFlowDisplay.annualLabel}: ${blocked ? "-" : formatNullableCurrency(expectedAnnualCash)}`,
     `최종 예상 평가금액: ${blocked ? "-" : formatNullableCurrency(result.futureValue)}`,
     `물가 반영 실질 평가금액: ${blocked ? "-" : formatNullableCurrency(result.inflationAdjustedFutureValue)}`,
     ...createNonOrdinaryDistributionLines(safeAssets),

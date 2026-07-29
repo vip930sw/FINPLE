@@ -1,3 +1,7 @@
+import {
+  resolveDistributionDisplayPolicy,
+} from "../../../data/tickers/distributionPolicy";
+
 function toSafeNumber(value) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : 0;
@@ -59,7 +63,7 @@ export default function DetailAssetTable({
             <th>CAGR (%)</th>
             <th>BETA</th>
             <th>MDD (%)</th>
-            <th>배당률 (%)</th>
+            <th>배당/현금분배율 (%)</th>
           </tr>
         </thead>
 
@@ -68,6 +72,12 @@ export default function DetailAssetTable({
             const assetValue = Number(asset.quantity || 0) * Number(asset.price || 0);
             const weight = totalAssetValue > 0 ? (assetValue / totalAssetValue) * 100 : 0;
             const cagrValue = isCashAsset(asset) ? 0 : asset.cagr;
+            const distributionDisplay = resolveDistributionDisplayPolicy(asset);
+            const cashYield = distributionDisplay.kind === "ordinary"
+              ? asset.dividendYield
+              : distributionDisplay.kind === "provider_error"
+                ? null
+                : asset.trailingDistributionYield;
 
             return (
               <tr key={`${asset.ticker || "asset"}-${index}`}>
@@ -80,7 +90,7 @@ export default function DetailAssetTable({
                 <td>{formatMetric(cagrValue, (value) => formatDecimal(value, 2))}</td>
                 <td>{formatMetric(asset.beta, (value) => formatDecimal(value, 2))}</td>
                 <td>{formatMetric(asset.mdd, (value) => formatDecimal(value, 2))}</td>
-                <td>{formatMetric(asset.dividendYield, (value) => formatDecimal(value, 2))}</td>
+                <td title={distributionDisplay.title}>{formatMetric(cashYield, (value) => formatDecimal(value, 2))}</td>
               </tr>
             );
           })}

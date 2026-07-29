@@ -238,37 +238,78 @@ test("dividend reinvestment is separate from price CAGR and can be disabled", ()
   assertClose(reinvested.performanceRows[0].annualDividend, reinvested.cumulativeDividendResult);
 });
 
-test("option and covered-call distributions fail closed before ordinary dividend calculations and ranking", () => {
+test("option and covered-call distributions use one simulation cash yield without double counting", () => {
   const optionIncomeAsset = asset({
     ticker: "AIPI",
     exposureType: "single_stock_option_income",
     distributionType: "mixed_distribution",
     distributionFrequency: "weekly",
     trailingDistributionYield: 34.98,
+    cashDistributionYieldTtm: 34.98,
+    simulationCashYield: 34.98,
+    distributionSimulationPolicy: "repeat_ttm_distribution",
     distributionYieldPolicy: "trailing_12m_cash_distribution_not_ordinary_dividend",
     dividendYield: 34.98,
   });
-  const blocked = buildMonthlyBaselineProjection({
+  const result = buildMonthlyBaselineProjection({
     settings: { ...BASE_SETTINGS, dividendReinvest: true },
     assets: [optionIncomeAsset],
   });
-  assert.equal(blocked.status, "blocked");
-  assert.equal(blocked.expectedDividendYield, null);
-  assert.equal(blocked.expectedAnnualDividend, null);
-  assert.match(blocked.blockReasons.join("|"), /unsupported_distribution_calculation_policy/);
+  assert.equal(result.status, "ready");
+  assertClose(result.expectedDividendYield, 34.98);
+  assertClose(result.expectedSimulationCashYield, 34.98);
+  assertClose(result.expectedAnnualCashDistribution, result.expectedAnnualDividend);
+  assert.equal(result.cashFlowMetricLabel, "시뮬레이션 적용 현금분배율");
+  assertClose(result.assets[0].annualDividendYield, 34.98);
+  assert.equal(result.assets[0].distributionSimulationPolicy, "repeat_ttm_distribution");
 
   const [ranked] = createRankedComparisonPortfolios([
     {
       id: "option-income",
       name: "AIPI review",
       assets: [optionIncomeAsset],
-      result: blocked,
+      result,
     },
   ]);
-  assert.equal(ranked.dividendRank, "-");
+  assert.equal(ranked.dividendRank, 1);
+  assert.equal(ranked.cashFlowRank, 1);
   const [withInsight] = createInsightComparisonPortfolios([ranked]);
-  assert.equal(withInsight.insight.type, "기준 계산 보류");
-  assert.doesNotMatch(withInsight.insight.text, /배당 매력/);
+  assert.notEqual(withInsight.insight.type, "기준 계산 보류");
+  assert.doesNotMatch(JSON.stringify(withInsight.insight), /배당/);
+});
+
+test("special distributions and provider event errors preserve cash display but reinvest zero", () => {
+  for (const fixture of [
+    {
+      ticker: "AIV",
+      distributionType: "special_or_liquidating_distribution",
+      distributionSimulationPolicy: "exclude_non_recurring_distribution",
+    },
+    {
+      ticker: "SOXS",
+      exposureType: "leveraged_inverse",
+      distributionDataQualityStatus: "provider_event_error",
+      distributionSimulationPolicy: "blocked_data_quality",
+    },
+  ]) {
+    const result = buildMonthlyBaselineProjection({
+      settings: { ...BASE_SETTINGS, dividendReinvest: true },
+      assets: [
+        asset({
+          ...fixture,
+          dividendYield: null,
+          cashDistributionYieldTtm: 99,
+          trailingDistributionYield: 99,
+          reinvestmentCashYield: 0,
+          simulationCashYield: 0,
+        }),
+      ],
+    });
+    assert.equal(result.status, "ready", fixture.ticker);
+    assert.equal(result.assets[0].annualDividendYield, 0, fixture.ticker);
+    assert.equal(result.expectedSimulationCashYield, 0, fixture.ticker);
+    assert.equal(result.cumulativeDividendResult, 0, fixture.ticker);
+  }
 });
 
 test("QQQ, SPY, and confirmed-zero GLD retain ordinary dividend calculation behavior", () => {
@@ -315,7 +356,7 @@ test("missing dividend is not inferred as zero", () => {
     assets: [asset({ dividendYield: null })],
   });
   assert.equal(blocked.status, "blocked");
-  assert.match(blocked.blockReasons.join("|"), /missing_dividend_yield_for_reinvestment/);
+  assert.match(blocked.blockReasons.join("|"), /missing_cash_yield_for_reinvestment/);
 
   const priceOnly = buildMonthlyBaselineProjection({
     settings: BASE_SETTINGS,
@@ -512,7 +553,7 @@ test("policy-approved TQQQ, SOXL, and 069500 restore Step 2/3 for both dividend 
   }
 });
 
-test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings", () => {
+test("non-ordinary AIPI and QYLG use trailing cash distributions for both settings", () => {
   for (const fixture of [
     productionAppExportAsset({
       ticker: "AIPI",
@@ -522,6 +563,8 @@ test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings",
       distributionType: "mixed_distribution",
       distributionFrequency: "weekly",
       trailingDistributionYield: 34.98,
+      simulationCashYield: 34.98,
+      distributionSimulationPolicy: "repeat_ttm_distribution",
     }),
     productionAppExportAsset({
       ticker: "QYLG",
@@ -531,6 +574,8 @@ test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings",
       distributionType: "mixed_distribution",
       distributionFrequency: "monthly",
       trailingDistributionYield: 16.26,
+      simulationCashYield: 16.26,
+      distributionSimulationPolicy: "repeat_ttm_distribution",
     }),
   ]) {
     for (const dividendReinvest of [true, false]) {
@@ -538,11 +583,11 @@ test("non-ordinary AIPI and QYLG remain fail-closed for both dividend settings",
         settings: { ...BASE_SETTINGS, dividendReinvest },
         assets: [fixture],
       });
-      assert.equal(result.status, "blocked", `${fixture.ticker}:${dividendReinvest}`);
-      assert.match(
-        result.blockReasons.join("|"),
-        new RegExp(`unsupported_distribution_calculation_policy:${fixture.ticker}\\.`),
-        `${fixture.ticker}:${dividendReinvest}`,
+      assert.equal(result.status, "ready", `${fixture.ticker}:${dividendReinvest}`);
+      assertClose(
+        result.expectedDividendYield,
+        fixture.simulationCashYield,
+        1e-8,
       );
     }
   }

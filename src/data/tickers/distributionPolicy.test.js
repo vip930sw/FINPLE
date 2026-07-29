@@ -5,7 +5,9 @@ import {
   TRAILING_DISTRIBUTION_YIELD_POLICY,
   isNonOrdinaryDistribution,
   resolveDividendYieldDisplay,
+  resolveDistributionDisplayPolicy,
   resolveDistributionYieldFields,
+  resolvePortfolioCashFlowDisplayPolicy,
 } from "./distributionPolicy.js";
 import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
 import { describeAssetDistribution } from "../../components/portfolio/utils/portfolioReports.js";
@@ -41,6 +43,77 @@ const OPTION_FIXTURES = [
   },
 ];
 
+test("distribution display resolver distinguishes provider, special, mixed, and futures semantics", () => {
+  const provider = resolveDistributionDisplayPolicy({
+    distributionDataQualityStatus: "provider_event_error",
+  });
+  assert.equal(provider.title, "분배 데이터 확인 필요");
+  assert.deepEqual(provider.notices, [
+    "공급자 현금 이벤트 기준 불일치",
+    "시뮬레이션 재투자 제외",
+  ]);
+  const providerYield = resolveDistributionYieldFields({
+    distributionDataQualityStatus: "provider_event_error",
+    trailingDistributionYield: 999,
+  });
+  assert.equal(providerYield.trailingDistributionYield, 999);
+  assert.equal(providerYield.reinvestmentCashYield, 0);
+  assert.equal(providerYield.simulationCashYield, 0);
+  assert.equal(
+    providerYield.distributionSimulationPolicy,
+    "blocked_data_quality",
+  );
+
+  const special = resolveDistributionDisplayPolicy({
+    distributionType: "special_or_liquidating_distribution",
+  });
+  assert.equal(special.title, "특별·청산 분배");
+  assert.match(special.notices.join("|"), /자산매각·청산 관련 지급/);
+  assert.doesNotMatch(special.notices.join("|"), /옵션/);
+  const specialYield = resolveDistributionYieldFields({
+    distributionType: "special_or_liquidating_distribution",
+    cashDistributionYieldTtm: 12.5,
+  });
+  assert.equal(specialYield.reinvestmentCashYield, 0);
+  assert.equal(specialYield.simulationCashYield, 0);
+  assert.equal(
+    specialYield.distributionSimulationPolicy,
+    "exclude_non_recurring_distribution",
+  );
+
+  const mixed = resolveDistributionDisplayPolicy({
+    distributionType: "mixed_distribution",
+  });
+  assert.equal(mixed.title, "옵션분배");
+  assert.match(mixed.notices.join("|"), /ROC\(원금환급\) 포함 가능/);
+
+  const futures = resolveDistributionDisplayPolicy({
+    distributionType: "futures_mixed_distribution",
+  });
+  assert.equal(futures.title, "선물·파생 분배");
+  assert.match(futures.notices.join("|"), /롤오버 영향/);
+
+  assert.equal(
+    resolvePortfolioCashFlowDisplayPolicy([
+      { distributionType: "ordinary_cash_dividend" },
+    ]).rankLabel,
+    "배당 순위",
+  );
+  assert.equal(
+    resolvePortfolioCashFlowDisplayPolicy([
+      { distributionType: "mixed_distribution" },
+    ]).rankLabel,
+    "현금흐름 순위",
+  );
+  assert.equal(
+    resolvePortfolioCashFlowDisplayPolicy([
+      { distributionType: "ordinary_cash_dividend" },
+      { distributionType: "mixed_distribution" },
+    ]).yieldLabel,
+    "예상 현금수익률",
+  );
+});
+
 test("AIPI, MSFY, TSLP, and QYLG preserve trailing distributions without ordinary dividends", () => {
   for (const fixture of OPTION_FIXTURES) {
     const resolved = {
@@ -52,6 +125,13 @@ test("AIPI, MSFY, TSLP, and QYLG preserve trailing distributions without ordinar
     assert.equal(resolved.cashDistributionYieldTtm, fixture.metricDividendYield, fixture.ticker);
     assert.equal(resolved.dividendYield, null, fixture.ticker);
     assert.equal(resolved.displayDividendYield, "", fixture.ticker);
+    assert.equal(resolved.reinvestmentCashYield, fixture.metricDividendYield, fixture.ticker);
+    assert.equal(resolved.simulationCashYield, fixture.metricDividendYield, fixture.ticker);
+    assert.equal(
+      resolved.distributionSimulationPolicy,
+      "repeat_ttm_distribution",
+      fixture.ticker,
+    );
     assert.equal(resolved.distributionYieldPolicy, TRAILING_DISTRIBUTION_YIELD_POLICY, fixture.ticker);
     assert.equal(
       resolved.distributionCalculationStatus,
@@ -74,6 +154,8 @@ test("QQQ and SPY keep ordinary dividends while GLD keeps confirmed zero distinc
     assert.equal(resolved.dividendYield, dividendYield);
     assert.equal(resolved.displayDividendYield, `${dividendYield.toFixed(2)}%`);
     assert.equal(resolved.trailingDistributionYield, null);
+    assert.equal(resolved.simulationCashYield, dividendYield);
+    assert.equal(resolved.distributionSimulationPolicy, "ordinary_cash_dividend");
   }
 
   const gld = {
@@ -275,6 +357,40 @@ test("legacy saved ordinary assets retain their dividend value without distribut
   assert.equal(reloaded.distributionType, "unknown");
 });
 
+test("legacy persisted distribution assets derive coherent default simulation policies", () => {
+  for (const [fixture, expectedPolicy] of [
+    [{
+      ticker: "PROVIDER-ERROR",
+      distributionDataQualityStatus: "provider_event_error",
+      trailingDistributionYield: 9.5,
+    }, "blocked_data_quality"],
+    [{
+      ticker: "SPECIAL",
+      distributionType: "special_or_liquidating_distribution",
+      trailingDistributionYield: 9.5,
+    }, "exclude_non_recurring_distribution"],
+  ]) {
+    const reloaded = normalizePersistedMetricFields(
+      JSON.parse(JSON.stringify(fixture)),
+    );
+    assert.equal(reloaded.reinvestmentCashYield, 0);
+    assert.equal(reloaded.simulationCashYield, 0);
+    assert.equal(reloaded.distributionSimulationPolicy, expectedPolicy);
+  }
+
+  const explicit = normalizePersistedMetricFields({
+    distributionDataQualityStatus: "provider_event_error",
+    trailingDistributionYield: 9.5,
+    distributionSimulationPolicy: "operator_explicit_policy",
+  });
+  assert.equal(explicit.reinvestmentCashYield, 0);
+  assert.equal(explicit.simulationCashYield, 0);
+  assert.equal(
+    explicit.distributionSimulationPolicy,
+    "operator_explicit_policy",
+  );
+});
+
 test("saved portfolio reload and report text preserve non-ordinary distribution semantics", () => {
   const source = {
     ticker: "AIPI",
@@ -301,9 +417,10 @@ test("saved portfolio reload and report text preserve non-ordinary distribution 
   assert.equal(reloaded.dividendYield, null);
 
   const pdfLine = describeAssetDistribution(reloaded);
+  assert.match(pdfLine, /옵션분배/);
   assert.match(pdfLine, /최근 12개월 분배율 34\.98%/);
   assert.match(pdfLine, /주간 분배/);
-  assert.match(pdfLine, /일반 배당수익률·총수익률과 다름/);
-  assert.match(pdfLine, /원금환급 가능성/);
+  assert.match(pdfLine, /ROC\(원금환급\) 포함 가능/);
+  assert.match(pdfLine, /분배율 변동 가능/);
   assert.doesNotMatch(pdfLine, /일반 배당률 34\.98%/);
 });

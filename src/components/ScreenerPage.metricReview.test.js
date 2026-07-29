@@ -18,6 +18,9 @@ test("Screener cards render dividend and metric review status as separate facts"
     const { ScreenerCandidateCard } = await vite.ssrLoadModule(
       "/src/components/ScreenerPage.jsx",
     );
+    const { default: PortfolioAddDecisionDialog } = await vite.ssrLoadModule(
+      "/src/components/portfolio/components/PortfolioAddDecisionDialog.jsx",
+    );
     const fixtures = [
       {
         ticker: "TQQQ",
@@ -148,6 +151,129 @@ test("Screener cards render dividend and metric review status as separate facts"
         fixture.ticker,
       );
     }
+
+    const shortHistoryHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "PLUS200TR",
+          koreanName: "PLUS 200 TR",
+          market: "KR",
+          type: "ETF",
+          exposureType: "ordinary_etf",
+          distributionType: "ordinary_cash_dividend",
+          active: true,
+          listingStatus: "active",
+          usablePriceHistoryYears: 1.9,
+          rollingCagrWindowYears: 1,
+          portfolioEligible: false,
+          portfolioAddPolicy: "deny",
+          portfolioEligibilityStatus: "insufficient_long_horizon_history",
+          portfolioEligibleAfterDate: "2027-09-01",
+          goals: [],
+          tags: [],
+        },
+        isAdded: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(shortHistoryHtml, /disabled=""/);
+    assert.match(shortHistoryHtml, /aria-disabled="true"/);
+    assert.match(shortHistoryHtml, /가격 이력 1\.9년/);
+    assert.match(shortHistoryHtml, /포트폴리오 이용 불가/);
+    assert.match(shortHistoryHtml, /2027-09-01 이후/);
+
+    const leveragedHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "SQQQ",
+          koreanName: "SQQQ",
+          market: "US",
+          type: "ETF",
+          exposureType: "leveraged_inverse",
+          leverageMultiple: -3,
+          direction: "inverse",
+          resetFrequency: "daily",
+          active: true,
+          listingStatus: "active",
+          usablePriceHistoryYears: 10,
+          rollingCagrWindowYears: 3,
+          portfolioEligible: true,
+          portfolioAddPolicy: "confirm",
+          goals: [],
+          tags: [],
+        },
+        isAdded: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.doesNotMatch(leveragedHtml, /disabled=""/);
+    assert.match(leveragedHtml, /확인 후 추가/);
+    assert.match(leveragedHtml, /레버리지·인버스 위험 확인/);
+    assert.match(leveragedHtml, /일일 -3X/);
+    assert.match(leveragedHtml, /인버스/);
+    assert.match(leveragedHtml, /장기보유 주의/);
+    assert.match(leveragedHtml, /극단 변동성/);
+
+    const specialDistributionHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "AIV",
+          koreanName: "AIV",
+          market: "US",
+          type: "ETF",
+          exposureType: "ordinary_etf",
+          distributionType: "special_or_liquidating_distribution",
+          distributionSimulationPolicy: "exclude_non_recurring_distribution",
+          active: true,
+          listingStatus: "active",
+          portfolioEligible: true,
+          portfolioAddPolicy: "allow",
+          goals: [],
+          tags: [],
+        },
+        isAdded: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(
+      specialDistributionHtml,
+      /특별·청산 분배금 · 재투자 제외/,
+    );
+
+    const denialDialogHtml = renderToStaticMarkup(
+      React.createElement(PortfolioAddDecisionDialog, {
+        dialog: {
+          decision: {
+            policy: "deny",
+            title: "포트폴리오에 추가할 수 없습니다",
+            message: "가격 이력이 부족합니다.",
+          },
+        },
+        onClose: () => {},
+        onConfirm: () => {},
+        onViewAsset: () => {},
+      }),
+    );
+    assert.match(denialDialogHtml, /role="dialog"/);
+    assert.match(denialDialogHtml, />확인</);
+    assert.match(denialDialogHtml, />자산 상세 보기</);
+
+    const confirmationDialogHtml = renderToStaticMarkup(
+      React.createElement(PortfolioAddDecisionDialog, {
+        dialog: {
+          decision: {
+            policy: "confirm",
+            title: "레버리지·인버스 상품 위험 확인",
+            message: "장기보유 위험을 확인하세요.",
+          },
+        },
+        onClose: () => {},
+        onConfirm: () => {},
+        onViewAsset: () => {},
+      }),
+    );
+    assert.match(confirmationDialogHtml, />위험을 확인하고 추가</);
+    assert.match(confirmationDialogHtml, />취소</);
   } finally {
     await vite.close();
   }

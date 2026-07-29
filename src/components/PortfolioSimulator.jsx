@@ -9,6 +9,7 @@ import ProbabilityAnalysisPanel from "./portfolio/components/ProbabilityAnalysis
 import ExternalShockAnalysisPanel from "./portfolio/components/ExternalShockAnalysisPanel";
 import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
+import PortfolioAddDecisionDialog from "./portfolio/components/PortfolioAddDecisionDialog";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import {
   createSimulatorHashNavigator,
@@ -32,6 +33,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     isBulkAssetLookupLoading,
     assetLookupSummary,
     recentlyAddedAssetId,
+    portfolioAddDialog,
+    confirmPortfolioAssetAdd,
+    closePortfolioAddDialog,
+    viewPortfolioAddAssetDetails,
     dataManagementSummary,
     activeSimulatorTab,
     screenerCandidateSnapshot,
@@ -208,6 +213,12 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
   return (
     <section id="simulator" className="section calculatorSection simulatorSection">
+      <PortfolioAddDecisionDialog
+        dialog={portfolioAddDialog}
+        onClose={closePortfolioAddDialog}
+        onConfirm={confirmPortfolioAssetAdd}
+        onViewAsset={viewPortfolioAddAssetDetails}
+      />
       <p className="sectionLabel">Portfolio Simulator</p>
       <h2>FINPLE 포트폴리오 시뮬레이터</h2>
       <p className="simulatorIntroText">

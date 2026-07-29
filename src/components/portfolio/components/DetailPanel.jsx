@@ -4,8 +4,13 @@ import { analyzePortfolioProfile } from "../utils/portfolioCalculations";
 import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
+  resolveDistributionDisplayPolicy,
+  resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
-import { formatUserFacingBaselineBlockReasons } from "../utils/baselineBlockReasonLabels";
+import {
+  formatPortfolioEligibilityBlocks,
+  formatUserFacingBaselineBlockReasons,
+} from "../utils/baselineBlockReasonLabels";
 
 function MetricTooltip({ label, children }) {
   return (
@@ -102,6 +107,9 @@ export default function DetailPanel({
   const safeResult = result || {};
   const safeAssets = safeArray(assets);
   const distributionAssets = safeAssets.filter(isNonOrdinaryDistribution);
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);
+  const expectedCashYield = safeResult.expectedSimulationCashYield ?? expectedDividendYield;
+  const expectedAnnualCash = safeResult.expectedAnnualCashDistribution ?? expectedAnnualDividend;
   const safePerformanceRows = safeArray(performanceRows);
   const safeReport = detailReport || null;
   const safeFormatNumber = typeof formatNumber === "function" ? formatNumber : (value) => Math.floor(safeNumber(value)).toLocaleString();
@@ -130,10 +138,10 @@ export default function DetailPanel({
     : ["목표비중을 조정해 장기 성과와 하락 위험의 변화를 비교해보세요."];
 
   const investmentYears = safeNumber(safeSettings.years, 0);
-  const monthlyDividend =
-    expectedAnnualDividend === null || expectedAnnualDividend === undefined
+  const monthlyCash =
+    expectedAnnualCash === null || expectedAnnualCash === undefined
       ? null
-      : Math.floor(Number(expectedAnnualDividend) / 12);
+      : Math.floor(Number(expectedAnnualCash) / 12);
   const cumulativeContribution = safeNumber(simulationStartValue) + safeNumber(yearlyContribution) * investmentYears;
   const cumulativeProfit = Math.max(0, safeNumber(futureValue) - cumulativeContribution);
 
@@ -153,10 +161,10 @@ export default function DetailPanel({
   ];
 
   const dividendMetrics = [
-    { label: "예상 연배당금", value: formatMoneyMetric(expectedAnnualDividend, (value) => Math.floor(value).toLocaleString()), note: "현재 평가금액 기준" },
-    { label: "월 예상 배당금", value: formatMoneyMetric(monthlyDividend, safeFormatNumber), note: "연배당금의 월 환산" },
-    { label: "예상 배당률", value: safeMetricFixed(expectedDividendYield) === "-" ? "-" : `${safeMetricFixed(expectedDividendYield)}%`, note: "포트폴리오 가중 평균" },
-    { label: "배당재투자", value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
+    { label: cashFlowDisplay.annualLabel, value: formatMoneyMetric(expectedAnnualCash, (value) => Math.floor(value).toLocaleString()), note: "현재 평가금액 기준" },
+    { label: `월 예상 ${cashFlowDisplay.focusLabel} 지급액`, value: formatMoneyMetric(monthlyCash, safeFormatNumber), note: "연간 금액의 월 환산" },
+    { label: cashFlowDisplay.yieldLabel, value: safeMetricFixed(expectedCashYield) === "-" ? "-" : `${safeMetricFixed(expectedCashYield)}%`, note: "포트폴리오 가중 평균" },
+    { label: `${cashFlowDisplay.focusLabel} 재투자`, value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
   ];
 
   if (safeResult.ready === false || safeResult.status === "blocked") {
@@ -175,14 +183,15 @@ export default function DetailPanel({
             <h4>계산 보류</h4>
             <span>준비된 지표만 순위와 차트, 상세 분석에 포함됩니다.</span>
           </div>
-          {safeAssets.some((asset) =>
-            asset?.internalPreviewReviewOnly || asset?.productionAppExportEnabled
-          ) &&
-          safeArray(safeResult.blockReasons).length > 0 ? (
-            <ul aria-label="지표 계약 계산 보류 사유">
-              {formatUserFacingBaselineBlockReasons(
-                safeResult.blockReasons,
+          {safeArray(safeResult.blockReasons).length > 0 ? (
+            <ul aria-label="계산 보류 사유">
+              {(safeArray(safeResult.portfolioEligibilityBlocks).length
+                ? formatPortfolioEligibilityBlocks(safeResult.portfolioEligibilityBlocks)
+                : formatUserFacingBaselineBlockReasons(safeResult.blockReasons)
               ).map((reason) => <li key={reason}>{reason}</li>)}
+              {safeArray(safeResult.portfolioEligibilityBlocks).length
+                ? <li>차단 자산을 제거하거나 이용 가능한 자산으로 교체하세요.</li>
+                : null}
             </ul>
           ) : null}
         </div>
@@ -197,13 +206,14 @@ export default function DetailPanel({
               {distributionAssets.map((asset) => (
                 <li key={`${asset.market || ""}:${asset.ticker || asset.id || ""}`}>
                   <strong>{asset.ticker || "-"}</strong>
-                  {" · 최근 12개월 분배율 "}
-                  {safeMetricFixed(asset.trailingDistributionYield) === "-"
+                  {" · "}{resolveDistributionDisplayPolicy(asset).title}
+                  {resolveDistributionDisplayPolicy(asset).kind === "provider_error" ? "" : " · 최근 12개월 분배율 "}
+                  {resolveDistributionDisplayPolicy(asset).kind === "provider_error" ? "" : safeMetricFixed(asset.trailingDistributionYield) === "-"
                     ? "확인 필요"
                     : `${safeMetricFixed(asset.trailingDistributionYield)}%`}
                   {" · "}
                   {getDistributionFrequencyLabel(asset.distributionFrequency)} 분배
-                  {" · 일반 배당수익률·총수익률과 다름 · 옵션 프리미엄 및 원금환급 가능성 있음"}
+                  {resolveDistributionDisplayPolicy(asset).notices.map((notice) => ` · ${notice}`)}
                 </li>
               ))}
             </ul>
@@ -278,9 +288,9 @@ export default function DetailPanel({
           </article>
 
           <article className="portfolioIntegratedFocusCard">
-            <span>배당</span>
-            <strong>예상 배당률 {safeFixed(expectedDividendYield)}%</strong>
-            <p>{safeReport?.dividendText || "배당 현금흐름을 확인합니다."}</p>
+            <span>{cashFlowDisplay.focusLabel}</span>
+            <strong>{cashFlowDisplay.yieldLabel} {safeFixed(expectedCashYield)}%</strong>
+            <p>{safeReport?.dividendText || `${cashFlowDisplay.focusLabel}을 확인합니다.`}</p>
           </article>
         </div>
 
@@ -349,7 +359,7 @@ export default function DetailPanel({
           <p className="screenOnlyNoticeText">
             월 투자금은 매월 적립한다고 가정한 금액이며, 시뮬레이션에서는 연간 합산 금액으로 계산됩니다.
             투자금은 특정 자산에 개별 배분되는 방식이 아니라, 현재 자산 비중으로 산출한 포트폴리오 평균 CAGR,
-            배당률, BETA, MDD를 기준으로 전체 포트폴리오에 반영합니다.
+            {cashFlowDisplay.yieldLabel}, BETA, MDD를 기준으로 전체 포트폴리오에 반영합니다.
           </p>
         </div>
       </div>
@@ -358,7 +368,7 @@ export default function DetailPanel({
         <div className="detailInfoHeader">
           <p className="sectionLabel">Detailed Metrics</p>
           <h4>상세 지표</h4>
-          <span>포트폴리오의 성과, 위험, 배당 지표를 구분해 상세 흐름을 비교합니다.</span>
+          <span>포트폴리오의 성과, 위험, {cashFlowDisplay.focusLabel} 지표를 구분해 상세 흐름을 비교합니다.</span>
         </div>
 
         <div className="detailGroupedMetricGrid">
@@ -373,7 +383,7 @@ export default function DetailPanel({
           </article>
 
           <article className="detailGroupedMetricCard">
-            <div className="detailGroupedMetricHeader"><span>Dividend</span><strong>배당 / 현금흐름</strong></div>
+            <div className="detailGroupedMetricHeader"><span>Cash Flow</span><strong>{cashFlowDisplay.focusLabel}</strong></div>
             <dl>{dividendMetrics.map((metric) => <div key={metric.label}><dt>{metric.label}<small>{metric.note}</small></dt><dd>{metric.value}</dd></div>)}</dl>
           </article>
         </div>
@@ -413,7 +423,7 @@ export default function DetailPanel({
           <table className="performanceTable">
             <thead>
               <tr>
-                <th>연차</th><th>연 투자금</th><th>연 배당금</th><th>연 수익금</th><th>누적 투자금</th><th>누적 배당금</th><th>누적 수익금</th><th>예상 평가금액</th><th>물가 반영 평가금액</th>
+                <th>연차</th><th>연 투자금</th><th>연 {cashFlowDisplay.focusLabel} 지급액</th><th>연 수익금</th><th>누적 투자금</th><th>누적 {cashFlowDisplay.focusLabel} 지급액</th><th>누적 수익금</th><th>예상 평가금액</th><th>물가 반영 평가금액</th>
               </tr>
             </thead>
             <tbody>
