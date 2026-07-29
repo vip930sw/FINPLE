@@ -179,6 +179,10 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
                 "leverageWarningLabelKo",
                 "officialSourceUrl",
                 "referenceSourceUrl",
+                "leverageMetadataRegistryActive",
+                "leverageMetadataRegistryApplied",
+                "leverageMetadataRegistryValues",
+                "leverageMetadataRegistryFingerprint",
             )
         },
         "distributionDataQualityStatus": asset.row_data.get(
@@ -492,6 +496,10 @@ def _base_update(
                 "leverageWarningLabelKo",
                 "officialSourceUrl",
                 "referenceSourceUrl",
+                "leverageMetadataRegistryActive",
+                "leverageMetadataRegistryApplied",
+                "leverageMetadataRegistryValues",
+                "leverageMetadataRegistryFingerprint",
             )
         },
         "distributionType": asset.distribution_type,

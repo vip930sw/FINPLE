@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import tempfile
 import unittest
 from datetime import date
@@ -97,6 +98,23 @@ class BootstrapUniverseTests(unittest.TestCase):
         )
         self.assertEqual(report["verifiedLeverageMetadataCount"], 14)
         self.assertEqual(report["pendingLeverageMetadataCount"], 197)
+        pending_identities = sorted(
+            f"{row['market']}:{row['ticker']}"
+            for row in rows
+            if row["metadataVerificationStatus"]
+            == "pending_official_source"
+        )
+        self.assertEqual(
+            hashlib.sha256(
+                "\n".join(pending_identities).encode("utf-8")
+            ).hexdigest(),
+            "c51cf51288427a8e7d66dcbaac5db7d0eb2efb9a767281115ce2f8dc6f8c37d9",
+        )
+        self.assertEqual(
+            report["verifiedLeverageMetadataCount"]
+            + report["pendingLeverageMetadataCount"],
+            211,
+        )
         self.assertEqual(
             sum(row["metadataVerificationStatus"] == "rejected" for row in rows),
             0,
@@ -131,6 +149,210 @@ class BootstrapUniverseTests(unittest.TestCase):
                     writer.writerows(changed)
                 with self.assertRaisesRegex(ValueError, message):
                     load_leverage_metadata_registry(path)
+
+    def test_leverage_registry_active_state_reconciles_only_derived_values(
+        self,
+    ) -> None:
+        source_row = {
+            **_source_row("US", "UPRO", "UPRO"),
+            "nameKr": "ProShares UltraPro S&P 500",
+            "exposureType": "ordinary_etf",
+        }
+        source = CanonicalSource(tuple(source_row), (source_row,))
+        registry = load_leverage_metadata_registry()
+        active_registry = {
+            "US:UPRO": {**registry["US:UPRO"], "active": "true"}
+        }
+        inactive_registry = {
+            "US:UPRO": {**registry["US:UPRO"], "active": "false"}
+        }
+        policy = {"US": ("US:SPY", "SPY")}
+
+        active_rows, _ = build_universe_rows(
+            source,
+            policy,
+            leverage_metadata_registry=active_registry,
+        )
+        active_row = active_rows[0]
+        self.assertEqual(
+            active_row["metadataVerificationStatus"],
+            "verified",
+        )
+        self.assertEqual(
+            active_row["leverageMetadataRegistryApplied"],
+            "true",
+        )
+        self.assertTrue(
+            active_row["leverageMetadataRegistryFingerprint"]
+        )
+
+        legacy_runtime_row = {
+            field: value
+            for field, value in active_row.items()
+            if not field.startswith("leverageMetadataRegistry")
+        }
+        inactive_rows, _ = build_universe_rows(
+            CanonicalSource(
+                tuple(legacy_runtime_row),
+                (legacy_runtime_row,),
+            ),
+            policy,
+            leverage_metadata_registry=inactive_registry,
+        )
+        self.assertEqual(
+            inactive_rows[0]["metadataVerificationStatus"],
+            "pending_official_source",
+        )
+        self.assertEqual(
+            inactive_rows[0]["leverageMetadataRegistryActive"],
+            "false",
+        )
+        self.assertEqual(
+            inactive_rows[0]["leverageMetadataRegistryApplied"],
+            "false",
+        )
+
+        released, _ = update_universe_rows(active_rows, inactive_rows)
+        self.assertEqual(
+            released[0]["metadataVerificationStatus"],
+            "pending_official_source",
+        )
+        self.assertNotEqual(
+            released[0]["exposureType"],
+            active_row["exposureType"],
+        )
+
+        manual = {
+            **active_row,
+            "exposureType": "operator_custom",
+            "metadataVerificationStatus": "operator_reviewed",
+        }
+        manual_rows, _ = update_universe_rows([manual], inactive_rows)
+        self.assertEqual(
+            manual_rows[0]["exposureType"],
+            "operator_custom",
+        )
+        self.assertEqual(
+            manual_rows[0]["metadataVerificationStatus"],
+            "operator_reviewed",
+        )
+
+        reactivated_source, _ = build_universe_rows(
+            CanonicalSource(tuple(released[0]), (released[0],)),
+            policy,
+            leverage_metadata_registry=active_registry,
+        )
+        reapplied, _ = update_universe_rows(
+            released,
+            reactivated_source,
+        )
+        self.assertEqual(
+            reapplied[0]["metadataVerificationStatus"],
+            "verified",
+        )
+        self.assertEqual(
+            reapplied[0]["leverageMetadataRegistryApplied"],
+            "true",
+        )
+
+    def test_rejected_registry_beats_name_pattern_and_can_be_released(
+        self,
+    ) -> None:
+        registry_path = (
+            REPOSITORY_ROOT
+            / "tools"
+            / "canonical_csv"
+            / "leverage_inverse_metadata_registry.csv"
+        )
+        with registry_path.open(
+            encoding="utf-8",
+            newline="",
+        ) as handle:
+            headers = tuple(csv.DictReader(handle).fieldnames or ())
+        rejected = {
+            field: "" for field in headers
+        } | {
+            "market": "US",
+            "ticker": "FAKE2X",
+            "metadataVerificationStatus": "rejected",
+            "exposureType": "ordinary_etf",
+            "exposureScope": "not_applicable",
+            "officialSourceUrl": "https://example.com/product",
+            "verifiedBy": "operator",
+            "verifiedAt": "2026-07-30T09:00:00+09:00",
+            "reason": "official product page confirms ordinary exposure",
+            "active": "true",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "registry.csv"
+
+            def load(row: dict[str, str]) -> dict[str, dict[str, str]]:
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=headers)
+                    writer.writeheader()
+                    writer.writerow(row)
+                return load_leverage_metadata_registry(path)
+
+            active_registry = load(rejected)
+            inactive_registry = load({**rejected, "active": "false"})
+
+        source_row = {
+            **_source_row("US", "FAKE2X", "FAKE2X"),
+            "nameKr": "Example 2X Long Fund",
+            "exposureType": "ordinary_etf",
+        }
+        source = CanonicalSource(tuple(source_row), (source_row,))
+        policy = {"US": ("US:SPY", "SPY")}
+        rejected_rows, report = build_universe_rows(
+            source,
+            policy,
+            leverage_metadata_registry=active_registry,
+        )
+        row = rejected_rows[0]
+        self.assertEqual(row["metadataVerificationStatus"], "rejected")
+        self.assertEqual(
+            row["metadataVerificationSource"],
+            "official_registry",
+        )
+        self.assertEqual(row["leverageRiskTier"], "not_applicable")
+        self.assertEqual(row["longTermSuitability"], "not_applicable")
+        self.assertEqual(report["pendingLeverageMetadataCount"], 0)
+
+        bootstrapped_again, _ = build_universe_rows(
+            CanonicalSource(tuple(row), (row,)),
+            policy,
+            leverage_metadata_registry=active_registry,
+        )
+        self.assertEqual(
+            bootstrapped_again[0]["metadataVerificationStatus"],
+            "rejected",
+        )
+
+        released, _ = build_universe_rows(
+            CanonicalSource(tuple(row), (row,)),
+            policy,
+            leverage_metadata_registry=inactive_registry,
+        )
+        self.assertEqual(
+            released[0]["metadataVerificationStatus"],
+            "pending_official_source",
+        )
+
+        verified_registry = {
+            "US:FAKE2X": {
+                **load_leverage_metadata_registry()["US:UPRO"],
+                "ticker": "FAKE2X",
+            }
+        }
+        verified_rows, _ = build_universe_rows(
+            CanonicalSource(tuple(row), (row,)),
+            policy,
+            leverage_metadata_registry=verified_registry,
+        )
+        self.assertEqual(
+            verified_rows[0]["metadataVerificationStatus"],
+            "verified",
+        )
 
     def test_distribution_override_csv_validates_and_active_false_unlocks(self) -> None:
         headers = (

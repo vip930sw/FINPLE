@@ -139,7 +139,7 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
 
       {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addDecision.message}</p> : null}
       {!addDenied && leverageRiskProfile ? (
-        <p className="tickerResultRiskNotice">
+        <p className={`tickerResultRiskNotice leverageRiskNotice--${leverageRiskProfile.severity}`} data-warning-severity={leverageRiskProfile.severity}>
           <strong>{leverageRiskProfile.label}</strong>
           {" · "}{leverageRiskProfile.badges.join(" · ")}
           {" · "}{addDecision.message}

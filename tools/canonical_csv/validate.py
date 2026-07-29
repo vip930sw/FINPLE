@@ -538,7 +538,10 @@ def validate_candidate_rows(
 
     universe_identities = {asset.identity for asset in universe}
     for asset in universe:
-        if asset.row_data.get("metadataVerificationStatus") != "verified":
+        if asset.row_data.get("metadataVerificationStatus") not in {
+            "verified",
+            "rejected",
+        }:
             continue
         candidate_row = actual_by_identity.get(asset.identity)
         if candidate_row is None:
@@ -562,6 +565,10 @@ def validate_candidate_rows(
             "leverageWarningLabelKo",
             "officialSourceUrl",
             "referenceSourceUrl",
+            "leverageMetadataRegistryActive",
+            "leverageMetadataRegistryApplied",
+            "leverageMetadataRegistryValues",
+            "leverageMetadataRegistryFingerprint",
         ):
             if str(candidate_row.get(field) or "") != asset.row_data.get(field, ""):
                 _issue(

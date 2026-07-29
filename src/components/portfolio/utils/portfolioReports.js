@@ -175,7 +175,7 @@ export function createPortfolioReportText({
     ...safeAssets.flatMap((asset) => {
       const profile = resolveLeverageRiskProfile(asset);
       return profile
-        ? [`위험 확인: ${asset.ticker || "-"} / ${profile.label} / ${profile.badges.join(" / ")} / ${profile.message}`]
+        ? [`위험 확인: ${asset.ticker || "-"} / 위험강도 ${profile.severity} / ${profile.label} / ${profile.badges.join(" / ")} / ${profile.message}`]
         : [];
     }),
     ...createNonOrdinaryDistributionLines(safeAssets),

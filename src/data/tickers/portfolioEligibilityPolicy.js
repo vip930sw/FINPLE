@@ -37,7 +37,7 @@ const TIER_COPY = Object.freeze({
     label: "주의 필요",
     scope: "집중 지수",
     message:
-      "특정 섹터·테마 또는 소수 대형종목 비중이 높은 지수의 일일 수익률을 배수로 추종합니다. 특정 산업과 종목에 대한 집중위험을 확인하세요.",
+      "단일종목보다 분산되어 있지만 특정 산업·대형종목에 집중된 지수의 일일 수익률을 배수로 추종합니다. 집중위험을 확인하세요.",
   },
   3: {
     label: "장기보유를 권장하지 않음",
@@ -53,6 +53,12 @@ const TIER_COPY = Object.freeze({
   },
 });
 
+const SEVERITY_LABELS = Object.freeze({
+  caution: "위험강도 주의",
+  high: "위험강도 높음",
+  critical: "위험강도 매우 높음",
+});
+
 function dailyMultipleLabel(asset = {}) {
   const leverage = finiteNumber(asset.leverageMultiple);
   if (String(asset.resetFrequency || "").toLowerCase() !== "daily" || leverage === null) {
@@ -63,23 +69,40 @@ function dailyMultipleLabel(asset = {}) {
 
 export function resolveLeverageRiskProfile(asset = {}) {
   const status = String(asset.metadataVerificationStatus || "").toLowerCase();
+  if (status === "rejected") return null;
   if (status === "pending_official_source") {
+    const severity = asset.portfolioWarningSeverity || "high";
     return {
       kind: "pending",
       tier: "pending",
       label: asset.leverageWarningLabelKo || "상품 구조 확인 필요",
       confirmationMode: "strong",
-      badges: ["공식 메타데이터 검증 중", "확인 후 추가"],
+      severity,
+      longTermSuitability: asset.longTermSuitability || "pending",
+      exposureScope: asset.exposureScope || "unresolved_scope",
+      badges: [
+        "공식 메타데이터 검증 중",
+        SEVERITY_LABELS[severity],
+        "확인 후 추가",
+      ].filter(Boolean),
       message:
         "상품명과 공개 정보상 레버리지·인버스 구조일 가능성이 있으나 공식 메타데이터 검증이 완료되지 않았습니다. 상품 구조와 장기보유 위험을 확인한 후 추가하세요.",
     };
   }
   const tier = Number(asset.leverageRiskTier);
   if (status === "verified" && TIER_COPY[tier]) {
-    const base = TIER_COPY[tier];
-    const scope = tier === 2 && ["sector_index", "thematic_index"].includes(asset.exposureScope)
-      ? "섹터 집중"
-      : base.scope;
+    const sectorOrTheme = tier === 2
+      && ["sector_index", "thematic_index"].includes(asset.exposureScope);
+    const base = sectorOrTheme
+      ? {
+          label: "높은 주의 필요",
+          scope: "섹터·테마 집중",
+          message:
+            "동일 산업·테마 위험요인에 집중된 지수의 일일 수익률을 배수로 추종합니다. 실질 분산효과가 제한될 수 있으므로 높은 주의가 필요합니다.",
+        }
+      : TIER_COPY[tier];
+    const severity = asset.portfolioWarningSeverity
+      || (tier === 1 ? "caution" : tier === 4 ? "critical" : "high");
     const multiple = dailyMultipleLabel(asset);
     const stronger = Math.abs(finiteNumber(asset.leverageMultiple) || 0) >= 3
       ? " 3배 일일 목표로 높은 변동성과 대규모 손실 가능성이 더 큽니다."
@@ -87,21 +110,34 @@ export function resolveLeverageRiskProfile(asset = {}) {
     return {
       kind: "verified",
       tier: String(tier),
-      label: asset.leverageWarningLabelKo || base.label,
+      label: tier === 2 ? base.label : asset.leverageWarningLabelKo || base.label,
       confirmationMode: asset.confirmationMode || (tier >= 3 ? "strong" : "standard"),
-      badges: [scope, multiple, tier === 4 ? "장기보유 부적합" : ""].filter(Boolean),
+      severity,
+      longTermSuitability: asset.longTermSuitability || "",
+      exposureScope: asset.exposureScope || "",
+      badges: [
+        base.scope,
+        multiple,
+        SEVERITY_LABELS[severity],
+        tier === 4 ? "장기보유 부적합" : "",
+      ].filter(Boolean),
       message: `${base.message}${stronger}`,
     };
   }
   if (!isLeveragedOrInverse(asset)) return null;
+  const severity = asset.portfolioWarningSeverity || "high";
   return {
     kind: "legacy",
     tier: "",
     label: "레버리지·인버스 위험 확인",
     confirmationMode: "standard",
+    severity,
+    longTermSuitability: asset.longTermSuitability || "caution",
+    exposureScope: asset.exposureScope || "",
     badges: [
       dailyMultipleLabel(asset),
       String(asset.direction || "").toLowerCase() === "inverse" ? "인버스" : "",
+      SEVERITY_LABELS[severity],
       "장기보유 주의",
       "극단 변동성",
     ].filter(Boolean),

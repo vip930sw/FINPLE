@@ -219,6 +219,8 @@ test("Screener cards render dividend and metric review status as separate facts"
     assert.match(leveragedHtml, /인버스/);
     assert.match(leveragedHtml, /장기보유 주의/);
     assert.match(leveragedHtml, /극단 변동성/);
+    assert.match(leveragedHtml, /leverageRiskNotice--high/);
+    assert.match(leveragedHtml, /위험강도 높음/);
 
     const finderTierHtml = renderToStaticMarkup(
       React.createElement(TickerResultCard, {
@@ -244,8 +246,10 @@ test("Screener cards render dividend and metric review status as separate facts"
       }),
     );
     assert.match(finderTierHtml, /높은 주의 필요/);
-    assert.match(finderTierHtml, /섹터 집중/);
+    assert.match(finderTierHtml, /섹터·테마 집중/);
     assert.match(finderTierHtml, /일일 \+3X/);
+    assert.match(finderTierHtml, /leverageRiskNotice--high/);
+    assert.match(finderTierHtml, /data-warning-severity="high"/);
 
     const compareTierHtml = renderToStaticMarkup(
       React.createElement(ComparePanel, {
@@ -276,6 +280,7 @@ test("Screener cards render dividend and metric review status as separate facts"
     );
     assert.match(compareTierHtml, /SH: 장기투자에 적절하지 않음/);
     assert.match(compareTierHtml, /장기보유 부적합/);
+    assert.match(compareTierHtml, /leverageRiskNotice--critical/);
 
     const specialDistributionHtml = renderToStaticMarkup(
       React.createElement(ScreenerCandidateCard, {
@@ -346,8 +351,11 @@ test("Screener cards render dividend and metric review status as separate facts"
             title: "장기투자에 적절하지 않음",
             message: "인버스 위험을 확인하세요.",
             riskProfile: {
+              kind: "verified",
+              tier: "4",
               confirmationMode: "strong",
-              badges: ["인버스", "일일 -3X", "장기보유 부적합"],
+              severity: "critical",
+              badges: ["인버스", "일일 -3X", "위험강도 매우 높음", "장기보유 부적합"],
             },
           },
         },
@@ -356,8 +364,34 @@ test("Screener cards render dividend and metric review status as separate facts"
         onViewAsset: () => {},
       }),
     );
-    assert.match(strongConfirmationHtml, /강한 위험을 확인하고 추가/);
-    assert.match(strongConfirmationHtml, /aria-label="장기투자에 적절하지 않음: 인버스, 일일 -3X, 장기보유 부적합"/);
+    assert.match(strongConfirmationHtml, /장기투자 부적합성을 확인하고 추가/);
+    assert.match(strongConfirmationHtml, /leverageRiskNotice--critical/);
+    assert.match(strongConfirmationHtml, /data-warning-severity="critical"/);
+    assert.match(strongConfirmationHtml, /aria-describedby="portfolioAddDecisionMessage"/);
+    assert.match(strongConfirmationHtml, /aria-label="장기투자에 적절하지 않음: 인버스, 일일 -3X, 위험강도 매우 높음, 장기보유 부적합"/);
+
+    for (const [riskProfile, expected] of [
+      [{ kind: "verified", tier: "3", severity: "high" }, "집중위험을 확인하고 추가"],
+      [{ kind: "pending", tier: "pending", severity: "high" }, "미검증 상품 위험을 확인하고 추가"],
+    ]) {
+      const html = renderToStaticMarkup(
+        React.createElement(PortfolioAddDecisionDialog, {
+          dialog: {
+            decision: {
+              policy: "confirm",
+              title: "위험 확인",
+              message: "위험 내용을 확인하세요.",
+              riskProfile,
+            },
+          },
+          onClose: () => {},
+          onConfirm: () => {},
+          onViewAsset: () => {},
+        }),
+      );
+      assert.match(html, new RegExp(expected));
+    }
+    assert.doesNotMatch(strongConfirmationHtml, /강한 위험을 확인하고 추가/);
   } finally {
     await vite.close();
   }

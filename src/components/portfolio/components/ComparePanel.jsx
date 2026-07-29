@@ -131,7 +131,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 {(portfolio.assets || []).map((asset) => {
                   const profile = resolveLeverageRiskProfile(asset);
                   return profile ? (
-                    <p key={`${asset.market || ""}:${asset.ticker || ""}`}>
+                    <p className={`leverageRiskNotice--${profile.severity}`} data-warning-severity={profile.severity} key={`${asset.market || ""}:${asset.ticker || ""}`}>
                       {asset.ticker}: {profile.label} · {profile.badges.join(" · ")}
                     </p>
                   ) : null;

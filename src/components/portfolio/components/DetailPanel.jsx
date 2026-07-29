@@ -261,7 +261,7 @@ export default function DetailPanel({
             <h4>레버리지·인버스 위험 확인</h4>
             <ul>
               {leverageRiskAssets.map(({ asset, profile }) => (
-                <li key={`${asset.market || ""}:${asset.ticker || ""}`}>
+                <li className={`leverageRiskNotice--${profile.severity}`} data-warning-severity={profile.severity} key={`${asset.market || ""}:${asset.ticker || ""}`}>
                   <strong>{asset.ticker}</strong>
                   {" · "}{profile.label} · {profile.badges.join(" · ")} · {profile.message}
                 </li>

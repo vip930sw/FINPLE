@@ -262,6 +262,55 @@ test("pending metadata is not described as verified and requires strong confirma
   assert.doesNotMatch(decision.message, /Tier [1-4]/);
 });
 
+test("tier 2 copy and severity differ by exposure scope", () => {
+  const base = {
+    ...readyAsset,
+    metadataVerificationStatus: "verified",
+    leverageRiskTier: "2",
+    leverageMultiple: 3,
+    direction: "long",
+    resetFrequency: "daily",
+    portfolioWarningSeverity: "high",
+    longTermSuitability: "high_caution",
+  };
+  const sector = resolveLeverageRiskProfile({
+    ...base,
+    exposureScope: "sector_index",
+  });
+  const concentrated = resolveLeverageRiskProfile({
+    ...base,
+    exposureScope: "concentrated_index",
+  });
+  assert.equal(sector.label, "높은 주의 필요");
+  assert.match(sector.message, /동일 산업·테마 위험요인/);
+  assert.match(sector.message, /실질 분산효과가 제한/);
+  assert.equal(concentrated.label, "주의 필요");
+  assert.match(concentrated.message, /단일종목보다 분산/);
+  assert.match(concentrated.message, /특정 산업·대형종목에 집중/);
+  assert.notEqual(sector.message, concentrated.message);
+  for (const profile of [sector, concentrated]) {
+    assert.equal(profile.severity, "high");
+    assert.equal(profile.longTermSuitability, "high_caution");
+    assert.match(profile.badges.join(" "), /위험강도 높음/);
+  }
+});
+
+test("official rejected metadata restores the general asset policy", () => {
+  const rejected = {
+    ...readyAsset,
+    name: "Example 2X Long Fund",
+    exposureType: "single_stock_leveraged",
+    leverageMultiple: 2,
+    metadataVerificationStatus: "rejected",
+    metadataVerificationSource: "official_registry",
+    leverageRiskTier: "not_applicable",
+    longTermSuitability: "not_applicable",
+    portfolioAddPolicy: "allow",
+  };
+  assert.equal(resolveLeverageRiskProfile(rejected), null);
+  assert.equal(getPortfolioAddDecision(rejected).policy, "allow");
+});
+
 test("tier metadata survives persistence and appears in reports", () => {
   const source = {
     ...readyAsset,
@@ -274,11 +323,27 @@ test("tier metadata survives persistence and appears in reports", () => {
     resetFrequency: "daily",
     confirmationMode: "standard",
     leverageWarningLabelKo: "주의 요함",
+    portfolioWarningSeverity: "caution",
+    longTermSuitability: "caution",
+    leverageMetadataRegistryActive: "true",
+    leverageMetadataRegistryApplied: "true",
+    leverageMetadataRegistryValues: "{\"metadataVerificationStatus\":\"verified\"}",
+    leverageMetadataRegistryFingerprint: "fixture-fingerprint",
   };
   const reloaded = {
     ...source,
     ...normalizePersistedMetricFields(JSON.parse(JSON.stringify(source))),
   };
-  assert.equal(resolveLeverageRiskProfile(reloaded).tier, "1");
-  assert.match(createPortfolioReportText({ assets: [reloaded], result: {} }), /UPRO.*주의 요함/);
+  const profile = resolveLeverageRiskProfile(reloaded);
+  assert.equal(profile.tier, "1");
+  assert.equal(profile.severity, "caution");
+  assert.equal(reloaded.leverageMetadataRegistryApplied, "true");
+  assert.equal(
+    reloaded.leverageMetadataRegistryFingerprint,
+    "fixture-fingerprint",
+  );
+  assert.match(
+    createPortfolioReportText({ assets: [reloaded], result: {} }),
+    /UPRO.*위험강도 caution.*주의 요함/,
+  );
 });

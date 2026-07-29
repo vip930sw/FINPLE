@@ -58,6 +58,26 @@ LEVERAGE_REGISTRY_MANAGED_FIELDS = frozenset(
         "referenceSourceUrl",
     }
 )
+_LEVERAGE_REGISTRY_CORE_FIELDS = frozenset(
+    {
+        "exposureType",
+        "underlyingTicker",
+        "leverageMultiple",
+        "direction",
+        "resetFrequency",
+    }
+)
+_LEVERAGE_REGISTRY_VALUE_FIELDS = (
+    LEVERAGE_REGISTRY_MANAGED_FIELDS | _LEVERAGE_REGISTRY_CORE_FIELDS
+)
+_LEVERAGE_REGISTRY_AUDIT_FIELDS = frozenset(
+    {
+        "leverageMetadataRegistryActive",
+        "leverageMetadataRegistryApplied",
+        "leverageMetadataRegistryValues",
+        "leverageMetadataRegistryFingerprint",
+    }
+)
 
 _DISTRIBUTION_OVERRIDE_VALUE_FIELDS = frozenset(
     {
@@ -151,6 +171,56 @@ def _override_values(row: dict[str, str]) -> dict[str, str]:
     }
 
 
+def _leverage_registry_values(row: dict[str, str]) -> dict[str, str]:
+    try:
+        values = json.loads(
+            row.get("leverageMetadataRegistryValues") or "{}"
+        )
+    except (TypeError, ValueError):
+        return {}
+    return {
+        field: str(value or "")
+        for field, value in values.items()
+        if field in _LEVERAGE_REGISTRY_VALUE_FIELDS
+    }
+
+
+def _leverage_registry_provenance_present(
+    row: dict[str, str],
+    values: dict[str, str],
+    fingerprint: str,
+) -> bool:
+    if (
+        str(row.get("leverageMetadataRegistryApplied") or "")
+        .strip()
+        .lower()
+        == "true"
+    ):
+        return True
+    if (
+        fingerprint
+        and str(
+            row.get("leverageMetadataRegistryFingerprint") or ""
+        ).strip()
+        == fingerprint
+    ):
+        return True
+    signatures = [
+        field
+        for field in (
+            "metadataVerificationStatus",
+            "metadataVerificationSource",
+            "metadataVerifiedBy",
+            "metadataVerifiedAt",
+        )
+        if values.get(field, "")
+    ]
+    return len(signatures) >= 3 and all(
+        str(row.get(field) or "") == values[field]
+        for field in signatures
+    )
+
+
 def load_editable_universe(
     path: Path | str,
 ) -> tuple[tuple[str, ...], list[dict[str, str]]]:
@@ -196,17 +266,48 @@ def update_universe_rows(
             for field in OPERATOR_MANAGED_FIELDS | SYSTEM_STATUS_FIELDS:
                 if field not in row and field in source:
                     row[field] = source[field]
-            for field in LEVERAGE_REGISTRY_MANAGED_FIELDS:
-                row[field] = source.get(field, "")
-            if source.get("metadataVerificationStatus") == "verified":
-                for field in (
-                    "exposureType",
-                    "underlyingTicker",
-                    "leverageMultiple",
-                    "direction",
-                    "resetFrequency",
-                ):
+            source_registry_values = _leverage_registry_values(source)
+            source_registry_fingerprint = str(
+                source.get("leverageMetadataRegistryFingerprint") or ""
+            ).strip()
+            source_registry_contract = bool(
+                source_registry_values
+                or source_registry_fingerprint
+                or str(
+                    source.get("leverageMetadataRegistryActive") or ""
+                ).strip()
+            )
+            if source_registry_contract:
+                source_applies_registry = str(
+                    source.get("leverageMetadataRegistryApplied") or ""
+                ).strip().lower() == "true"
+                registry_provenance_present = (
+                    _leverage_registry_provenance_present(
+                        existing,
+                        source_registry_values,
+                        source_registry_fingerprint,
+                    )
+                )
+                for field in _LEVERAGE_REGISTRY_VALUE_FIELDS:
+                    if source_applies_registry and field in source_registry_values:
+                        row[field] = source.get(field, "")
+                    elif (
+                        registry_provenance_present
+                        and field in source_registry_values
+                        and str(existing.get(field) or "")
+                        == source_registry_values[field]
+                    ):
+                        row[field] = source.get(field, "")
+                    elif field not in row:
+                        row[field] = source.get(field, "")
+                for field in _LEVERAGE_REGISTRY_AUDIT_FIELDS:
                     row[field] = source.get(field, "")
+            else:
+                for field in LEVERAGE_REGISTRY_MANAGED_FIELDS:
+                    row[field] = source.get(field, "")
+                if source.get("metadataVerificationStatus") == "verified":
+                    for field in _LEVERAGE_REGISTRY_CORE_FIELDS:
+                        row[field] = source.get(field, "")
             provenance_present = _override_provenance_present(existing)
             expected_values = (
                 _override_values(existing) or _override_values(source)

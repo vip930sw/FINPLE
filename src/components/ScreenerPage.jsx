@@ -299,7 +299,7 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       </div>
       <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{historyBadges.map((text) => <span key={text}>{text}</span>)}{addDenied ? <span>신뢰도 낮음, 포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leverageRiskProfile ? <span>{leverageRiskProfile.label}</span> : null}{leverageRiskProfile?.badges.map((text) => <span key={text}>{text}</span>)}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
       {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addReason}</p> : null}
-      {!addDenied && leverageRiskProfile ? <p className="tickerResultRiskNotice">{addDecision.message}</p> : null}
+      {!addDenied && leverageRiskProfile ? <p className={`tickerResultRiskNotice leverageRiskNotice--${leverageRiskProfile.severity}`} data-warning-severity={leverageRiskProfile.severity}>{addDecision.message}</p> : null}
       {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
       {isNonOrdinaryDistribution(item) ? (
