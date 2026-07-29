@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import tempfile
 import unittest
 from datetime import date
@@ -303,8 +304,28 @@ class BootstrapUniverseTests(unittest.TestCase):
         }
         source = CanonicalSource(tuple(source_row), (source_row,))
         policy = {"US": ("US:SPY", "SPY")}
-        rejected_rows, report = build_universe_rows(
+        verified_registry = {
+            "US:FAKE2X": {
+                **load_leverage_metadata_registry()["US:SQQQ"],
+                "ticker": "FAKE2X",
+            }
+        }
+        verified_rows, _ = build_universe_rows(
             source,
+            policy,
+            leverage_metadata_registry=verified_registry,
+        )
+        verified_row = verified_rows[0]
+        self.assertEqual(
+            verified_row["underlyingTicker"],
+            verified_registry["US:FAKE2X"]["underlyingTicker"],
+        )
+        self.assertEqual(verified_row["leverageMultiple"], "-3")
+        self.assertEqual(verified_row["direction"], "inverse")
+        self.assertEqual(verified_row["resetFrequency"], "daily")
+
+        rejected_rows, report = build_universe_rows(
+            CanonicalSource(tuple(verified_row), (verified_row,)),
             policy,
             leverage_metadata_registry=active_registry,
         )
@@ -316,7 +337,70 @@ class BootstrapUniverseTests(unittest.TestCase):
         )
         self.assertEqual(row["leverageRiskTier"], "not_applicable")
         self.assertEqual(row["longTermSuitability"], "not_applicable")
+        for field in (
+            "underlyingTicker",
+            "leverageMultiple",
+            "direction",
+            "resetFrequency",
+        ):
+            self.assertEqual(row[field], "", field)
+            self.assertEqual(
+                json.loads(
+                    row["leverageMetadataRegistryValues"]
+                )[field],
+                "",
+                field,
+            )
+        self.assertNotEqual(
+            row["leverageMetadataRegistryFingerprint"],
+            verified_row["leverageMetadataRegistryFingerprint"],
+        )
         self.assertEqual(report["pendingLeverageMetadataCount"], 0)
+
+        manual_verified = {
+            **verified_row,
+            "exposureType": "operator_custom",
+            "underlyingTicker": "MANUAL",
+            "leverageMultiple": "-2.5",
+            "direction": "long",
+            "resetFrequency": "weekly",
+        }
+        manual_runtime_rows, _ = build_universe_rows(
+            CanonicalSource(
+                tuple(manual_verified),
+                (manual_verified,),
+            ),
+            policy,
+            leverage_metadata_registry=active_registry,
+        )
+        for field in (
+            "exposureType",
+            "underlyingTicker",
+            "leverageMultiple",
+            "direction",
+            "resetFrequency",
+        ):
+            self.assertEqual(
+                manual_runtime_rows[0][field],
+                manual_verified[field],
+                field,
+            )
+        manual_rows, _ = update_universe_rows(
+            [manual_verified],
+            rejected_rows,
+        )
+        for field in (
+            "exposureType",
+            "underlyingTicker",
+            "leverageMultiple",
+            "direction",
+            "resetFrequency",
+        ):
+            self.assertEqual(
+                manual_rows[0][field],
+                manual_verified[field],
+                field,
+            )
 
         bootstrapped_again, _ = build_universe_rows(
             CanonicalSource(tuple(row), (row,)),
@@ -338,12 +422,6 @@ class BootstrapUniverseTests(unittest.TestCase):
             "pending_official_source",
         )
 
-        verified_registry = {
-            "US:FAKE2X": {
-                **load_leverage_metadata_registry()["US:UPRO"],
-                "ticker": "FAKE2X",
-            }
-        }
         verified_rows, _ = build_universe_rows(
             CanonicalSource(tuple(row), (row,)),
             policy,
@@ -353,6 +431,8 @@ class BootstrapUniverseTests(unittest.TestCase):
             verified_rows[0]["metadataVerificationStatus"],
             "verified",
         )
+        self.assertEqual(verified_rows[0]["direction"], "inverse")
+        self.assertEqual(verified_rows[0]["leverageMultiple"], "-3")
 
     def test_distribution_override_csv_validates_and_active_false_unlocks(self) -> None:
         headers = (

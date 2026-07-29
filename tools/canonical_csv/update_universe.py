@@ -281,6 +281,9 @@ def update_universe_rows(
                 source_applies_registry = str(
                     source.get("leverageMetadataRegistryApplied") or ""
                 ).strip().lower() == "true"
+                existing_registry_values = _leverage_registry_values(
+                    existing
+                )
                 registry_provenance_present = (
                     _leverage_registry_provenance_present(
                         existing,
@@ -289,6 +292,22 @@ def update_universe_rows(
                     )
                 )
                 for field in _LEVERAGE_REGISTRY_VALUE_FIELDS:
+                    manual_rejected_core_value = (
+                        source.get("metadataVerificationStatus")
+                        == "rejected"
+                        and field in _LEVERAGE_REGISTRY_CORE_FIELDS
+                        and str(
+                            existing.get(
+                                "leverageMetadataRegistryApplied"
+                            ) or ""
+                        ).strip().lower() == "true"
+                        and field in existing_registry_values
+                        and str(existing.get(field) or "")
+                        != existing_registry_values[field]
+                    )
+                    if manual_rejected_core_value:
+                        row[field] = existing.get(field, "")
+                        continue
                     if source_applies_registry and field in source_registry_values:
                         row[field] = source.get(field, "")
                     elif (

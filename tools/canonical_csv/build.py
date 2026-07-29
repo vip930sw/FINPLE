@@ -232,6 +232,11 @@ def _parsed_date(value: object) -> date | None:
 
 
 def _leveraged_warning_codes(asset: UniverseAsset) -> list[str]:
+    if (
+        asset.row_data.get("metadataVerificationStatus", "").strip().lower()
+        == "rejected"
+    ):
+        return []
     exposure = asset.exposure_type
     direction = asset.row_data.get("direction", "").strip().lower()
     reset_frequency = asset.row_data.get(

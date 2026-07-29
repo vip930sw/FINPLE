@@ -195,10 +195,13 @@ def _leverage_registry_values(row: dict[str, str]) -> dict[str, str]:
                 "portfolioWarningSeverity": "",
                 "confirmationMode": "",
                 "leverageWarningLabelKo": "",
+                "exposureType": row.get("exposureType") or "",
+                "underlyingTicker": "",
+                "leverageMultiple": "",
+                "direction": "",
+                "resetFrequency": "",
             }
         )
-        if row.get("exposureType"):
-            values["exposureType"] = row["exposureType"]
         return values
     values.update(
         {
@@ -669,16 +672,40 @@ def build_universe_rows(
             field: str(source_row.get(field) or "").strip()
             for field in _LEVERAGE_REGISTRY_VALUE_FIELDS
         }
-        if leverage_metadata_active:
-            leverage_values.update(leverage_registry_values)
-        elif source_was_registry_applied:
-            for field, value in leverage_registry_values.items():
-                if leverage_values.get(field, "") == value:
-                    leverage_values[field] = ""
         leverage_status = leverage_metadata.get(
             "metadataVerificationStatus",
             "",
         )
+        if leverage_metadata_active:
+            try:
+                previous_registry_values = json.loads(
+                    source_row.get(
+                        "leverageMetadataRegistryValues"
+                    ) or "{}"
+                )
+            except (TypeError, ValueError):
+                previous_registry_values = {}
+            if not isinstance(previous_registry_values, dict):
+                previous_registry_values = {}
+            for field, value in leverage_registry_values.items():
+                manual_core_value = (
+                    leverage_status == "rejected"
+                    and field in _LEVERAGE_REGISTRY_CORE_FIELDS
+                    and _parse_bool(
+                        source_row.get(
+                            "leverageMetadataRegistryApplied"
+                        )
+                    )
+                    and field in previous_registry_values
+                    and leverage_values.get(field, "")
+                    != str(previous_registry_values[field] or "")
+                )
+                if not manual_core_value:
+                    leverage_values[field] = value
+        elif source_was_registry_applied:
+            for field, value in leverage_registry_values.items():
+                if leverage_values.get(field, "") == value:
+                    leverage_values[field] = ""
         leverage_verified = (
             leverage_metadata_active and leverage_status == "verified"
         )

@@ -42,6 +42,7 @@ UNIVERSE_HEADERS = (
     "marketDataProviderSymbol",
     "benchmarkProviderSymbol",
     "exposureType",
+    "underlyingTicker",
     "distributionType",
     "distributionFrequency",
     "firstListedDate",
@@ -352,6 +353,59 @@ class FullSchemaBuildTests(unittest.TestCase):
                 row["reasonCode"],
                 "new_asset_pending_metrics",
             )
+
+    def test_rejected_leverage_metadata_returns_to_allow(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            rejected_asset = _asset_row(
+                "FAKE2X",
+                exposure_type="ordinary_etf",
+                direction="inverse",
+                leverage_multiple="-2.5",
+                reset_frequency="weekly",
+            )
+            rejected_asset.update(
+                {
+                    "underlyingTicker": "MANUAL",
+                    "metadataVerificationStatus": "rejected",
+                    "metadataVerificationSource": "official_registry",
+                    "exposureScope": "not_applicable",
+                    "leverageRiskTier": "not_applicable",
+                    "longTermSuitability": "not_applicable",
+                }
+            )
+            source, universe, candidate = _paths(
+                root,
+                [
+                    _source_row("SPY"),
+                    _source_row(
+                        "FAKE2X",
+                        exposure_type="ordinary_etf",
+                    ),
+                ],
+                [_asset_row("SPY"), rejected_asset],
+            )
+            build_canonical_candidate(
+                replace(
+                    _config(source, universe, candidate),
+                    rolling_cagr_window_years=(3,),
+                ),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(0.08, months=49, start_year=2020),
+                        "US:FAKE2X": _bundle(
+                            0.08,
+                            months=49,
+                            start_year=2020,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = list(csv.DictReader(handle))[1]
+            self.assertEqual(row["metadataVerificationStatus"], "rejected")
+            self.assertEqual(row["portfolioWarningCodes"], "")
+            self.assertEqual(row["portfolioAddPolicy"], "allow", row)
 
     def test_nonordinary_asset_keeps_price_metrics_and_cash_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

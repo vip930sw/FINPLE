@@ -309,6 +309,14 @@ test("official rejected metadata restores the general asset policy", () => {
   };
   assert.equal(resolveLeverageRiskProfile(rejected), null);
   assert.equal(getPortfolioAddDecision(rejected).policy, "allow");
+  const reloaded = {
+    ...rejected,
+    ...normalizePersistedMetricFields(
+      JSON.parse(JSON.stringify(rejected)),
+    ),
+  };
+  assert.equal(resolveLeverageRiskProfile(reloaded), null);
+  assert.equal(getPortfolioAddDecision(reloaded).policy, "allow");
 });
 
 test("tier metadata survives persistence and appears in reports", () => {
