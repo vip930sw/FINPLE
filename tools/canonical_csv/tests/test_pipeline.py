@@ -42,12 +42,31 @@ UNIVERSE_HEADERS = (
     "marketDataProviderSymbol",
     "benchmarkProviderSymbol",
     "exposureType",
+    "underlyingTicker",
     "distributionType",
     "distributionFrequency",
     "firstListedDate",
     "direction",
     "leverageMultiple",
     "resetFrequency",
+    "metadataVerificationStatus",
+    "metadataVerificationSource",
+    "metadataVerifiedBy",
+    "metadataVerifiedAt",
+    "metadataVerificationReason",
+    "exposureScope",
+    "diversificationTier",
+    "leverageRiskTier",
+    "longTermSuitability",
+    "portfolioWarningSeverity",
+    "confirmationMode",
+    "leverageWarningLabelKo",
+    "officialSourceUrl",
+    "referenceSourceUrl",
+    "leverageMetadataRegistryActive",
+    "leverageMetadataRegistryApplied",
+    "leverageMetadataRegistryValues",
+    "leverageMetadataRegistryFingerprint",
     "distributionDataQualityStatus",
     "distributionDataQualityReason",
     "cashEventBasis",
@@ -335,6 +354,59 @@ class FullSchemaBuildTests(unittest.TestCase):
                 "new_asset_pending_metrics",
             )
 
+    def test_rejected_leverage_metadata_returns_to_allow(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            rejected_asset = _asset_row(
+                "FAKE2X",
+                exposure_type="ordinary_etf",
+                direction="inverse",
+                leverage_multiple="-2.5",
+                reset_frequency="weekly",
+            )
+            rejected_asset.update(
+                {
+                    "underlyingTicker": "MANUAL",
+                    "metadataVerificationStatus": "rejected",
+                    "metadataVerificationSource": "official_registry",
+                    "exposureScope": "not_applicable",
+                    "leverageRiskTier": "not_applicable",
+                    "longTermSuitability": "not_applicable",
+                }
+            )
+            source, universe, candidate = _paths(
+                root,
+                [
+                    _source_row("SPY"),
+                    _source_row(
+                        "FAKE2X",
+                        exposure_type="ordinary_etf",
+                    ),
+                ],
+                [_asset_row("SPY"), rejected_asset],
+            )
+            build_canonical_candidate(
+                replace(
+                    _config(source, universe, candidate),
+                    rolling_cagr_window_years=(3,),
+                ),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(0.08, months=49, start_year=2020),
+                        "US:FAKE2X": _bundle(
+                            0.08,
+                            months=49,
+                            start_year=2020,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = list(csv.DictReader(handle))[1]
+            self.assertEqual(row["metadataVerificationStatus"], "rejected")
+            self.assertEqual(row["portfolioWarningCodes"], "")
+            self.assertEqual(row["portfolioAddPolicy"], "allow", row)
+
     def test_nonordinary_asset_keeps_price_metrics_and_cash_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -462,6 +534,30 @@ class FullSchemaBuildTests(unittest.TestCase):
             ("direction", "inverse"),
             ("leverageMultiple", "-3"),
             ("resetFrequency", "daily"),
+            ("metadataVerificationStatus", "pending_official_source"),
+            ("metadataVerificationSource", "operator_review"),
+            ("metadataVerifiedBy", "operator"),
+            ("metadataVerifiedAt", "2026-07-30T02:30:00+09:00"),
+            ("metadataVerificationReason", "official verification"),
+            ("exposureScope", "broad_market_index"),
+            ("diversificationTier", "high"),
+            ("leverageRiskTier", "1"),
+            ("longTermSuitability", "caution"),
+            ("portfolioWarningSeverity", "caution"),
+            ("confirmationMode", "standard"),
+            ("leverageWarningLabelKo", "주의 요함"),
+            ("officialSourceUrl", "https://example.com/product"),
+            ("referenceSourceUrl", "https://example.com/factsheet"),
+            ("leverageMetadataRegistryActive", "false"),
+            ("leverageMetadataRegistryApplied", "false"),
+            (
+                "leverageMetadataRegistryValues",
+                '{"metadataVerificationStatus":"verified"}',
+            ),
+            (
+                "leverageMetadataRegistryFingerprint",
+                "registry-contract-v2",
+            ),
             ("distributionDataQualityStatus", "provider_event_error"),
             ("cashEventBasis", "provider_reported_cash_event"),
             ("cashEventNormalizationStatus", "unresolved"),
@@ -1086,6 +1182,74 @@ class PublishabilityTests(unittest.TestCase):
             self.assertTrue(report["structuralValid"])
             self.assertFalse(report["publishable"])
             self.assertFalse(report["valid"])
+
+    def test_leverage_metadata_completeness_and_registry_match(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, row, source, asset, headers = self._validate(root)
+            row.update(
+                {
+                    "metadataVerificationStatus": "pending_official_source",
+                    "portfolioAddPolicy": "allow",
+                }
+            )
+            pending_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            self.assertIn(
+                "pending_leverage_metadata_must_confirm",
+                {issue["code"] for issue in pending_report["issues"]},
+            )
+            row.update(
+                {
+                    "metadataVerificationStatus": "",
+                    "metadataVerificationSource": "name_pattern_candidate",
+                }
+            )
+            missing_status_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            self.assertIn(
+                "leverage_metadata_verification_status_missing",
+                {issue["code"] for issue in missing_status_report["issues"]},
+            )
+
+            verified = {
+                "metadataVerificationStatus": "verified",
+                "leverageMultiple": "3",
+                "resetFrequency": "daily",
+                "officialSourceUrl": "https://example.com/product",
+                "direction": "long",
+                "exposureType": "index_leveraged",
+                "exposureScope": "broad_market_index",
+                "diversificationTier": "high",
+                "leverageRiskTier": "1",
+                "longTermSuitability": "caution",
+                "portfolioWarningSeverity": "caution",
+                "confirmationMode": "standard",
+                "portfolioAddPolicy": "confirm",
+            }
+            row.update(verified)
+            asset.row_data.update(verified)
+            row["resetFrequency"] = ""
+            incomplete_report = validate_candidate_rows(
+                [row],
+                headers=headers,
+                universe=[asset],
+                as_of_date=date(2024, 1, 1),
+                source=source,
+            )
+            codes = {issue["code"] for issue in incomplete_report["issues"]}
+            self.assertIn("verified_leverage_metadata_incomplete", codes)
+            self.assertIn("leverage_registry_candidate_mismatch", codes)
 
     def test_missing_common_metric_is_not_publishable(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

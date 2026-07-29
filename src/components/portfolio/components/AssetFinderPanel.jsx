@@ -10,10 +10,7 @@ import {
   isNonOrdinaryDistribution,
   resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
-import {
-  getPortfolioAddDecision,
-  isLeveragedOrInverse,
-} from "../../../data/tickers/portfolioEligibilityPolicy";
+import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 const GOAL_OPTIONS = [
   { value: "all", label: "전체" },
@@ -111,11 +108,12 @@ function getRiskLabel(value) {
   return option?.label || value || "-";
 }
 
-function TickerResultCard({ item, isAdded, onAdd }) {
+export function TickerResultCard({ item, isAdded, onAdd }) {
   const displayName = item.koreanName || item.name || item.ticker;
   const nonOrdinaryDistribution = isNonOrdinaryDistribution(item);
   const distributionDisplay = resolveDistributionDisplayPolicy(item);
   const addDecision = getPortfolioAddDecision(item);
+  const leverageRiskProfile = addDecision.riskProfile;
   const addDenied = addDecision.policy === "deny";
   const addReasonId = `portfolio-add-reason-${item.market}-${item.ticker}`.replace(/[^a-zA-Z0-9_-]/g, "-");
 
@@ -140,7 +138,13 @@ function TickerResultCard({ item, isAdded, onAdd }) {
       </div>
 
       {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addDecision.message}</p> : null}
-      {isLeveragedOrInverse(item) ? <p className="tickerResultRiskNotice">일일 재설정과 경로 의존성으로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
+      {!addDenied && leverageRiskProfile ? (
+        <p className={`tickerResultRiskNotice leverageRiskNotice--${leverageRiskProfile.severity}`} data-warning-severity={leverageRiskProfile.severity}>
+          <strong>{leverageRiskProfile.label}</strong>
+          {" · "}{leverageRiskProfile.badges.join(" · ")}
+          {" · "}{addDecision.message}
+        </p>
+      ) : null}
 
       <p className="tickerResultDescription">
         {item.description || item.name || "티커 마스터에 등록된 후보 자산입니다."}

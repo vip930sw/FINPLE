@@ -4,6 +4,7 @@ import {
   formatUserFacingBaselineBlockReasons,
 } from "../utils/baselineBlockReasonLabels";
 import { resolvePortfolioCashFlowDisplayPolicy } from "../../../data/tickers/distributionPolicy";
+import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 function getCompactPortfolioName(name) {
   return String(name || "포트폴리오")
@@ -127,6 +128,14 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                       : null}
                   </ul>
                 ) : null}
+                {(portfolio.assets || []).map((asset) => {
+                  const profile = resolveLeverageRiskProfile(asset);
+                  return profile ? (
+                    <p className={`leverageRiskNotice--${profile.severity}`} data-warning-severity={profile.severity} key={`${asset.market || ""}:${asset.ticker || ""}`}>
+                      {asset.ticker}: {profile.label} · {profile.badges.join(" · ")}
+                    </p>
+                  ) : null;
+                })}
               </div>
             </div>
           ))}

@@ -11,6 +11,7 @@ import {
   formatPortfolioEligibilityBlocks,
   formatUserFacingBaselineBlockReasons,
 } from "../utils/baselineBlockReasonLabels";
+import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 function MetricTooltip({ label, children }) {
   return (
@@ -107,6 +108,9 @@ export default function DetailPanel({
   const safeResult = result || {};
   const safeAssets = safeArray(assets);
   const distributionAssets = safeAssets.filter(isNonOrdinaryDistribution);
+  const leverageRiskAssets = safeAssets
+    .map((asset) => ({ asset, profile: resolveLeverageRiskProfile(asset) }))
+    .filter(({ profile }) => profile);
   const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);
   const expectedCashYield = safeResult.expectedSimulationCashYield ?? expectedDividendYield;
   const expectedAnnualCash = safeResult.expectedAnnualCashDistribution ?? expectedAnnualDividend;
@@ -252,6 +256,19 @@ export default function DetailPanel({
       </div>
 
       <div className="portfolioIntegratedDiagnosis detailStep3ExecutiveSection">
+        {leverageRiskAssets.length ? (
+          <div className="detailInfoSection" aria-label="레버리지 인버스 위험">
+            <h4>레버리지·인버스 위험 확인</h4>
+            <ul>
+              {leverageRiskAssets.map(({ asset, profile }) => (
+                <li className={`leverageRiskNotice--${profile.severity}`} data-warning-severity={profile.severity} key={`${asset.market || ""}:${asset.ticker || ""}`}>
+                  <strong>{asset.ticker}</strong>
+                  {" · "}{profile.label} · {profile.badges.join(" · ")} · {profile.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="portfolioIntegratedHeader">
           <div>
             <p className="sectionLabel">Portfolio Diagnosis</p>

@@ -162,6 +162,29 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
         "direction": asset.row_data.get("direction", ""),
         "leverageMultiple": asset.row_data.get("leverageMultiple", ""),
         "resetFrequency": asset.row_data.get("resetFrequency", ""),
+        "leverageMetadata": {
+            field: asset.row_data.get(field, "")
+            for field in (
+                "metadataVerificationStatus",
+                "metadataVerificationSource",
+                "metadataVerifiedBy",
+                "metadataVerifiedAt",
+                "metadataVerificationReason",
+                "exposureScope",
+                "diversificationTier",
+                "leverageRiskTier",
+                "longTermSuitability",
+                "portfolioWarningSeverity",
+                "confirmationMode",
+                "leverageWarningLabelKo",
+                "officialSourceUrl",
+                "referenceSourceUrl",
+                "leverageMetadataRegistryActive",
+                "leverageMetadataRegistryApplied",
+                "leverageMetadataRegistryValues",
+                "leverageMetadataRegistryFingerprint",
+            )
+        },
         "distributionDataQualityStatus": asset.row_data.get(
             "distributionDataQualityStatus",
             "",
@@ -209,6 +232,11 @@ def _parsed_date(value: object) -> date | None:
 
 
 def _leveraged_warning_codes(asset: UniverseAsset) -> list[str]:
+    if (
+        asset.row_data.get("metadataVerificationStatus", "").strip().lower()
+        == "rejected"
+    ):
+        return []
     exposure = asset.exposure_type
     direction = asset.row_data.get("direction", "").strip().lower()
     reset_frequency = asset.row_data.get(
@@ -226,6 +254,14 @@ def _leveraged_warning_codes(asset: UniverseAsset) -> list[str]:
         codes.append("inverse_exposure")
     if codes and reset_frequency == "daily":
         codes.append("daily_reset")
+    verification_status = asset.row_data.get(
+        "metadataVerificationStatus", ""
+    ).strip()
+    risk_tier = asset.row_data.get("leverageRiskTier", "").strip()
+    if verification_status == "pending_official_source":
+        codes.append("metadata_verification_pending")
+    elif risk_tier in {"1", "2", "3", "4"}:
+        codes.append(f"leverage_risk_tier_{risk_tier}")
     return codes
 
 
@@ -444,6 +480,33 @@ def _base_update(
         "marketDataProviderSymbol": asset.market_data_provider_symbol,
         "benchmarkProviderSymbol": asset.benchmark_provider_symbol,
         "exposureType": asset.exposure_type,
+        **{
+            field: asset.row_data.get(field, "")
+            for field in (
+                "underlyingTicker",
+                "leverageMultiple",
+                "direction",
+                "resetFrequency",
+                "metadataVerificationStatus",
+                "metadataVerificationSource",
+                "metadataVerifiedBy",
+                "metadataVerifiedAt",
+                "metadataVerificationReason",
+                "exposureScope",
+                "diversificationTier",
+                "leverageRiskTier",
+                "longTermSuitability",
+                "portfolioWarningSeverity",
+                "confirmationMode",
+                "leverageWarningLabelKo",
+                "officialSourceUrl",
+                "referenceSourceUrl",
+                "leverageMetadataRegistryActive",
+                "leverageMetadataRegistryApplied",
+                "leverageMetadataRegistryValues",
+                "leverageMetadataRegistryFingerprint",
+            )
+        },
         "distributionType": asset.distribution_type,
         "distributionFrequency": asset.distribution_frequency,
         "active": "true" if asset.active else "false",

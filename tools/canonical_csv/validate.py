@@ -251,6 +251,80 @@ def validate_candidate_rows(
                     "structural",
                 )
 
+        verification_status = str(
+            row.get("metadataVerificationStatus") or ""
+        ).strip()
+        if verification_status not in {
+            "", "verified", "pending_official_source",
+            "not_applicable", "rejected",
+        }:
+            _issue(
+                structural_issues,
+                "invalid_metadata_verification_status",
+                f"{identity}:{verification_status}",
+                "structural",
+            )
+        if (
+            not verification_status
+            and str(row.get("metadataVerificationSource") or "").strip()
+            in {"name_pattern_candidate", "official_registry"}
+        ):
+            _issue(
+                publishability_issues,
+                "leverage_metadata_verification_status_missing",
+                identity,
+                "publishability",
+            )
+        if verification_status == "verified":
+            for field in (
+                "leverageMultiple",
+                "resetFrequency",
+                "officialSourceUrl",
+            ):
+                if not str(row.get(field) or "").strip():
+                    _issue(
+                        publishability_issues,
+                        "verified_leverage_metadata_incomplete",
+                        f"{identity}.{field}",
+                        "publishability",
+                    )
+            if not _finite_number(row.get("leverageMultiple")):
+                _issue(
+                    publishability_issues,
+                    "verified_leverage_multiple_invalid",
+                    identity,
+                    "publishability",
+                )
+            if not str(row.get("officialSourceUrl") or "").strip().startswith(
+                ("http://", "https://")
+            ):
+                _issue(
+                    publishability_issues,
+                    "verified_leverage_source_url_invalid",
+                    identity,
+                    "publishability",
+                )
+            if (
+                str(row.get("direction") or "").strip().lower() == "inverse"
+                and str(row.get("leverageRiskTier") or "").strip() != "4"
+            ):
+                _issue(
+                    publishability_issues,
+                    "inverse_leverage_risk_tier_invalid",
+                    identity,
+                    "publishability",
+                )
+        if (
+            verification_status == "pending_official_source"
+            and str(row.get("portfolioAddPolicy") or "").strip() == "allow"
+        ):
+            _issue(
+                publishability_issues,
+                "pending_leverage_metadata_must_confirm",
+                identity,
+                "publishability",
+            )
+
         price_basis = str(row.get("priceBasis") or "").strip()
         if price_basis and price_basis not in SUPPORTED_PRICE_BASES:
             _issue(
@@ -463,6 +537,46 @@ def validate_candidate_rows(
                 )
 
     universe_identities = {asset.identity for asset in universe}
+    for asset in universe:
+        if asset.row_data.get("metadataVerificationStatus") not in {
+            "verified",
+            "rejected",
+        }:
+            continue
+        candidate_row = actual_by_identity.get(asset.identity)
+        if candidate_row is None:
+            continue
+        for field in (
+            "exposureType",
+            "underlyingTicker",
+            "leverageMultiple",
+            "direction",
+            "resetFrequency",
+            "exposureScope",
+            "diversificationTier",
+            "leverageRiskTier",
+            "longTermSuitability",
+            "portfolioWarningSeverity",
+            "confirmationMode",
+            "metadataVerificationSource",
+            "metadataVerifiedBy",
+            "metadataVerifiedAt",
+            "metadataVerificationReason",
+            "leverageWarningLabelKo",
+            "officialSourceUrl",
+            "referenceSourceUrl",
+            "leverageMetadataRegistryActive",
+            "leverageMetadataRegistryApplied",
+            "leverageMetadataRegistryValues",
+            "leverageMetadataRegistryFingerprint",
+        ):
+            if str(candidate_row.get(field) or "") != asset.row_data.get(field, ""):
+                _issue(
+                    structural_issues,
+                    "leverage_registry_candidate_mismatch",
+                    f"{asset.identity}.{field}",
+                    "structural",
+                )
     missing_universe_rows = sorted(
         universe_identities - set(actual_identities)
     )
