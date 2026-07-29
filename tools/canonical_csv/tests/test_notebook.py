@@ -31,7 +31,27 @@ class NotebookStructureTests(unittest.TestCase):
         self.assertIn("RESUME", source)
         self.assertIn("RETRY_COUNT", source)
         self.assertIn("PersistentCachedMarketDataProvider", source)
+        self.assertIn('AS_OF_DATE = "2026-07-28"', source)
         self.assertIn('REPO_REF = "main"', source)
+        self.assertIn(
+            'DRIVE_ROOT = "/content/drive/MyDrive/FINPLE"',
+            source,
+        )
+        self.assertIn(
+            'RUN_DIR = (DRIVE_ROOT_PATH / f"canonical_run_{AS_OF_DATE}")',
+            source,
+        )
+        self.assertIn(
+            'CACHE_DIR = (DRIVE_ROOT_PATH / "canonical_csv_cache")',
+            source,
+        )
+        self.assertIn("if UNIVERSE_PATH.exists():", source)
+        self.assertNotIn(
+            'DRIVE_ROOT = "/content/drive/MyDrive/FINPLE/canonical-csv"',
+            source,
+        )
+        self.assertNotIn('DRIVE_ROOT_PATH / "runs"', source)
+        self.assertNotIn('DRIVE_ROOT_PATH / "cache"', source)
         self.assertIn("drive.mount", source)
         self.assertIn('"git", "clone"', source)
         self.assertIn('"git", "-C"', source)

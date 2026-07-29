@@ -416,28 +416,35 @@ class FullSchemaBuildTests(unittest.TestCase):
                     root = Path(temporary)
                     source, universe, candidate = _paths(
                         root,
-                        [_source_row("SPY")],
-                        [_asset_row("SPY")],
+                        [_source_row("SPY"), _source_row("QQQ")],
+                        [_asset_row("SPY"), _asset_row("QQQ")],
                     )
                     config = _config(source, universe, candidate)
                     build_canonical_candidate(
                         config,
                         InMemoryMarketDataProvider(
-                            {"US:SPY": _bundle(0.08)}
+                            {
+                                "US:SPY": _bundle(0.08),
+                                "US:QQQ": _bundle(0.12),
+                            }
                         ),
                     )
                     with universe.open(
                         encoding="utf-8",
                         newline="",
                     ) as handle:
-                        row = next(csv.DictReader(handle))
-                    row[field] = value
-                    _write_csv(universe, UNIVERSE_HEADERS, [row])
+                        rows = list(csv.DictReader(handle))
+                    rows[0][field] = value
+                    _write_csv(universe, UNIVERSE_HEADERS, rows)
                     provider = CountingProvider(
-                        {"US:SPY": _bundle(0.08)}
+                        {
+                            "US:SPY": _bundle(0.08),
+                            "US:QQQ": _bundle(0.12),
+                        }
                     )
-                    build_canonical_candidate(config, provider)
+                    result = build_canonical_candidate(config, provider)
                     self.assertEqual(provider.asset_calls, ["US:SPY"])
+                    self.assertEqual(result.summary["resumedRowCount"], 1)
 
     def test_ordinary_distribution_uses_dividend_only(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
