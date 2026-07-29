@@ -295,6 +295,37 @@ test("tier 2 copy and severity differ by exposure scope", () => {
   }
 });
 
+test("non-equity futures scopes use distinct tier 2 warnings and persist", () => {
+  const cases = [
+    ["currency_futures", /통화선물/, /환율|롤오버/],
+    ["sovereign_bond_futures", /국채선물/, /금리·듀레이션/],
+    ["commodity_futures", /원자재선물/, /현물가격/],
+  ];
+  for (const [exposureScope, subject, detail] of cases) {
+    const asset = JSON.parse(JSON.stringify({
+      ...readyAsset,
+      metadataVerificationStatus: "verified",
+      leverageRiskTier: "2",
+      leverageMultiple: 2,
+      direction: "long",
+      resetFrequency: "daily",
+      exposureScope,
+      longTermSuitability: "high_caution",
+      portfolioWarningSeverity: "high",
+      confirmationMode: "standard",
+    }));
+    const profile = resolveLeverageRiskProfile(asset);
+    assert.equal(profile.label, "높은 주의 필요");
+    assert.equal(profile.exposureScope, exposureScope);
+    assert.equal(profile.severity, "high");
+    assert.equal(profile.longTermSuitability, "high_caution");
+    assert.match(profile.message, subject);
+    assert.match(profile.message, detail);
+    assert.match(profile.message, /경로의존성/);
+    assert.equal(getPortfolioAddDecision(asset).policy, "confirm");
+  }
+});
+
 test("official rejected metadata restores the general asset policy", () => {
   const rejected = {
     ...readyAsset,
