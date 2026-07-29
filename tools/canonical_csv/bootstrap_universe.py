@@ -30,8 +30,17 @@ UNIVERSE_OUTPUT_FIELDS = (
     "aum",
     "sizeSource",
     "exposureType",
+    "underlyingTicker",
+    "leverageMultiple",
+    "direction",
+    "resetFrequency",
     "distributionType",
     "distributionFrequency",
+    "cashEventBasis",
+    "cashEventNormalizationStatus",
+    "cashEventNormalizationMethod",
+    "distributionDataQualityStatus",
+    "distributionDataQualityReason",
     "issuer",
     "inceptionDate",
     "firstListedDate",
@@ -42,6 +51,10 @@ UNIVERSE_OUTPUT_FIELDS = (
     "benchmarkStatus",
     "reasonCode",
     "reasonMessage",
+)
+
+PROVIDER_EVENT_ERROR_IDENTITIES = frozenset(
+    {"KR:381560", "US:SOXS"}
 )
 
 
@@ -150,6 +163,8 @@ def build_universe_rows(
     market_counts: dict[str, int] = {}
     for source_row in source.rows:
         market, ticker = row_identity(source_row).split(":", 1)
+        identity = f"{market}:{ticker}"
+        provider_event_error = identity in PROVIDER_EVENT_ERROR_IDENTITIES
         market_counts[market] = market_counts.get(market, 0) + 1
         canonical_provider_symbol = str(
             source_row.get("providerSymbol") or ""
@@ -221,11 +236,55 @@ def build_universe_rows(
                 "exposureType": str(
                     source_row.get("exposureType") or ""
                 ).strip(),
+                "underlyingTicker": str(
+                    source_row.get("underlyingTicker") or ""
+                ).strip(),
+                "leverageMultiple": str(
+                    source_row.get("leverageMultiple") or ""
+                ).strip(),
+                "direction": str(
+                    source_row.get("direction") or ""
+                ).strip(),
+                "resetFrequency": str(
+                    source_row.get("resetFrequency") or ""
+                ).strip(),
                 "distributionType": str(
                     source_row.get("distributionType") or "unknown"
                 ).strip(),
                 "distributionFrequency": str(
                     source_row.get("distributionFrequency") or "unknown"
+                ).strip(),
+                "cashEventBasis": str(
+                    source_row.get("cashEventBasis")
+                    or (
+                        "provider_reported_cash_event"
+                        if provider_event_error
+                        else ""
+                    )
+                ).strip(),
+                "cashEventNormalizationStatus": str(
+                    source_row.get("cashEventNormalizationStatus")
+                    or ("unresolved" if provider_event_error else "")
+                ).strip(),
+                "cashEventNormalizationMethod": str(
+                    source_row.get("cashEventNormalizationMethod") or ""
+                ).strip(),
+                "distributionDataQualityStatus": str(
+                    source_row.get("distributionDataQualityStatus")
+                    or (
+                        "provider_event_error"
+                        if provider_event_error
+                        else ""
+                    )
+                ).strip(),
+                "distributionDataQualityReason": str(
+                    source_row.get("distributionDataQualityReason")
+                    or (
+                        "provider cash event conflicts with official "
+                        "distribution history"
+                        if provider_event_error
+                        else ""
+                    )
                 ).strip(),
                 "issuer": str(source_row.get("issuer") or "").strip(),
                 "inceptionDate": str(

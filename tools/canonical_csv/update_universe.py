@@ -27,14 +27,23 @@ OPERATOR_MANAGED_FIELDS = frozenset(
         "benchmark",
         "benchmarkProviderSymbol",
         "exposureType",
+        "leverageMultiple",
+        "direction",
+        "resetFrequency",
         "distributionType",
         "distributionFrequency",
+        "cashEventBasis",
+        "cashEventNormalizationStatus",
+        "cashEventNormalizationMethod",
+        "distributionDataQualityStatus",
+        "distributionDataQualityReason",
     }
 )
 
 SOURCE_MANAGED_FIELDS = frozenset(
     {
         "name",
+        "underlyingTicker",
         "assetType",
         "sourceUniverse",
         "listingStatus",

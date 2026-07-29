@@ -31,6 +31,8 @@ class AssetMetrics:
     rollingCagrMedian: float
     rollingCagrWindowYears: int
     rollingCagrWindowCount: int
+    priceHistoryStartDate: str
+    usablePriceHistoryYears: float
     expectedCagr: float
     beta: float
     mdd: float
@@ -260,6 +262,11 @@ def calculate_asset_metrics(
         rollingCagrMedian=round(rolling_median, 8),
         rollingCagrWindowYears=rolling_years,
         rollingCagrWindowCount=rolling_count,
+        priceHistoryStartDate=asset_points[0][0].isoformat(),
+        usablePriceHistoryYears=round(
+            (asset_points[-1][0] - asset_points[0][0]).days / 365.2425,
+            8,
+        ),
         expectedCagr=round(rolling_median, 8),
         beta=round(beta, 8),
         mdd=round(calculate_mdd(asset_points), 8),

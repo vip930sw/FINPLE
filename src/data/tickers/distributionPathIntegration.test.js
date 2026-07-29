@@ -284,20 +284,15 @@ test("metric overlay follows the public App Preview path through save/reload and
         assertOptionDistributionContract(patch, expected.yield);
         assertOptionDistributionContract(hydrated, expected.yield);
         assertOptionDistributionContract(reloaded, expected.yield);
-        assert.equal(result.status, "blocked", ticker);
-        assert.equal(result.expectedDividendYield, null, ticker);
-        assert.equal(result.expectedAnnualDividend, null, ticker);
-        assert.deepEqual(result.monthlyBaselinePoints, [], ticker);
-        assert.deepEqual(result.performanceRows, [], ticker);
-        assert.match(
-          result.blockReasons.join("|"),
-          /unsupported_distribution_calculation_policy/,
-          ticker,
-        );
+        assert.equal(result.status, "ready", ticker);
+        assert.equal(result.expectedDividendYield, expected.yield, ticker);
+        assert.equal(result.assets[0].annualDividendYield, expected.yield, ticker);
+        assert.ok(result.monthlyBaselinePoints.length > 1, ticker);
+        assert.ok(result.performanceRows.length > 0, ticker);
         const [ranked] = createRankedComparisonPortfolios([
           { id: ticker, name: ticker, assets: [reloaded], result },
         ]);
-        assert.equal(ranked.dividendRank, "-", ticker);
+        assert.equal(ranked.dividendRank, 1, ticker);
       } else {
         assert.equal(result.status, "ready", ticker);
         assert.equal(result.expectedDividendYield, expected.yield, ticker);
@@ -339,11 +334,11 @@ test("metric overlay follows the public App Preview path through save/reload and
         targetWeight: 100,
       }),
     );
-    const blocked = buildResult(aipi);
+    const ready = buildResult(aipi);
     const reportInput = {
       activePortfolio: { name: "AIPI blocked contract" },
       detailReport: { type: "검토 필요", tags: [], summary: "분배 계약 검토" },
-      result: blocked,
+      result: ready,
       assets: [aipi],
       detailPortfolio: {
         realValueRank: 1,
@@ -355,25 +350,19 @@ test("metric overlay follows the public App Preview path through save/reload and
     const fullReport = createPortfolioReportText(reportInput);
     const summaryReport = createReportSummaryText(reportInput);
     for (const report of [fullReport, summaryReport]) {
-      assert.match(report, /기준 계산 보류/);
-      assert.match(report, /예상 CAGR: -/);
-      assert.match(report, /예상 BETA: -/);
-      assert.match(report, /예상 MDD: -/);
-      assert.match(report, /예상 일반 배당률: -/);
-      assert.match(report, /예상 연배당금: -/);
-      assert.match(
-        report,
-        /이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다\./,
-      );
+      assert.match(report, /계산 완료/);
+      assert.match(report, /예상 CAGR: 10\.00%/);
+      assert.match(report, /예상 BETA: 1\.00/);
+      assert.match(report, /예상 MDD: -20\.00%/);
+      assert.match(report, /예상 일반 배당률: 34\.98%/);
       assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
       assert.match(report, /최근 12개월 분배율 34\.98%/);
       assert.match(report, /주간 분배/);
       assert.match(report, /일반 배당수익률·총수익률과 다름/);
       assert.match(report, /옵션 프리미엄 및 원금환급 가능성 있음/);
     }
-    assert.match(fullReport, /배당 순위: -/);
-    assert.doesNotMatch(fullReport, /배당 순위: \d/);
-    assert.match(fullReport, /CAGR - \/ BETA - \/ MDD -/);
+    assert.match(fullReport, /배당 순위: 1위/);
+    assert.match(fullReport, /CAGR 10\.0% \/ BETA 1\.00 \/ MDD -20\.0%/);
 
     const spy = roundTripSavedAsset(
       loader.hydrateAssetFromScreenerCandidate({

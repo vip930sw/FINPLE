@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
+import PortfolioAddDecisionDialog from "./portfolio/components/PortfolioAddDecisionDialog";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import { normalizeTicker } from "./portfolio/services/assetDataService";
 import {
@@ -13,6 +14,10 @@ import {
   resolveDividendYieldDisplay,
 } from "../data/tickers/distributionPolicy";
 import { resolveMetricReviewDisplay } from "../data/tickers/metricReviewPolicy";
+import {
+  getPortfolioAddDecision,
+  isLeveragedOrInverse,
+} from "../data/tickers/portfolioEligibilityPolicy";
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
@@ -261,13 +266,32 @@ function getPageNumbers(currentPage, totalPages) {
 export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const cardClassName = ["tickerResultCard", isAdded ? "added" : "", item.market === "KR" ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
   const metricReview = resolveMetricReviewDisplay(item);
+  const addDecision = getPortfolioAddDecision(item);
+  const addDenied = !canAdd || addDecision.policy === "deny";
+  const addReason = addDenied
+    ? addDecision.message || "현재 포트폴리오에 추가할 수 없습니다."
+    : addDecision.message;
+  const historyYears = Number(item.usablePriceHistoryYears);
+  const leverage = Number(item.leverageMultiple);
+  const leveragedOrInverse = isLeveragedOrInverse(item);
   return (
     <article className={cardClassName}>
       <div className="tickerResultMain">
         <div className="tickerResultTitleBlock"><strong className="tickerResultTicker">{item.ticker}</strong><span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span></div>
-        <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
+        <span title={addReason}>
+          <button
+            type="button"
+            className={isAdded ? "tickerResultAction added" : "tickerResultAction"}
+            onClick={() => onAdd(item)}
+            disabled={isAdded || addDenied}
+            aria-disabled={isAdded || addDenied}
+            aria-label={addReason || `${item.ticker} 포트폴리오에 추가`}
+          >
+            {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
+          </button>
+        </span>
       </div>
-      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{Number.isFinite(historyYears) && historyYears < 3 ? <span>신규 상장 · 가격 이력 {historyYears.toFixed(1)}년</span> : null}{addDenied ? <span>포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leveragedOrInverse ? <span>레버리지·인버스 위험 확인</span> : null}{item.resetFrequency === "daily" && Number.isFinite(leverage) && Math.abs(leverage) >= 2 ? <span>일일 {leverage > 0 ? "+" : ""}{leverage}X</span> : null}{String(item.direction).toLowerCase() === "inverse" ? <span>인버스</span> : null}{leveragedOrInverse ? <span>장기보유 주의</span> : null}{leveragedOrInverse ? <span>극단 변동성</span> : null}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
       {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
       {isNonOrdinaryDistribution(item) ? (
@@ -291,9 +315,10 @@ function CandidateScreenerPanel({
   candidates,
   assets,
   addAssetFromTickerCandidate,
+  initialQuery = "",
   isLoading = false,
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [styleFilter, setStyleFilter] = useState("all");
   const [riskLevel, setRiskLevel] = useState("all");
   const [type, setType] = useState("all");
@@ -351,7 +376,7 @@ function CandidateScreenerPanel({
 }
 
 function ScreenerPage({ onBack }) {
-  const { portfolioList, activePortfolioId, activePortfolio, assets, screenerCandidateSnapshot, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate } = usePortfolioSimulator();
+  const { portfolioList, activePortfolioId, activePortfolio, assets, screenerCandidateSnapshot, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails } = usePortfolioSimulator();
   const [activeMarket, setActiveMarket] = useState("ALL");
   const usCandidates = screenerCandidateSnapshot?.usCandidates || US_SCREENER_CANDIDATES;
   const krCandidates = screenerCandidateSnapshot?.krCandidates || KR_SCREENER_CANDIDATES;
@@ -359,8 +384,17 @@ function ScreenerPage({ onBack }) {
   const isInternalPreview = screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only";
   const isProductionCatalogLoading =
     screenerCandidateSnapshot?.preview?.status === PRODUCTION_APP_EXPORT_LOADING_STATUS;
+  const initialQuery = typeof window === "undefined"
+    ? ""
+    : new URLSearchParams(window.location.search).get("asset") || "";
   return (
     <main className="page screenerPage">
+      <PortfolioAddDecisionDialog
+        dialog={portfolioAddDialog}
+        onClose={closePortfolioAddDialog}
+        onConfirm={confirmPortfolioAssetAdd}
+        onViewAsset={viewPortfolioAddAssetDetails}
+      />
       <section className="section calculatorSection screenerStandaloneSection screenerUnifiedSection">
         <p className="sectionLabel">Asset Finder</p>
         <h2>FINPLE 자산 파인더</h2>
@@ -376,7 +410,7 @@ function ScreenerPage({ onBack }) {
             지표 기준월 {screenerCandidateSnapshot.preview.manifest?.metricDataThroughMonth || "-"}
           </p>
         ) : null}
-        <CandidateScreenerPanel key={activeMarket} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} isLoading={isProductionCatalogLoading} />
+        <CandidateScreenerPanel key={`${activeMarket}-${initialQuery}`} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} initialQuery={initialQuery} isLoading={isProductionCatalogLoading} />
       </section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />
       <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="자산 파인더 상단으로 이동">↑ TOP</button>

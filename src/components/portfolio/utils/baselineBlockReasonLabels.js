@@ -4,6 +4,9 @@ const USER_FACING_BLOCK_REASON_LABELS = Object.freeze({
   unsupported_distribution_calculation_policy:
     "이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다.",
   missing_metric_lineage: "지표 출처 정보가 부족합니다.",
+  portfolio_add_denied: "장기 포트폴리오에 사용할 수 없는 자산이 포함되어 있습니다.",
+  missing_cash_yield_for_reinvestment:
+    "분배금 재투자에 필요한 현금수익률 데이터가 없습니다.",
 });
 
 function getReasonDetail(reason = "") {

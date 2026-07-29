@@ -9,6 +9,10 @@ import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
 } from "../../../data/tickers/distributionPolicy";
+import {
+  getPortfolioAddDecision,
+  isLeveragedOrInverse,
+} from "../../../data/tickers/portfolioEligibilityPolicy";
 
 const GOAL_OPTIONS = [
   { value: "all", label: "전체" },
@@ -109,6 +113,8 @@ function getRiskLabel(value) {
 function TickerResultCard({ item, isAdded, onAdd }) {
   const displayName = item.koreanName || item.name || item.ticker;
   const nonOrdinaryDistribution = isNonOrdinaryDistribution(item);
+  const addDecision = getPortfolioAddDecision(item);
+  const addDenied = addDecision.policy === "deny";
 
   return (
     <article className={isAdded ? "tickerResultCard added" : "tickerResultCard"}>
@@ -121,11 +127,17 @@ function TickerResultCard({ item, isAdded, onAdd }) {
           type="button"
           className={isAdded ? "tickerResultAction added" : "tickerResultAction"}
           onClick={() => onAdd(item)}
-          disabled={isAdded}
+          disabled={isAdded || addDenied}
+          aria-disabled={isAdded || addDenied}
+          aria-label={addDecision.message || `${item.ticker} 포트폴리오에 추가`}
+          title={addDecision.message}
         >
-          {isAdded ? "추가됨" : "추가"}
+          {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
         </button>
       </div>
+
+      {addDenied ? <p className="tickerResultRiskNotice">{addDecision.message}</p> : null}
+      {isLeveragedOrInverse(item) ? <p className="tickerResultRiskNotice">일일 재설정과 경로 의존성으로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
 
       <p className="tickerResultDescription">
         {item.description || item.name || "티커 마스터에 등록된 후보 자산입니다."}
@@ -341,6 +353,10 @@ export default function AssetFinderPanel({
 
     if (result?.status === "duplicate") {
       setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`);
+      return;
+    }
+    if (["denied", "confirmation_required"].includes(result?.status)) {
+      setStatusText(result.decision?.message || `${ticker} 추가 정책을 확인하세요.`);
       return;
     }
 

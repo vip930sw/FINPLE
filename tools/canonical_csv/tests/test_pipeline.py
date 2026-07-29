@@ -44,6 +44,12 @@ UNIVERSE_HEADERS = (
     "exposureType",
     "distributionType",
     "distributionFrequency",
+    "firstListedDate",
+    "direction",
+    "leverageMultiple",
+    "resetFrequency",
+    "distributionDataQualityStatus",
+    "distributionDataQualityReason",
     "reasonCode",
     "reasonMessage",
 )
@@ -87,6 +93,12 @@ def _asset_row(
     exposure_type: str = "broad_market",
     distribution_type: str = "ordinary_cash_dividend",
     distribution_frequency: str = "monthly",
+    first_listed_date: str = "",
+    direction: str = "long",
+    leverage_multiple: str = "1",
+    reset_frequency: str = "not_applicable",
+    distribution_data_quality_status: str = "",
+    distribution_data_quality_reason: str = "",
     reason_code: str = "",
     reason_message: str = "",
 ) -> dict[str, str]:
@@ -107,6 +119,12 @@ def _asset_row(
         "exposureType": exposure_type,
         "distributionType": distribution_type,
         "distributionFrequency": distribution_frequency,
+        "firstListedDate": first_listed_date,
+        "direction": direction,
+        "leverageMultiple": leverage_multiple,
+        "resetFrequency": reset_frequency,
+        "distributionDataQualityStatus": distribution_data_quality_status,
+        "distributionDataQualityReason": distribution_data_quality_reason,
         "reasonCode": reason_code,
         "reasonMessage": reason_message,
     }
@@ -144,10 +162,12 @@ def _bundle(
     *,
     cash: float = 0.0,
     cash_status: str = DIVIDEND_CONFIRMED_ZERO,
+    months: int = 25,
+    start_year: int = 2022,
 ) -> MarketDataBundle:
     observations: list[DailyObservation] = []
-    for offset in range(25):
-        year = 2022 + offset // 12
+    for offset in range(months):
+        year = start_year + offset // 12
         month = offset % 12 + 1
         observations.append(
             DailyObservation(
@@ -155,7 +175,7 @@ def _bundle(
                 100.0
                 * (1.0 + growth) ** (offset / 12.0)
                 * (1.0 + (offset % 3) * 0.001),
-                dividend_cash=cash if offset == 24 else 0.0,
+                dividend_cash=cash if offset == months - 1 else 0.0,
             )
         )
     return MarketDataBundle(
@@ -404,12 +424,25 @@ class FullSchemaBuildTests(unittest.TestCase):
                 row["reinvestmentCashYield"],
                 row["cashDistributionYieldTtm"],
             )
+            self.assertEqual(
+                row["simulationCashYield"],
+                row["cashDistributionYieldTtm"],
+            )
+            self.assertEqual(
+                row["distributionSimulationPolicy"],
+                "repeat_ttm_distribution",
+            )
             self.assertEqual(row["tags"], "preserve-me")
 
     def test_distribution_contract_changes_invalidate_checkpoint(self) -> None:
         for field, value in (
             ("distributionType", "mixed_distribution"),
             ("distributionFrequency", "weekly"),
+            ("firstListedDate", "2010-01-01"),
+            ("direction", "inverse"),
+            ("leverageMultiple", "-3"),
+            ("resetFrequency", "daily"),
+            ("distributionDataQualityStatus", "provider_event_error"),
         ):
             with self.subTest(field=field):
                 with tempfile.TemporaryDirectory() as temporary:
@@ -470,6 +503,11 @@ class FullSchemaBuildTests(unittest.TestCase):
                 row = next(csv.DictReader(handle))
             self.assertNotEqual(row["dividendYield"], "")
             self.assertEqual(row["cashDistributionYieldTtm"], "")
+            self.assertEqual(row["simulationCashYield"], row["dividendYield"])
+            self.assertEqual(
+                row["reinvestmentCashYield"],
+                row["dividendYield"],
+            )
 
     def test_partial_failure_preserves_candidate_and_checkpoint_resumes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -680,6 +718,229 @@ class UniverseTests(unittest.TestCase):
             with self.assertRaisesRegex(UniverseError, "duplicate"):
                 load_universe(path)
 
+    def test_short_history_remains_metric_ready_but_portfolio_denied(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("PLUS200TR")],
+                [
+                    _asset_row(
+                        "PLUS200TR",
+                        first_listed_date="2022-01-01",
+                    )
+                ],
+            )
+            result = build_canonical_candidate(
+                _config(source, universe, candidate),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(0.08),
+                        "US:PLUS200TR": _bundle(0.12),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertTrue(result.validation["publishable"])
+            self.assertEqual(row["priceMetricsStatus"], "ready")
+            self.assertEqual(row["simulatorReady"], "true")
+            self.assertEqual(row["portfolioEligible"], "false")
+            self.assertEqual(
+                row["portfolioEligibilityStatus"],
+                "insufficient_long_horizon_history",
+            )
+            self.assertEqual(row["portfolioAddPolicy"], "deny")
+            self.assertEqual(row["cagrConfidence"], "low")
+            self.assertEqual(row["portfolioEligibleAfterDate"], "2025-01-01")
+            self.assertNotEqual(row["rawPriceCagr"], "")
+
+    def test_long_history_leveraged_asset_requires_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("SQQQ")],
+                [
+                    _asset_row(
+                        "SQQQ",
+                        exposure_type="leveraged_inverse",
+                        first_listed_date="2019-01-01",
+                        direction="inverse",
+                        leverage_multiple="-3",
+                        reset_frequency="daily",
+                    )
+                ],
+            )
+            config = replace(
+                _config(source, universe, candidate),
+                rolling_cagr_window_years=(3, 1),
+            )
+            result = build_canonical_candidate(
+                config,
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(
+                            0.08,
+                            months=61,
+                            start_year=2019,
+                        ),
+                        "US:SQQQ": _bundle(
+                            -0.08,
+                            months=61,
+                            start_year=2019,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertTrue(result.validation["publishable"])
+            self.assertEqual(row["portfolioEligible"], "true")
+            self.assertEqual(row["portfolioEligibilityStatus"], "eligible")
+            self.assertEqual(row["portfolioAddPolicy"], "confirm")
+            self.assertIn("inverse_exposure", row["portfolioWarningCodes"])
+            self.assertIn("daily_reset", row["portfolioWarningCodes"])
+
+    def test_one_year_rolling_window_denies_long_listing_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("LONG1Y")],
+                [
+                    _asset_row(
+                        "LONG1Y",
+                        first_listed_date="2010-01-01",
+                    )
+                ],
+            )
+            config = replace(
+                _config(source, universe, candidate),
+                rolling_cagr_window_years=(1,),
+            )
+            result = build_canonical_candidate(
+                config,
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(
+                            0.08,
+                            months=61,
+                            start_year=2019,
+                        ),
+                        "US:LONG1Y": _bundle(
+                            0.1,
+                            months=61,
+                            start_year=2019,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertTrue(result.validation["publishable"])
+            self.assertGreaterEqual(float(row["usablePriceHistoryYears"]), 3)
+            self.assertEqual(row["rollingCagrWindowYears"], "1")
+            self.assertEqual(row["portfolioAddPolicy"], "deny")
+            self.assertEqual(row["cagrConfidence"], "low")
+
+    def test_special_and_provider_error_distribution_yields_do_not_repeat(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [
+                    _source_row("AIV"),
+                    _source_row("BETH"),
+                    _source_row("SOXS"),
+                ],
+                [
+                    _asset_row(
+                        "AIV",
+                        distribution_type=(
+                            "special_or_liquidating_distribution"
+                        ),
+                    ),
+                    _asset_row(
+                        "BETH",
+                        distribution_type="futures_mixed_distribution",
+                    ),
+                    _asset_row(
+                        "SOXS",
+                        exposure_type="leveraged_inverse",
+                        distribution_type="ordinary_cash_dividend",
+                        distribution_data_quality_status=(
+                            "provider_event_error"
+                        ),
+                        distribution_data_quality_reason=(
+                            "provider cash events require review"
+                        ),
+                    ),
+                ],
+            )
+            result = build_canonical_candidate(
+                _config(source, universe, candidate),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(0.08),
+                        "US:AIV": _bundle(
+                            0.04,
+                            cash=5,
+                            cash_status=DIVIDEND_CONFIRMED_VALUE,
+                        ),
+                        "US:BETH": _bundle(
+                            0.06,
+                            cash=8,
+                            cash_status=DIVIDEND_CONFIRMED_VALUE,
+                        ),
+                        "US:SOXS": _bundle(
+                            -0.05,
+                            cash=30,
+                            cash_status=DIVIDEND_CONFIRMED_VALUE,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                rows = {row["ticker"]: row for row in csv.DictReader(handle)}
+            self.assertTrue(result.validation["publishable"])
+            for ticker in ("AIV", "SOXS"):
+                self.assertNotEqual(
+                    rows[ticker]["cashDistributionYieldTtm"],
+                    "",
+                )
+                self.assertEqual(rows[ticker]["simulationCashYield"], "0")
+                self.assertEqual(rows[ticker]["reinvestmentCashYield"], "0")
+            self.assertEqual(
+                rows["AIV"]["distributionSimulationPolicy"],
+                "exclude_non_recurring_distribution",
+            )
+            self.assertEqual(
+                rows["AIV"]["distributionCalculationStatus"],
+                "non_recurring_distribution_excluded",
+            )
+            self.assertEqual(rows["BETH"]["dividendYield"], "")
+            self.assertEqual(
+                rows["BETH"]["simulationCashYield"],
+                rows["BETH"]["cashDistributionYieldTtm"],
+            )
+            self.assertEqual(
+                rows["BETH"]["reinvestmentCashYield"],
+                rows["BETH"]["cashDistributionYieldTtm"],
+            )
+            self.assertEqual(
+                rows["BETH"]["distributionSimulationPolicy"],
+                "repeat_ttm_distribution",
+            )
+            self.assertEqual(
+                rows["SOXS"]["distributionSimulationPolicy"],
+                "blocked_data_quality",
+            )
+            self.assertEqual(
+                rows["SOXS"]["distributionCalculationStatus"],
+                "provider_event_error",
+            )
+
 
 class PublishabilityTests(unittest.TestCase):
     def _context(
@@ -728,6 +989,26 @@ class PublishabilityTests(unittest.TestCase):
                 "rollingCagrMedian": "8",
                 "rollingCagrWindowYears": "1",
                 "rollingCagrWindowCount": "12",
+                "priceHistoryStartDate": "2022-01-01",
+                "usablePriceHistoryYears": "2",
+                "minimumPortfolioHistoryYears": "3",
+                "portfolioEligible": "false",
+                "portfolioEligibilityStatus": (
+                    "excluded_by_operator"
+                    if include == "false"
+                    else "insufficient_long_horizon_history"
+                ),
+                "portfolioEligibilityReason": (
+                    "excluded_by_operator"
+                    if include == "false"
+                    else "insufficient_long_horizon_history"
+                ),
+                "portfolioEligibleAfterDate": (
+                    "" if include == "false" else "2025-01-01"
+                ),
+                "cagrConfidence": "low",
+                "portfolioAddPolicy": "deny",
+                "portfolioWarningCodes": "",
                 "expectedCagr": "8",
                 "beta": "1",
                 "mdd": "-20",
@@ -735,6 +1016,12 @@ class PublishabilityTests(unittest.TestCase):
                 "volatilityObservationCount": "252",
                 "priceDataEndDate": "2024-01-01",
                 "priceBasis": SPLIT_ADJUSTED_CLOSE,
+                "simulationCashYield": "",
+                "distributionSimulationPolicy": (
+                    "repeat_ttm_distribution"
+                    if nonordinary
+                    else "ordinary_cash_dividend"
+                ),
                 "reasonCode": "",
                 "reasonMessage": "",
             }
@@ -835,6 +1122,7 @@ class PublishabilityTests(unittest.TestCase):
             row["cashDistributionYieldTtm"] = "12"
             row["trailingDistributionYield"] = "12"
             row["reinvestmentCashYield"] = "12"
+            row["simulationCashYield"] = "12"
             report = validate_candidate_rows(
                 [row],
                 headers=headers,

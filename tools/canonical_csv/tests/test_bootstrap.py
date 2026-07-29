@@ -68,6 +68,44 @@ def _source_row(
 
 
 class BootstrapUniverseTests(unittest.TestCase):
+    def test_known_provider_event_errors_bootstrap_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source_path = Path(temporary) / "source.csv"
+            _write_source(
+                source_path,
+                [
+                    _source_row("KR", "381560", "381560"),
+                    _source_row("US", "SOXS", "SOXS"),
+                    _source_row("US", "SPY", "SPY"),
+                ],
+            )
+            rows, _ = build_universe_rows(
+                load_canonical_source(source_path),
+                {
+                    "KR": ("KR:069500", "069500.KS"),
+                    "US": ("US:SPY", "SPY"),
+                },
+            )
+            by_identity = {
+                f"{row['market']}:{row['ticker']}": row
+                for row in rows
+            }
+            for identity in ("KR:381560", "US:SOXS"):
+                self.assertEqual(
+                    by_identity[identity]["distributionDataQualityStatus"],
+                    "provider_event_error",
+                )
+                self.assertEqual(
+                    by_identity[identity][
+                        "cashEventNormalizationStatus"
+                    ],
+                    "unresolved",
+                )
+            self.assertEqual(
+                by_identity["US:SPY"]["distributionDataQualityStatus"],
+                "",
+            )
+
     def test_bootstrap_preserves_counts_identity_and_provider_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             source_path = Path(temporary) / "source.csv"

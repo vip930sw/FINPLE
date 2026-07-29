@@ -8,6 +8,7 @@ import json
 import os
 import tempfile
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from .cache import PersistentCachedMarketDataProvider
@@ -46,6 +47,14 @@ class BuildResult:
     run_summary_path: Path
     validation: dict[str, object]
     summary: dict[str, object]
+
+
+MINIMUM_PORTFOLIO_HISTORY_YEARS = 3
+ELIGIBILITY_POLICY_VERSION = "portfolio-eligibility-v1"
+SPECIAL_DISTRIBUTION_TYPE = "special_or_liquidating_distribution"
+REPEATED_DISTRIBUTION_TYPES = frozenset(
+    {"mixed_distribution", "futures_mixed_distribution"}
+)
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -120,6 +129,8 @@ def _write_csv(
 
 def _execution_contract(config: PipelineConfig) -> dict[str, object]:
     return {
+        "eligibilityPolicyVersion": ELIGIBILITY_POLICY_VERSION,
+        "minimumPortfolioHistoryYears": MINIMUM_PORTFOLIO_HISTORY_YEARS,
         "rollingCagrWindowYears": list(
             config.rolling_cagr_window_years
         ),
@@ -147,7 +158,181 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
         "exposureType": asset.exposure_type,
         "distributionType": asset.distribution_type,
         "distributionFrequency": asset.distribution_frequency,
+        "firstListedDate": asset.row_data.get("firstListedDate", ""),
+        "direction": asset.row_data.get("direction", ""),
+        "leverageMultiple": asset.row_data.get("leverageMultiple", ""),
+        "resetFrequency": asset.row_data.get("resetFrequency", ""),
+        "distributionDataQualityStatus": asset.row_data.get(
+            "distributionDataQualityStatus",
+            "",
+        ),
     }
+
+
+def _add_years(value: date, years: int) -> date:
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(month=2, day=28, year=value.year + years)
+
+
+def _parsed_date(value: object) -> date | None:
+    try:
+        return date.fromisoformat(str(value or "").strip())
+    except ValueError:
+        return None
+
+
+def _leveraged_warning_codes(asset: UniverseAsset) -> list[str]:
+    exposure = asset.exposure_type
+    direction = asset.row_data.get("direction", "").strip().lower()
+    reset_frequency = asset.row_data.get(
+        "resetFrequency",
+        "",
+    ).strip().lower()
+    try:
+        leverage = abs(float(asset.row_data.get("leverageMultiple", "")))
+    except ValueError:
+        leverage = 0
+    codes: list[str] = []
+    if "leveraged" in exposure or leverage >= 2:
+        codes.append("leveraged_exposure")
+    if "inverse" in exposure or direction == "inverse":
+        codes.append("inverse_exposure")
+    if codes and reset_frequency == "daily":
+        codes.append("daily_reset")
+    return codes
+
+
+def _apply_portfolio_policy(
+    update: dict[str, object],
+    asset: UniverseAsset,
+    config: PipelineConfig,
+) -> None:
+    update["minimumPortfolioHistoryYears"] = MINIMUM_PORTFOLIO_HISTORY_YEARS
+    warning_codes = _leveraged_warning_codes(asset)
+    update["portfolioWarningCodes"] = "|".join(warning_codes)
+    if not asset.active:
+        status = "inactive"
+        policy = "deny"
+    elif not asset.include_in_simulator:
+        status = "excluded_by_operator"
+        policy = "deny"
+    elif update.get("priceMetricsStatus") != "ready":
+        status = "provider_data_unavailable"
+        policy = "deny"
+    else:
+        usable_years = float(update.get("usablePriceHistoryYears") or 0)
+        rolling_years = float(update.get("rollingCagrWindowYears") or 0)
+        if (
+            usable_years < MINIMUM_PORTFOLIO_HISTORY_YEARS
+            or rolling_years < MINIMUM_PORTFOLIO_HISTORY_YEARS
+        ):
+            status = "insufficient_long_horizon_history"
+            policy = "deny"
+        elif warning_codes:
+            status = "eligible"
+            policy = "confirm"
+        else:
+            status = "eligible"
+            policy = "allow"
+    eligible = status == "eligible"
+    update["portfolioEligible"] = "true" if eligible else "false"
+    update["portfolioEligibilityStatus"] = status
+    update["portfolioEligibilityReason"] = "" if eligible else status
+    update["portfolioAddPolicy"] = policy
+    usable_years = float(update.get("usablePriceHistoryYears") or 0)
+    update["cagrConfidence"] = (
+        "low"
+        if status == "insufficient_long_horizon_history" or usable_years < 3
+        else "high"
+        if usable_years >= 10
+        else "medium"
+    )
+    start_dates = [
+        item
+        for item in (
+            _parsed_date(asset.row_data.get("firstListedDate")),
+            _parsed_date(update.get("priceHistoryStartDate")),
+        )
+        if item is not None
+    ]
+    eligible_after = (
+        _add_years(max(start_dates), MINIMUM_PORTFOLIO_HISTORY_YEARS)
+        if start_dates
+        else None
+    )
+    update["portfolioEligibleAfterDate"] = (
+        eligible_after.isoformat()
+        if status == "insufficient_long_horizon_history"
+        and eligible_after
+        and eligible_after > config.as_of_date
+        else ""
+    )
+
+
+def _apply_distribution_policy(
+    update: dict[str, object],
+    asset: UniverseAsset,
+    cash_yield: float,
+) -> None:
+    distribution_type = asset.distribution_type
+    data_quality_status = (
+        asset.row_data.get("distributionDataQualityStatus", "")
+        .strip()
+        .lower()
+    )
+    update["distributionDataQualityStatus"] = data_quality_status
+    update["distributionDataQualityReason"] = asset.row_data.get(
+        "distributionDataQualityReason",
+        "",
+    )
+    update["cashEventBasis"] = asset.row_data.get("cashEventBasis", "")
+    update["cashEventNormalizationStatus"] = asset.row_data.get(
+        "cashEventNormalizationStatus",
+        "",
+    )
+    update["cashEventNormalizationMethod"] = asset.row_data.get(
+        "cashEventNormalizationMethod",
+        "",
+    )
+    if data_quality_status == "provider_event_error":
+        update["dividendYield"] = ""
+        update["cashDistributionYieldTtm"] = cash_yield
+        update["trailingDistributionYield"] = cash_yield
+        update["reinvestmentCashYield"] = 0
+        update["simulationCashYield"] = 0
+        update["distributionSimulationPolicy"] = "blocked_data_quality"
+        update["distributionCalculationStatus"] = "provider_event_error"
+    elif distribution_type == SPECIAL_DISTRIBUTION_TYPE:
+        update["dividendYield"] = ""
+        update["cashDistributionYieldTtm"] = cash_yield
+        update["trailingDistributionYield"] = cash_yield
+        update["reinvestmentCashYield"] = 0
+        update["simulationCashYield"] = 0
+        update["distributionSimulationPolicy"] = (
+            "exclude_non_recurring_distribution"
+        )
+        update["distributionCalculationStatus"] = (
+            "non_recurring_distribution_excluded"
+        )
+    elif (
+        distribution_type in REPEATED_DISTRIBUTION_TYPES
+        or _is_non_ordinary(asset, None)
+    ):
+        update["dividendYield"] = ""
+        update["cashDistributionYieldTtm"] = cash_yield
+        update["trailingDistributionYield"] = cash_yield
+        update["reinvestmentCashYield"] = cash_yield
+        update["simulationCashYield"] = cash_yield
+        update["distributionSimulationPolicy"] = "repeat_ttm_distribution"
+    else:
+        update["dividendYield"] = cash_yield
+        update["cashDistributionYieldTtm"] = ""
+        update["trailingDistributionYield"] = ""
+        update["reinvestmentCashYield"] = cash_yield
+        update["simulationCashYield"] = cash_yield
+        update["distributionSimulationPolicy"] = "ordinary_cash_dividend"
 
 
 def _load_checkpoint(
@@ -247,6 +432,16 @@ def _base_update(
         "rollingCagrMedian": "",
         "rollingCagrWindowYears": "",
         "rollingCagrWindowCount": "",
+        "priceHistoryStartDate": "",
+        "usablePriceHistoryYears": "",
+        "minimumPortfolioHistoryYears": MINIMUM_PORTFOLIO_HISTORY_YEARS,
+        "portfolioEligible": "false",
+        "portfolioEligibilityStatus": "provider_data_unavailable",
+        "portfolioEligibilityReason": "provider_data_unavailable",
+        "portfolioEligibleAfterDate": "",
+        "cagrConfidence": "low",
+        "portfolioAddPolicy": "deny",
+        "portfolioWarningCodes": "",
         "expectedCagr": "",
         "beta": "",
         "mdd": "",
@@ -256,6 +451,13 @@ def _base_update(
         "cashDistributionYieldTtm": "",
         "trailingDistributionYield": "",
         "reinvestmentCashYield": "",
+        "simulationCashYield": "",
+        "distributionSimulationPolicy": "",
+        "cashEventBasis": "",
+        "cashEventNormalizationStatus": "",
+        "cashEventNormalizationMethod": "",
+        "distributionDataQualityStatus": "",
+        "distributionDataQualityReason": "",
         "priceDataEndDate": "",
         "priceBasis": "",
         "priceMetricsStatus": "not_attempted",
@@ -310,6 +512,7 @@ def _calculate_update(
             reason_code,
             reason_message,
         )
+        _apply_portfolio_policy(update, asset, config)
         return update, failure, True
     if not asset.include_in_simulator:
         reason_code = (
@@ -325,6 +528,7 @@ def _calculate_update(
             reason_code,
             reason_message,
         )
+        _apply_portfolio_policy(update, asset, config)
         return update, failure, True
 
     try:
@@ -342,6 +546,7 @@ def _calculate_update(
         code = getattr(error, "code", "price_metric_calculation_failed")
         update["priceMetricsStatus"] = "failed"
         update, failure = _failure(update, str(code), str(error))
+        _apply_portfolio_policy(update, asset, config)
         return update, failure, False
 
     update.update(metrics.to_row())
@@ -360,19 +565,12 @@ def _calculate_update(
     except (MetricCalculationError, MarketDataError) as error:
         code = getattr(error, "code", "cash_yield_calculation_failed")
         update, failure = _failure(update, str(code), str(error))
+        _apply_portfolio_policy(update, asset, config)
         return update, failure, False
 
-    if _is_non_ordinary(asset, source_row):
-        update["dividendYield"] = ""
-        update["cashDistributionYieldTtm"] = cash_yield
-        update["trailingDistributionYield"] = cash_yield
-        update["reinvestmentCashYield"] = cash_yield
-    else:
-        update["dividendYield"] = cash_yield
-        update["cashDistributionYieldTtm"] = ""
-        update["trailingDistributionYield"] = ""
-        update["reinvestmentCashYield"] = cash_yield
+    _apply_distribution_policy(update, asset, cash_yield)
     update["simulatorReady"] = "true"
+    _apply_portfolio_policy(update, asset, config)
     return update, None, True
 
 

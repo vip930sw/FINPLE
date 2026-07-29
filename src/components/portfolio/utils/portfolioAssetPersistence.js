@@ -44,6 +44,40 @@ export function normalizePersistedMetricFields(asset = {}) {
     cashDistributionYieldTtm: distributionFields.cashDistributionYieldTtm,
     distributionYieldPolicy: distributionFields.distributionYieldPolicy,
     distributionCalculationStatus: distributionFields.distributionCalculationStatus,
+    priceHistoryStartDate: asset.priceHistoryStartDate || "",
+    usablePriceHistoryYears: normalizeNullableNumber(asset.usablePriceHistoryYears, null),
+    rollingCagrWindowYears: normalizeNullableNumber(asset.rollingCagrWindowYears, null),
+    minimumPortfolioHistoryYears: normalizeNullableNumber(asset.minimumPortfolioHistoryYears, null),
+    portfolioEligible:
+      asset.portfolioEligible === undefined ? undefined : asset.portfolioEligible === true,
+    portfolioEligibilityStatus: asset.portfolioEligibilityStatus || "",
+    portfolioEligibilityReason: asset.portfolioEligibilityReason || "",
+    portfolioEligibleAfterDate: asset.portfolioEligibleAfterDate || "",
+    cagrConfidence: asset.cagrConfidence || "",
+    portfolioAddPolicy: asset.portfolioAddPolicy || "",
+    portfolioWarningCodes: Array.isArray(asset.portfolioWarningCodes)
+      ? [...asset.portfolioWarningCodes]
+      : String(asset.portfolioWarningCodes || "").split("|").filter(Boolean),
+    simulationCashYield: normalizeNullableNumber(
+      distributionFields.simulationCashYield,
+      null,
+    ),
+    reinvestmentCashYield: normalizeNullableNumber(
+      distributionFields.reinvestmentCashYield,
+      null,
+    ),
+    distributionSimulationPolicy:
+      distributionFields.distributionSimulationPolicy || "",
+    cashEventBasis: asset.cashEventBasis || "",
+    cashEventNormalizationStatus: asset.cashEventNormalizationStatus || "",
+    cashEventNormalizationMethod: asset.cashEventNormalizationMethod || "",
+    distributionDataQualityStatus: asset.distributionDataQualityStatus || "",
+    distributionDataQualityReason: asset.distributionDataQualityReason || "",
+    includeInSimulator:
+      asset.includeInSimulator === undefined ? undefined : asset.includeInSimulator === true,
+    simulatorReady:
+      asset.simulatorReady === undefined ? undefined : asset.simulatorReady === true,
+    portfolioRiskConfirmed: asset.portfolioRiskConfirmed === true,
     reviewTag: asset.reviewTag || "",
     reviewReason: asset.reviewReason || "",
     reviewApprovalPolicyVersion: asset.reviewApprovalPolicyVersion || "",

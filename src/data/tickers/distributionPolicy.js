@@ -38,6 +38,8 @@ export function isNonOrdinaryDistribution(asset = {}) {
   const distributionType = String(asset.distributionType || "").trim().toLowerCase();
   const exposureType = String(asset.exposureType || "").trim().toLowerCase();
   return (
+    normalizeDividendState(asset.distributionDataQualityStatus) ===
+      "provider_event_error" ||
     !ORDINARY_DISTRIBUTION_TYPES.has(distributionType) ||
     OPTION_DISTRIBUTION_EXPOSURE_TYPES.has(exposureType)
   );
@@ -115,19 +117,37 @@ export function resolveDistributionYieldFields(
       cashDistributionYieldTtm: toNullableNumber(asset.cashDistributionYieldTtm),
       distributionYieldPolicy: asset.distributionYieldPolicy || "",
       distributionCalculationStatus: asset.distributionCalculationStatus || "",
+      reinvestmentCashYield: toNullableNumber(asset.reinvestmentCashYield),
+      simulationCashYield:
+        toNullableNumber(asset.simulationCashYield) ?? numericYield,
+      distributionSimulationPolicy:
+        asset.distributionSimulationPolicy || "ordinary_cash_dividend",
     };
   }
 
+  const cashYield =
+    toNullableNumber(asset.cashDistributionYieldTtm) ??
+    toNullableNumber(asset.trailingDistributionYield) ??
+    numericYield;
   return {
     dividendYield: null,
     displayDividendYield: "",
     trailingDistributionYield:
-      toNullableNumber(asset.trailingDistributionYield) ?? numericYield,
-    cashDistributionYieldTtm:
-      toNullableNumber(asset.cashDistributionYieldTtm) ?? numericYield,
+      toNullableNumber(asset.trailingDistributionYield) ?? cashYield,
+    cashDistributionYieldTtm: cashYield,
     distributionYieldPolicy:
       asset.distributionYieldPolicy || TRAILING_DISTRIBUTION_YIELD_POLICY,
-    distributionCalculationStatus: "review_only_no_approved_reinvestment_model",
+    distributionCalculationStatus:
+      asset.distributionCalculationStatus ||
+      "review_only_no_approved_reinvestment_model",
+    reinvestmentCashYield:
+      toNullableNumber(asset.reinvestmentCashYield) ?? cashYield,
+    simulationCashYield:
+      toNullableNumber(asset.simulationCashYield) ??
+      toNullableNumber(asset.reinvestmentCashYield) ??
+      cashYield,
+    distributionSimulationPolicy:
+      asset.distributionSimulationPolicy || "repeat_ttm_distribution",
   };
 }
 
