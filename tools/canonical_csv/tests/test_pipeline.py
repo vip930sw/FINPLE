@@ -86,6 +86,7 @@ def _asset_row(
     include: str = "true",
     exposure_type: str = "broad_market",
     distribution_type: str = "ordinary_cash_dividend",
+    distribution_frequency: str = "monthly",
     reason_code: str = "",
     reason_message: str = "",
 ) -> dict[str, str]:
@@ -105,7 +106,7 @@ def _asset_row(
         "benchmarkProviderSymbol": benchmark_symbol,
         "exposureType": exposure_type,
         "distributionType": distribution_type,
-        "distributionFrequency": "monthly",
+        "distributionFrequency": distribution_frequency,
         "reasonCode": reason_code,
         "reasonMessage": reason_message,
     }
@@ -116,6 +117,7 @@ def _source_row(
     *,
     exposure_type: str = "broad_market",
     distribution_type: str = "ordinary_cash_dividend",
+    distribution_frequency: str = "monthly",
     active: str = "True",
 ) -> dict[str, str]:
     return {
@@ -132,7 +134,7 @@ def _source_row(
         "dividendYield": "",
         "exposureType": exposure_type,
         "distributionType": distribution_type,
-        "distributionFrequency": "monthly",
+        "distributionFrequency": distribution_frequency,
         "active": active,
     }
 
@@ -351,6 +353,124 @@ class FullSchemaBuildTests(unittest.TestCase):
                 row["cashDistributionYieldTtm"],
             )
 
+    def test_operator_distribution_fields_drive_candidate_and_cash_yield(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [
+                    _source_row(
+                        "NVDY",
+                        exposure_type="ordinary_etf",
+                        distribution_type="unknown",
+                        distribution_frequency="unknown",
+                    )
+                ],
+                [
+                    _asset_row(
+                        "NVDY",
+                        exposure_type="ordinary_etf",
+                        distribution_type="mixed_distribution",
+                        distribution_frequency="weekly",
+                    )
+                ],
+            )
+            result = build_canonical_candidate(
+                _config(source, universe, candidate),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(0.08),
+                        "US:NVDY": _bundle(
+                            0.15,
+                            cash=12.0,
+                            cash_status=DIVIDEND_CONFIRMED_VALUE,
+                        ),
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertTrue(result.validation["publishable"])
+            self.assertEqual(row["exposureType"], "ordinary_etf")
+            self.assertEqual(row["distributionType"], "mixed_distribution")
+            self.assertEqual(row["distributionFrequency"], "weekly")
+            self.assertEqual(row["dividendYield"], "")
+            self.assertNotEqual(row["cashDistributionYieldTtm"], "")
+            self.assertEqual(
+                row["trailingDistributionYield"],
+                row["cashDistributionYieldTtm"],
+            )
+            self.assertEqual(
+                row["reinvestmentCashYield"],
+                row["cashDistributionYieldTtm"],
+            )
+            self.assertEqual(row["tags"], "preserve-me")
+
+    def test_distribution_contract_changes_invalidate_checkpoint(self) -> None:
+        for field, value in (
+            ("distributionType", "mixed_distribution"),
+            ("distributionFrequency", "weekly"),
+        ):
+            with self.subTest(field=field):
+                with tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary)
+                    source, universe, candidate = _paths(
+                        root,
+                        [_source_row("SPY"), _source_row("QQQ")],
+                        [_asset_row("SPY"), _asset_row("QQQ")],
+                    )
+                    config = _config(source, universe, candidate)
+                    build_canonical_candidate(
+                        config,
+                        InMemoryMarketDataProvider(
+                            {
+                                "US:SPY": _bundle(0.08),
+                                "US:QQQ": _bundle(0.12),
+                            }
+                        ),
+                    )
+                    with universe.open(
+                        encoding="utf-8",
+                        newline="",
+                    ) as handle:
+                        rows = list(csv.DictReader(handle))
+                    rows[0][field] = value
+                    _write_csv(universe, UNIVERSE_HEADERS, rows)
+                    provider = CountingProvider(
+                        {
+                            "US:SPY": _bundle(0.08),
+                            "US:QQQ": _bundle(0.12),
+                        }
+                    )
+                    result = build_canonical_candidate(config, provider)
+                    self.assertEqual(provider.asset_calls, ["US:SPY"])
+                    self.assertEqual(result.summary["resumedRowCount"], 1)
+
+    def test_ordinary_distribution_uses_dividend_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("SPY")],
+                [_asset_row("SPY")],
+            )
+            build_canonical_candidate(
+                _config(source, universe, candidate),
+                InMemoryMarketDataProvider(
+                    {
+                        "US:SPY": _bundle(
+                            0.08,
+                            cash=2.0,
+                            cash_status=DIVIDEND_CONFIRMED_VALUE,
+                        )
+                    }
+                ),
+            )
+            with candidate.open(encoding="utf-8", newline="") as handle:
+                row = next(csv.DictReader(handle))
+            self.assertNotEqual(row["dividendYield"], "")
+            self.assertEqual(row["cashDistributionYieldTtm"], "")
+
     def test_partial_failure_preserves_candidate_and_checkpoint_resumes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -399,6 +519,32 @@ class FullSchemaBuildTests(unittest.TestCase):
             )
             self.assertTrue(result.validation["publishable"])
             self.assertEqual(second.asset_calls, ["US:QQQ"])
+
+    def test_nonpublishable_review_candidate_can_be_retained(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, universe, candidate = _paths(
+                root,
+                [_source_row("SPY")],
+                [_asset_row("SPY")],
+            )
+            candidate.write_bytes(b"known-good-candidate\n")
+            config = replace(
+                _config(source, universe, candidate),
+                write_non_publishable_candidate=True,
+            )
+            with self.assertRaisesRegex(ValueError, "review artifact"):
+                build_canonical_candidate(
+                    config,
+                    CountingProvider(
+                        {"US:SPY": _bundle(0.08)},
+                        fail_identity="US:SPY",
+                    ),
+                )
+            self.assertNotEqual(
+                candidate.read_bytes(),
+                b"known-good-candidate\n",
+            )
 
     def test_cash_failure_retains_successful_nonordinary_price_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

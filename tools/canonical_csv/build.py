@@ -146,6 +146,7 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
         "includeInSimulator": asset.include_in_simulator,
         "exposureType": asset.exposure_type,
         "distributionType": asset.distribution_type,
+        "distributionFrequency": asset.distribution_frequency,
     }
 
 
@@ -232,6 +233,9 @@ def _base_update(
         "marketDataProvider": asset.market_data_provider,
         "marketDataProviderSymbol": asset.market_data_provider_symbol,
         "benchmarkProviderSymbol": asset.benchmark_provider_symbol,
+        "exposureType": asset.exposure_type,
+        "distributionType": asset.distribution_type,
+        "distributionFrequency": asset.distribution_frequency,
         "active": "true" if asset.active else "false",
         "includeInSimulator": (
             "true"
@@ -626,12 +630,16 @@ def build_canonical_candidate(
             ],
         )
         _atomic_json(config.resolved_run_summary_path, summary)
-        if not (
-            validation["structuralValid"]
-            and validation["publishable"]
-        ):
+        if not validation["publishable"]:
+            if config.write_non_publishable_candidate:
+                os.replace(staged_candidate, config.output_candidate_path)
             raise ValueError(
-                "candidate is not publishable; existing candidate was preserved"
+                "candidate is not publishable"
+                + (
+                    "; review artifact was written"
+                    if config.write_non_publishable_candidate
+                    else "; existing candidate was preserved"
+                )
             )
         os.replace(staged_candidate, config.output_candidate_path)
     return BuildResult(
