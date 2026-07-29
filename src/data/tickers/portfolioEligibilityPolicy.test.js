@@ -295,11 +295,14 @@ test("tier 2 copy and severity differ by exposure scope", () => {
   }
 });
 
-test("non-equity futures scopes use distinct tier 2 warnings and persist", () => {
+test("non-equity scopes use distinct tier 2 warnings and persist", () => {
   const cases = [
     ["currency_futures", /통화선물/, /환율|롤오버/],
     ["sovereign_bond_futures", /국채선물/, /금리·듀레이션/],
     ["commodity_futures", /원자재선물/, /현물가격/],
+    ["commodity_asset", /단일 원자재/, /높은 변동성/],
+    ["crypto_asset", /단일 암호자산/, /24시간 시장/],
+    ["corporate_bond_index", /회사채 지수/, /신용스프레드·부도·유동성/],
   ];
   for (const [exposureScope, subject, detail] of cases) {
     const asset = JSON.parse(JSON.stringify({
@@ -324,6 +327,29 @@ test("non-equity futures scopes use distinct tier 2 warnings and persist", () =>
     assert.match(profile.message, /경로의존성/);
     assert.equal(getPortfolioAddDecision(asset).policy, "confirm");
   }
+});
+
+test("verified ETN adds issuer credit risk without changing confirmation", () => {
+  const asset = {
+    ...readyAsset,
+    metadataVerificationStatus: "verified",
+    exposureType: "index_leveraged_etn",
+    leverageRiskTier: "2",
+    leverageMultiple: 2,
+    direction: "long",
+    resetFrequency: "quarterly",
+    exposureScope: "concentrated_index",
+    longTermSuitability: "caution",
+    portfolioWarningSeverity: "high",
+    confirmationMode: "standard",
+  };
+  const profile = resolveLeverageRiskProfile(
+    JSON.parse(JSON.stringify(asset)),
+  );
+  assert.match(profile.badges.join(" "), /ETN 발행사 신용위험/);
+  assert.match(profile.message, /발행사의 상환능력/);
+  assert.equal(profile.confirmationMode, "standard");
+  assert.equal(getPortfolioAddDecision(asset).policy, "confirm");
 });
 
 test("official rejected metadata restores the general asset policy", () => {

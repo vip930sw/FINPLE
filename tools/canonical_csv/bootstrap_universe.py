@@ -481,6 +481,8 @@ def load_leverage_metadata_registry(
                     "concentrated_index", "broad_market_index",
                     "multi_asset_index", "currency_futures",
                     "sovereign_bond_futures", "commodity_futures",
+                    "commodity_asset", "crypto_asset",
+                    "corporate_bond_index",
                     "unresolved_scope",
                 },
                 "diversificationTier": {

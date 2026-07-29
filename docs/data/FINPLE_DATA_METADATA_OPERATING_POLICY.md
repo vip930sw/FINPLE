@@ -481,3 +481,18 @@ publishable
 
 이 분류는 경고 확인 후 포트폴리오 추가를 허용하는 기존 confirm 정책이며,
 새로운 deny 또는 승인 gate를 추가하지 않는다.
+
+---
+
+## 14. 미국 원자재·암호자산·회사채 및 ETN 분류
+
+공식 상품정보에서 원자재 현물 또는 현물보유 상품을 기초로 하면
+`commodity_asset`, 단일 Bitcoin·Ether 등의 일일 수익률을 추종하면
+`crypto_asset`, 회사채 지수를 추종하면 `corporate_bond_index`를
+사용한다. 정방향 레버리지는 Tier 2,
+`high_caution`, `high`, `standard`, `높은 주의 필요`로 분류하고,
+인버스는 기존 원칙대로 Tier 4를 적용한다.
+
+ETN은 `exposureType`에 ETN 구조를 기록하고 발행사 신용위험을 별도로
+안내한다. 이 구조 분류는 기존 방향·분산범위 Tier를 바꾸거나 새로운
+deny·승인 gate를 추가하지 않는다.
