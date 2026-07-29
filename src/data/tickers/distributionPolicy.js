@@ -198,6 +198,12 @@ export function resolveDistributionYieldFields(
   const simulationExcluded =
     normalizeDividendState(asset.distributionDataQualityStatus) === "provider_event_error" ||
     normalizeDividendState(asset.distributionType) === "special_or_liquidating_distribution";
+  const defaultSimulationPolicy =
+    normalizeDividendState(asset.distributionDataQualityStatus) === "provider_event_error"
+      ? "blocked_data_quality"
+      : normalizeDividendState(asset.distributionType) === "special_or_liquidating_distribution"
+        ? "exclude_non_recurring_distribution"
+        : "repeat_ttm_distribution";
   return {
     dividendYield: null,
     displayDividendYield: "",
@@ -220,7 +226,7 @@ export function resolveDistributionYieldFields(
           toNullableNumber(asset.reinvestmentCashYield) ??
           cashYield,
     distributionSimulationPolicy:
-      asset.distributionSimulationPolicy || "repeat_ttm_distribution",
+      asset.distributionSimulationPolicy || defaultSimulationPolicy,
   };
 }
 

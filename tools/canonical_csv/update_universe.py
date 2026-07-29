@@ -37,11 +37,28 @@ OPERATOR_MANAGED_FIELDS = frozenset(
         "cashEventNormalizationMethod",
         "distributionDataQualityStatus",
         "distributionDataQualityReason",
+    }
+)
+
+_DISTRIBUTION_OVERRIDE_VALUE_FIELDS = frozenset(
+    {
+        "cashEventBasis",
+        "cashEventNormalizationStatus",
+        "cashEventNormalizationMethod",
+        "distributionDataQualityStatus",
+        "distributionDataQualityReason",
+    }
+)
+
+_DISTRIBUTION_OVERRIDE_AUDIT_FIELDS = frozenset(
+    {
         "distributionDataQualityOverrideAsOfDate",
         "distributionDataQualityOverrideSourceUrl",
         "distributionDataQualityOverrideAppliedBy",
         "distributionDataQualityOverrideAppliedAt",
         "distributionDataQualityOverrideActive",
+        "distributionDataQualityOverrideApplied",
+        "distributionDataQualityOverrideValues",
     }
 )
 
@@ -76,6 +93,43 @@ def _identity(row: dict[str, str]) -> str:
     market = normalize_market(row.get("market"))
     ticker = normalize_ticker(row.get("ticker"), market)
     return f"{market}:{ticker}"
+
+
+def _override_provenance_present(row: dict[str, str]) -> bool:
+    return (
+        str(
+            row.get("distributionDataQualityOverrideApplied") or ""
+        ).strip().lower()
+        == "true"
+        or (
+            str(
+                row.get("distributionDataQualityOverrideActive") or ""
+            ).strip().lower()
+            == "true"
+            and bool(
+                str(
+                    row.get(
+                        "distributionDataQualityOverrideAppliedAt"
+                    )
+                    or ""
+                ).strip()
+            )
+        )
+    )
+
+
+def _override_values(row: dict[str, str]) -> dict[str, str]:
+    try:
+        values = json.loads(
+            row.get("distributionDataQualityOverrideValues") or "{}"
+        )
+    except (TypeError, ValueError):
+        return {}
+    return {
+        field: str(value or "")
+        for field, value in values.items()
+        if field in _DISTRIBUTION_OVERRIDE_VALUE_FIELDS
+    }
 
 
 def load_editable_universe(
@@ -123,6 +177,41 @@ def update_universe_rows(
             for field in OPERATOR_MANAGED_FIELDS | SYSTEM_STATUS_FIELDS:
                 if field not in row and field in source:
                     row[field] = source[field]
+            provenance_present = _override_provenance_present(existing)
+            expected_values = (
+                _override_values(existing) or _override_values(source)
+            )
+            legacy_override_derived = (
+                provenance_present
+                and not expected_values
+                and str(
+                    existing.get("distributionDataQualityStatus") or ""
+                ).strip().lower()
+                == "provider_event_error"
+            )
+            source_applies_override = str(
+                source.get(
+                    "distributionDataQualityOverrideApplied"
+                )
+                or ""
+            ).strip().lower() == "true"
+            for field in _DISTRIBUTION_OVERRIDE_VALUE_FIELDS:
+                field_was_overridden = (
+                    legacy_override_derived
+                    or (
+                        provenance_present
+                        and field in expected_values
+                        and str(existing.get(field) or "")
+                        == expected_values[field]
+                    )
+                )
+                if field_was_overridden or (
+                    source_applies_override
+                    and not str(existing.get(field) or "").strip()
+                ):
+                    row[field] = source.get(field, "")
+            for field in _DISTRIBUTION_OVERRIDE_AUDIT_FIELDS:
+                row[field] = source.get(field, "")
             row["sourcePresent"] = "true"
         if row != existing:
             changed_count += 1

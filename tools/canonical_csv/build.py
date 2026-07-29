@@ -187,6 +187,8 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
                 "distributionDataQualityOverrideAppliedBy",
                 "distributionDataQualityOverrideAppliedAt",
                 "distributionDataQualityOverrideActive",
+                "distributionDataQualityOverrideApplied",
+                "distributionDataQualityOverrideValues",
             )
         },
     }

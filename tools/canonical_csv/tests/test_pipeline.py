@@ -58,6 +58,8 @@ UNIVERSE_HEADERS = (
     "distributionDataQualityOverrideAppliedBy",
     "distributionDataQualityOverrideAppliedAt",
     "distributionDataQualityOverrideActive",
+    "distributionDataQualityOverrideApplied",
+    "distributionDataQualityOverrideValues",
     "reasonCode",
     "reasonMessage",
 )
@@ -141,6 +143,8 @@ def _asset_row(
         "distributionDataQualityOverrideAppliedBy": "",
         "distributionDataQualityOverrideAppliedAt": "",
         "distributionDataQualityOverrideActive": "",
+        "distributionDataQualityOverrideApplied": "",
+        "distributionDataQualityOverrideValues": "",
         "reasonCode": reason_code,
         "reasonMessage": reason_message,
     }
@@ -464,6 +468,11 @@ class FullSchemaBuildTests(unittest.TestCase):
             ("cashEventNormalizationMethod", "operator_review"),
             ("distributionDataQualityReason", "operator override changed"),
             ("distributionDataQualityOverrideActive", "true"),
+            ("distributionDataQualityOverrideApplied", "true"),
+            (
+                "distributionDataQualityOverrideValues",
+                '{"distributionDataQualityStatus":"provider_event_error"}',
+            ),
         ):
             with self.subTest(field=field):
                 with tempfile.TemporaryDirectory() as temporary:

@@ -72,7 +72,11 @@ export function getPortfolioAddDecision(asset = {}) {
           : "장기 이력 확인 필요";
     const availabilityText = afterDate
       ? `${afterDate} 이후 다시 확인해 주세요.`
-      : "충분한 가격 이력이 확보된 이후 사용할 수 있습니다.";
+      : reasonCode === "insufficient_rolling_window_history"
+        ? "충분한 장기 RM 표본이 확보된 이후 사용할 수 있습니다."
+        : reasonCode === "insufficient_price_and_rolling_history"
+          ? "가격 이력과 장기 RM 표본이 모두 확보된 이후 사용할 수 있습니다."
+          : "충분한 가격 이력이 확보된 이후 사용할 수 있습니다.";
     return {
       policy: "deny",
       reasonCode,

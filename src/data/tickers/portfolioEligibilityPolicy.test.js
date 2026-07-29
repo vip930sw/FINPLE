@@ -82,6 +82,42 @@ test("custom minimum history years controls both history checks", () => {
   assert.match(decision.message, /최소 5년 필요/);
 });
 
+test("history availability text names the metric that is still insufficient", () => {
+  const priceOnly = getPortfolioAddDecision({
+    ...readyAsset,
+    usablePriceHistoryYears: 2.9,
+    rollingCagrWindowYears: 3,
+  });
+  assert.match(
+    priceOnly.message,
+    /충분한 가격 이력이 확보된 이후 사용할 수 있습니다\./,
+  );
+
+  const rmOnly = getPortfolioAddDecision({
+    ...readyAsset,
+    usablePriceHistoryYears: 3.1,
+    rollingCagrWindowYears: 1,
+  });
+  assert.match(
+    rmOnly.message,
+    /충분한 장기 RM 표본이 확보된 이후 사용할 수 있습니다\./,
+  );
+  assert.doesNotMatch(
+    rmOnly.message,
+    /충분한 가격 이력이 확보된 이후/,
+  );
+
+  const both = getPortfolioAddDecision({
+    ...readyAsset,
+    usablePriceHistoryYears: 2.9,
+    rollingCagrWindowYears: 1,
+  });
+  assert.match(
+    both.message,
+    /가격 이력과 장기 RM 표본이 모두 확보된 이후 사용할 수 있습니다\./,
+  );
+});
+
 test("multiple blocked assets are retained once each after persisted reload", () => {
   const assets = ["AAA", "BBB"].map((ticker) => {
     const source = {

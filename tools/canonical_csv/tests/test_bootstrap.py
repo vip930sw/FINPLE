@@ -12,7 +12,7 @@ from tools.canonical_csv.bootstrap_universe import (
     write_universe,
 )
 from tools.canonical_csv.build import build_canonical_candidate
-from tools.canonical_csv.canonical import load_canonical_source
+from tools.canonical_csv.canonical import CanonicalSource, load_canonical_source
 from tools.canonical_csv.config import PipelineConfig
 from tools.canonical_csv.update_universe import update_universe_rows
 
@@ -100,13 +100,141 @@ class BootstrapUniverseTests(unittest.TestCase):
                     writer.writerows(rows)
 
             write([base])
-            self.assertEqual(load_distribution_data_quality_overrides(path), {})
+            loaded = load_distribution_data_quality_overrides(path)
+            self.assertEqual(loaded["US:SOXS"]["active"], "false")
             write([{**base, "active": "true"}, base])
             with self.assertRaisesRegex(ValueError, "duplicate"):
                 load_distribution_data_quality_overrides(path)
             write([{**base, "distributionDataQualityStatus": "ready"}])
             with self.assertRaisesRegex(ValueError, "invalid.*status"):
                 load_distribution_data_quality_overrides(path)
+            for field, value, message in (
+                ("asOfDate", "2026/07/28", "asOfDate"),
+                ("appliedAt", "2026-07-29T00:00:00", "timezone"),
+                ("sourceUrl", "ftp://example.com", "source URL"),
+                ("reason", "", "reason"),
+                ("appliedBy", "", "appliedBy"),
+            ):
+                with self.subTest(field=field):
+                    write([{**base, field: value}])
+                    with self.assertRaisesRegex(ValueError, message):
+                        load_distribution_data_quality_overrides(path)
+
+    def test_distribution_override_active_state_reconciles_only_derived_values(
+        self,
+    ) -> None:
+        source_row = _source_row("US", "SOXS", "SOXS")
+        source = CanonicalSource(tuple(source_row), (source_row,))
+        active_override = {
+            "market": "US",
+            "ticker": "SOXS",
+            "distributionDataQualityStatus": "provider_event_error",
+            "cashEventBasis": "provider_reported_cash_event",
+            "cashEventNormalizationStatus": "unresolved",
+            "cashEventNormalizationMethod": "",
+            "asOfDate": "2026-07-28",
+            "sourceUrl": "https://example.com/SOXS",
+            "reason": "provider event review",
+            "appliedBy": "operator",
+            "appliedAt": "2026-07-29T00:00:00+09:00",
+            "active": "true",
+        }
+        inactive_override = {**active_override, "active": "false"}
+        policy = {"US": ("US:SPY", "SPY")}
+
+        active_rows, _ = build_universe_rows(
+            source,
+            policy,
+            {"US:SOXS": active_override},
+        )
+        active_row = active_rows[0]
+        self.assertEqual(
+            active_row["distributionDataQualityStatus"],
+            "provider_event_error",
+        )
+        self.assertEqual(
+            active_row["distributionDataQualityOverrideApplied"],
+            "true",
+        )
+
+        runtime_candidate = {
+            field: value
+            for field, value in active_row.items()
+            if not field.startswith(
+                "distributionDataQualityOverride"
+            )
+        }
+        runtime_source = CanonicalSource(
+            tuple(runtime_candidate),
+            (runtime_candidate,),
+        )
+        inactive_rows, _ = build_universe_rows(
+            runtime_source,
+            policy,
+            {"US:SOXS": inactive_override},
+        )
+        self.assertEqual(
+            inactive_rows[0]["distributionDataQualityStatus"],
+            "",
+        )
+        released, _ = update_universe_rows(active_rows, inactive_rows)
+        self.assertEqual(
+            released[0]["distributionDataQualityStatus"],
+            "",
+        )
+        for field in (
+            "cashEventBasis",
+            "cashEventNormalizationStatus",
+            "cashEventNormalizationMethod",
+            "distributionDataQualityReason",
+        ):
+            self.assertEqual(released[0][field], "", field)
+        self.assertEqual(
+            released[0]["distributionDataQualityOverrideActive"],
+            "false",
+        )
+        self.assertEqual(
+            released[0]["distributionDataQualityOverrideApplied"],
+            "false",
+        )
+
+        manual = {
+            **active_row,
+            "distributionDataQualityStatus": "operator_reviewed",
+            "distributionDataQualityReason": "manual decision",
+        }
+        manual_rows, _ = update_universe_rows([manual], inactive_rows)
+        self.assertEqual(
+            manual_rows[0]["distributionDataQualityStatus"],
+            "operator_reviewed",
+        )
+        self.assertEqual(
+            manual_rows[0]["distributionDataQualityReason"],
+            "manual decision",
+        )
+        self.assertEqual(manual_rows[0]["cashEventBasis"], "")
+        self.assertEqual(
+            manual_rows[0]["cashEventNormalizationStatus"],
+            "",
+        )
+
+        reactivated_source, _ = build_universe_rows(
+            CanonicalSource(tuple(released[0]), (released[0],)),
+            policy,
+            {"US:SOXS": active_override},
+        )
+        reapplied, _ = update_universe_rows(
+            released,
+            reactivated_source,
+        )
+        self.assertEqual(
+            reapplied[0]["distributionDataQualityStatus"],
+            "provider_event_error",
+        )
+        self.assertEqual(
+            reapplied[0]["distributionDataQualityOverrideApplied"],
+            "true",
+        )
 
     def test_known_provider_event_errors_bootstrap_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

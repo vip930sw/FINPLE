@@ -59,6 +59,10 @@ test("distribution display resolver distinguishes provider, special, mixed, and 
   assert.equal(providerYield.trailingDistributionYield, 999);
   assert.equal(providerYield.reinvestmentCashYield, 0);
   assert.equal(providerYield.simulationCashYield, 0);
+  assert.equal(
+    providerYield.distributionSimulationPolicy,
+    "blocked_data_quality",
+  );
 
   const special = resolveDistributionDisplayPolicy({
     distributionType: "special_or_liquidating_distribution",
@@ -66,6 +70,16 @@ test("distribution display resolver distinguishes provider, special, mixed, and 
   assert.equal(special.title, "특별·청산 분배");
   assert.match(special.notices.join("|"), /자산매각·청산 관련 지급/);
   assert.doesNotMatch(special.notices.join("|"), /옵션/);
+  const specialYield = resolveDistributionYieldFields({
+    distributionType: "special_or_liquidating_distribution",
+    cashDistributionYieldTtm: 12.5,
+  });
+  assert.equal(specialYield.reinvestmentCashYield, 0);
+  assert.equal(specialYield.simulationCashYield, 0);
+  assert.equal(
+    specialYield.distributionSimulationPolicy,
+    "exclude_non_recurring_distribution",
+  );
 
   const mixed = resolveDistributionDisplayPolicy({
     distributionType: "mixed_distribution",
@@ -111,6 +125,13 @@ test("AIPI, MSFY, TSLP, and QYLG preserve trailing distributions without ordinar
     assert.equal(resolved.cashDistributionYieldTtm, fixture.metricDividendYield, fixture.ticker);
     assert.equal(resolved.dividendYield, null, fixture.ticker);
     assert.equal(resolved.displayDividendYield, "", fixture.ticker);
+    assert.equal(resolved.reinvestmentCashYield, fixture.metricDividendYield, fixture.ticker);
+    assert.equal(resolved.simulationCashYield, fixture.metricDividendYield, fixture.ticker);
+    assert.equal(
+      resolved.distributionSimulationPolicy,
+      "repeat_ttm_distribution",
+      fixture.ticker,
+    );
     assert.equal(resolved.distributionYieldPolicy, TRAILING_DISTRIBUTION_YIELD_POLICY, fixture.ticker);
     assert.equal(
       resolved.distributionCalculationStatus,
@@ -133,6 +154,8 @@ test("QQQ and SPY keep ordinary dividends while GLD keeps confirmed zero distinc
     assert.equal(resolved.dividendYield, dividendYield);
     assert.equal(resolved.displayDividendYield, `${dividendYield.toFixed(2)}%`);
     assert.equal(resolved.trailingDistributionYield, null);
+    assert.equal(resolved.simulationCashYield, dividendYield);
+    assert.equal(resolved.distributionSimulationPolicy, "ordinary_cash_dividend");
   }
 
   const gld = {
@@ -332,6 +355,40 @@ test("legacy saved ordinary assets retain their dividend value without distribut
   assert.equal(reloaded.trailingDistributionYield, null);
   assert.equal(reloaded.cashDistributionYieldTtm, null);
   assert.equal(reloaded.distributionType, "unknown");
+});
+
+test("legacy persisted distribution assets derive coherent default simulation policies", () => {
+  for (const [fixture, expectedPolicy] of [
+    [{
+      ticker: "PROVIDER-ERROR",
+      distributionDataQualityStatus: "provider_event_error",
+      trailingDistributionYield: 9.5,
+    }, "blocked_data_quality"],
+    [{
+      ticker: "SPECIAL",
+      distributionType: "special_or_liquidating_distribution",
+      trailingDistributionYield: 9.5,
+    }, "exclude_non_recurring_distribution"],
+  ]) {
+    const reloaded = normalizePersistedMetricFields(
+      JSON.parse(JSON.stringify(fixture)),
+    );
+    assert.equal(reloaded.reinvestmentCashYield, 0);
+    assert.equal(reloaded.simulationCashYield, 0);
+    assert.equal(reloaded.distributionSimulationPolicy, expectedPolicy);
+  }
+
+  const explicit = normalizePersistedMetricFields({
+    distributionDataQualityStatus: "provider_event_error",
+    trailingDistributionYield: 9.5,
+    distributionSimulationPolicy: "operator_explicit_policy",
+  });
+  assert.equal(explicit.reinvestmentCashYield, 0);
+  assert.equal(explicit.simulationCashYield, 0);
+  assert.equal(
+    explicit.distributionSimulationPolicy,
+    "operator_explicit_policy",
+  );
 });
 
 test("saved portfolio reload and report text preserve non-ordinary distribution semantics", () => {

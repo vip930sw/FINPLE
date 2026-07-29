@@ -6,7 +6,9 @@ import argparse
 import csv
 import json
 import re
+from datetime import date, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .canonical import CanonicalSource, load_canonical_source, row_identity
 
@@ -46,6 +48,8 @@ UNIVERSE_OUTPUT_FIELDS = (
     "distributionDataQualityOverrideAppliedBy",
     "distributionDataQualityOverrideAppliedAt",
     "distributionDataQualityOverrideActive",
+    "distributionDataQualityOverrideApplied",
+    "distributionDataQualityOverrideValues",
     "issuer",
     "inceptionDate",
     "firstListedDate",
@@ -64,6 +68,19 @@ DEFAULT_DISTRIBUTION_DATA_QUALITY_OVERRIDES_PATH = (
 ALLOWED_DISTRIBUTION_DATA_QUALITY_OVERRIDE_STATUSES = frozenset(
     {"provider_event_error"}
 )
+_DISTRIBUTION_OVERRIDE_AUDIT_FIELDS = {
+    "distributionDataQualityOverrideAsOfDate": "asOfDate",
+    "distributionDataQualityOverrideSourceUrl": "sourceUrl",
+    "distributionDataQualityOverrideAppliedBy": "appliedBy",
+    "distributionDataQualityOverrideAppliedAt": "appliedAt",
+}
+_DISTRIBUTION_OVERRIDE_VALUE_FIELDS = {
+    "distributionDataQualityStatus": "distributionDataQualityStatus",
+    "cashEventBasis": "cashEventBasis",
+    "cashEventNormalizationStatus": "cashEventNormalizationStatus",
+    "cashEventNormalizationMethod": "cashEventNormalizationMethod",
+    "distributionDataQualityReason": "reason",
+}
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -73,6 +90,39 @@ def _parse_bool(value: object, default: bool = False) -> bool:
     if normalized in {"false", "0", "no", "n"}:
         return False
     return default
+
+
+def _valid_http_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _source_was_overridden(
+    source_row: dict[str, str],
+    override: dict[str, str],
+) -> bool:
+    if _parse_bool(
+        source_row.get("distributionDataQualityOverrideApplied")
+    ):
+        return True
+    audit_matches = (
+        _parse_bool(source_row.get("distributionDataQualityOverrideActive"))
+        and source_row.get("distributionDataQualityStatus", "").strip()
+        == override.get("distributionDataQualityStatus", "")
+        and all(
+            source_row.get(output_field, "").strip()
+            == override.get(input_field, "")
+            for output_field, input_field
+            in _DISTRIBUTION_OVERRIDE_AUDIT_FIELDS.items()
+        )
+    )
+    values_match = all(
+        source_row.get(output_field, "").strip()
+        == override.get(input_field, "")
+        for output_field, input_field
+        in _DISTRIBUTION_OVERRIDE_VALUE_FIELDS.items()
+    )
+    return audit_matches or values_match
 
 
 def load_distribution_data_quality_overrides(
@@ -88,7 +138,6 @@ def load_distribution_data_quality_overrides(
             "cashEventNormalizationStatus",
             "cashEventNormalizationMethod",
             "asOfDate",
-            "sourceUrl",
             "reason",
             "appliedBy",
             "appliedAt",
@@ -99,6 +148,15 @@ def load_distribution_data_quality_overrides(
             raise ValueError(
                 f"distribution data quality override missing: "
                 f"{','.join(sorted(missing))}"
+            )
+        source_url_fields = {
+            "sourceUrl",
+            "providerSourceUrl",
+            "referenceSourceUrl",
+        }
+        if not source_url_fields & set(reader.fieldnames or ()):
+            raise ValueError(
+                "distribution data quality override missing: sourceUrl"
             )
         overrides: dict[str, dict[str, str]] = {}
         seen: set[str] = set()
@@ -129,12 +187,54 @@ def load_distribution_data_quality_overrides(
                     f"distribution data quality override active must be "
                     f"true or false: {identity}"
                 )
-            if active == "true":
-                overrides[identity] = {
-                    str(key): str(value or "").strip()
-                    for key, value in row.items()
-                    if key is not None
-                }
+            normalized = {
+                str(key): str(value or "").strip()
+                for key, value in row.items()
+                if key is not None
+            }
+            try:
+                date.fromisoformat(normalized["asOfDate"])
+            except ValueError as error:
+                raise ValueError(
+                    f"invalid distribution override asOfDate: {identity}"
+                ) from error
+            try:
+                applied_at = datetime.fromisoformat(
+                    normalized["appliedAt"]
+                )
+            except ValueError as error:
+                raise ValueError(
+                    f"invalid distribution override appliedAt: {identity}"
+                ) from error
+            if applied_at.utcoffset() is None:
+                raise ValueError(
+                    f"distribution override appliedAt requires timezone: "
+                    f"{identity}"
+                )
+            urls = [
+                normalized.get(field, "")
+                for field in source_url_fields
+                if normalized.get(field, "")
+            ]
+            if not urls or any(not _valid_http_url(url) for url in urls):
+                raise ValueError(
+                    f"invalid distribution override source URL: {identity}"
+                )
+            if not normalized["reason"]:
+                raise ValueError(
+                    f"distribution override reason is required: {identity}"
+                )
+            if not normalized["appliedBy"]:
+                raise ValueError(
+                    f"distribution override appliedBy is required: {identity}"
+                )
+            normalized["sourceUrl"] = (
+                normalized.get("providerSourceUrl")
+                or normalized.get("sourceUrl")
+                or normalized.get("referenceSourceUrl")
+                or ""
+            )
+            overrides[identity] = normalized
         return overrides
 
 
@@ -239,6 +339,31 @@ def build_universe_rows(
         market, ticker = row_identity(source_row).split(":", 1)
         identity = f"{market}:{ticker}"
         distribution_override = distribution_overrides.get(identity, {})
+        distribution_override_values = {
+            output_field: distribution_override.get(input_field, "")
+            for output_field, input_field
+            in _DISTRIBUTION_OVERRIDE_VALUE_FIELDS.items()
+        }
+        override_active = _parse_bool(
+            distribution_override.get("active")
+        )
+        source_was_overridden = bool(distribution_override) and (
+            _source_was_overridden(source_row, distribution_override)
+        )
+        apply_distribution_override = (
+            override_active
+            and (
+                source_was_overridden
+                or not str(
+                    source_row.get("distributionDataQualityStatus") or ""
+                ).strip()
+            )
+        )
+        clear_distribution_override = (
+            bool(distribution_override)
+            and not override_active
+            and source_was_overridden
+        )
         market_counts[market] = market_counts.get(market, 0) + 1
         canonical_provider_symbol = str(
             source_row.get("providerSymbol") or ""
@@ -329,34 +454,49 @@ def build_universe_rows(
                     source_row.get("distributionFrequency") or "unknown"
                 ).strip(),
                 "cashEventBasis": str(
-                    source_row.get("cashEventBasis")
-                    or distribution_override.get("cashEventBasis")
+                    ""
+                    if clear_distribution_override
+                    else distribution_override.get("cashEventBasis")
+                    if apply_distribution_override
+                    else source_row.get("cashEventBasis")
                     or ""
                 ).strip(),
                 "cashEventNormalizationStatus": str(
-                    source_row.get("cashEventNormalizationStatus")
-                    or distribution_override.get(
+                    ""
+                    if clear_distribution_override
+                    else distribution_override.get(
                         "cashEventNormalizationStatus"
                     )
+                    if apply_distribution_override
+                    else source_row.get("cashEventNormalizationStatus")
                     or ""
                 ).strip(),
                 "cashEventNormalizationMethod": str(
-                    source_row.get("cashEventNormalizationMethod")
-                    or distribution_override.get(
+                    ""
+                    if clear_distribution_override
+                    else distribution_override.get(
                         "cashEventNormalizationMethod"
                     )
+                    if apply_distribution_override
+                    else source_row.get("cashEventNormalizationMethod")
                     or ""
                 ).strip(),
                 "distributionDataQualityStatus": str(
-                    source_row.get("distributionDataQualityStatus")
-                    or distribution_override.get(
+                    ""
+                    if clear_distribution_override
+                    else distribution_override.get(
                         "distributionDataQualityStatus"
                     )
+                    if apply_distribution_override
+                    else source_row.get("distributionDataQualityStatus")
                     or ""
                 ).strip(),
                 "distributionDataQualityReason": str(
-                    source_row.get("distributionDataQualityReason")
-                    or distribution_override.get("reason")
+                    ""
+                    if clear_distribution_override
+                    else distribution_override.get("reason")
+                    if apply_distribution_override
+                    else source_row.get("distributionDataQualityReason")
                     or ""
                 ).strip(),
                 "distributionDataQualityOverrideAsOfDate": (
@@ -373,6 +513,19 @@ def build_universe_rows(
                 ),
                 "distributionDataQualityOverrideActive": (
                     distribution_override.get("active", "")
+                ),
+                "distributionDataQualityOverrideApplied": (
+                    "true" if apply_distribution_override else "false"
+                    if distribution_override else ""
+                ),
+                "distributionDataQualityOverrideValues": (
+                    json.dumps(
+                        distribution_override_values,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    )
+                    if distribution_override else ""
                 ),
                 "issuer": str(source_row.get("issuer") or "").strip(),
                 "inceptionDate": str(
