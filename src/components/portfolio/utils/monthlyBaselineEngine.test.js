@@ -257,6 +257,9 @@ test("option and covered-call distributions use one simulation cash yield withou
   });
   assert.equal(result.status, "ready");
   assertClose(result.expectedDividendYield, 34.98);
+  assertClose(result.expectedSimulationCashYield, 34.98);
+  assertClose(result.expectedAnnualCashDistribution, result.expectedAnnualDividend);
+  assert.equal(result.cashFlowMetricLabel, "시뮬레이션 적용 현금분배율");
   assertClose(result.assets[0].annualDividendYield, 34.98);
   assert.equal(result.assets[0].distributionSimulationPolicy, "repeat_ttm_distribution");
 
@@ -269,8 +272,10 @@ test("option and covered-call distributions use one simulation cash yield withou
     },
   ]);
   assert.equal(ranked.dividendRank, 1);
+  assert.equal(ranked.cashFlowRank, 1);
   const [withInsight] = createInsightComparisonPortfolios([ranked]);
   assert.notEqual(withInsight.insight.type, "기준 계산 보류");
+  assert.doesNotMatch(JSON.stringify(withInsight.insight), /배당/);
 });
 
 test("special distributions and provider event errors preserve cash display but reinvest zero", () => {
@@ -302,6 +307,7 @@ test("special distributions and provider event errors preserve cash display but 
     });
     assert.equal(result.status, "ready", fixture.ticker);
     assert.equal(result.assets[0].annualDividendYield, 0, fixture.ticker);
+    assert.equal(result.expectedSimulationCashYield, 0, fixture.ticker);
     assert.equal(result.cumulativeDividendResult, 0, fixture.ticker);
   }
 });

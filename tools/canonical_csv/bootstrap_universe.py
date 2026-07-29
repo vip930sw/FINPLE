@@ -41,6 +41,11 @@ UNIVERSE_OUTPUT_FIELDS = (
     "cashEventNormalizationMethod",
     "distributionDataQualityStatus",
     "distributionDataQualityReason",
+    "distributionDataQualityOverrideAsOfDate",
+    "distributionDataQualityOverrideSourceUrl",
+    "distributionDataQualityOverrideAppliedBy",
+    "distributionDataQualityOverrideAppliedAt",
+    "distributionDataQualityOverrideActive",
     "issuer",
     "inceptionDate",
     "firstListedDate",
@@ -53,8 +58,11 @@ UNIVERSE_OUTPUT_FIELDS = (
     "reasonMessage",
 )
 
-PROVIDER_EVENT_ERROR_IDENTITIES = frozenset(
-    {"KR:381560", "US:SOXS"}
+DEFAULT_DISTRIBUTION_DATA_QUALITY_OVERRIDES_PATH = (
+    Path(__file__).with_name("distribution_data_quality_overrides.csv")
+)
+ALLOWED_DISTRIBUTION_DATA_QUALITY_OVERRIDE_STATUSES = frozenset(
+    {"provider_event_error"}
 )
 
 
@@ -65,6 +73,67 @@ def _parse_bool(value: object, default: bool = False) -> bool:
     if normalized in {"false", "0", "no", "n"}:
         return False
     return default
+
+
+def load_distribution_data_quality_overrides(
+    path: Path | str = DEFAULT_DISTRIBUTION_DATA_QUALITY_OVERRIDES_PATH,
+) -> dict[str, dict[str, str]]:
+    with Path(path).open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        required = {
+            "market",
+            "ticker",
+            "status",
+            "cashEventBasis",
+            "cashEventNormalizationStatus",
+            "cashEventNormalizationMethod",
+            "asOfDate",
+            "sourceUrl",
+            "reason",
+            "appliedBy",
+            "appliedAt",
+            "active",
+        }
+        missing = required - set(reader.fieldnames or ())
+        if missing:
+            raise ValueError(
+                f"distribution data quality override missing: "
+                f"{','.join(sorted(missing))}"
+            )
+        overrides: dict[str, dict[str, str]] = {}
+        seen: set[str] = set()
+        for row_number, row in enumerate(reader, start=2):
+            market = str(row.get("market") or "").strip().upper()
+            ticker = str(row.get("ticker") or "").strip().upper()
+            identity = f"{market}:{ticker}"
+            if not market or not ticker:
+                raise ValueError(
+                    f"distribution data quality override row {row_number} "
+                    "has blank identity"
+                )
+            if identity in seen:
+                raise ValueError(
+                    f"duplicate distribution data quality override: {identity}"
+                )
+            seen.add(identity)
+            status = str(row.get("status") or "").strip().lower()
+            if status not in ALLOWED_DISTRIBUTION_DATA_QUALITY_OVERRIDE_STATUSES:
+                raise ValueError(
+                    f"invalid distribution data quality status: {status}"
+                )
+            active = str(row.get("active") or "").strip().lower()
+            if active not in {"true", "false"}:
+                raise ValueError(
+                    f"distribution data quality override active must be "
+                    f"true or false: {identity}"
+                )
+            if active == "true":
+                overrides[identity] = {
+                    str(key): str(value or "").strip()
+                    for key, value in row.items()
+                    if key is not None
+                }
+        return overrides
 
 
 def load_benchmark_policy(
@@ -152,7 +221,10 @@ def _resolve_market_data_symbol(
 def build_universe_rows(
     source: CanonicalSource,
     benchmark_policy: dict[str, tuple[str, str]],
+    distribution_overrides: dict[str, dict[str, str]] | None = None,
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
+    if distribution_overrides is None:
+        distribution_overrides = load_distribution_data_quality_overrides()
     rows: list[dict[str, str]] = []
     canonical_provider_count = 0
     adapter_ready_count = 0
@@ -164,7 +236,7 @@ def build_universe_rows(
     for source_row in source.rows:
         market, ticker = row_identity(source_row).split(":", 1)
         identity = f"{market}:{ticker}"
-        provider_event_error = identity in PROVIDER_EVENT_ERROR_IDENTITIES
+        distribution_override = distribution_overrides.get(identity, {})
         market_counts[market] = market_counts.get(market, 0) + 1
         canonical_provider_symbol = str(
             source_row.get("providerSymbol") or ""
@@ -256,36 +328,48 @@ def build_universe_rows(
                 ).strip(),
                 "cashEventBasis": str(
                     source_row.get("cashEventBasis")
-                    or (
-                        "provider_reported_cash_event"
-                        if provider_event_error
-                        else ""
-                    )
+                    or distribution_override.get("cashEventBasis")
+                    or ""
                 ).strip(),
                 "cashEventNormalizationStatus": str(
                     source_row.get("cashEventNormalizationStatus")
-                    or ("unresolved" if provider_event_error else "")
+                    or distribution_override.get(
+                        "cashEventNormalizationStatus"
+                    )
+                    or ""
                 ).strip(),
                 "cashEventNormalizationMethod": str(
-                    source_row.get("cashEventNormalizationMethod") or ""
+                    source_row.get("cashEventNormalizationMethod")
+                    or distribution_override.get(
+                        "cashEventNormalizationMethod"
+                    )
+                    or ""
                 ).strip(),
                 "distributionDataQualityStatus": str(
                     source_row.get("distributionDataQualityStatus")
-                    or (
-                        "provider_event_error"
-                        if provider_event_error
-                        else ""
-                    )
+                    or distribution_override.get("status")
+                    or ""
                 ).strip(),
                 "distributionDataQualityReason": str(
                     source_row.get("distributionDataQualityReason")
-                    or (
-                        "provider cash event conflicts with official "
-                        "distribution history"
-                        if provider_event_error
-                        else ""
-                    )
+                    or distribution_override.get("reason")
+                    or ""
                 ).strip(),
+                "distributionDataQualityOverrideAsOfDate": (
+                    distribution_override.get("asOfDate", "")
+                ),
+                "distributionDataQualityOverrideSourceUrl": (
+                    distribution_override.get("sourceUrl", "")
+                ),
+                "distributionDataQualityOverrideAppliedBy": (
+                    distribution_override.get("appliedBy", "")
+                ),
+                "distributionDataQualityOverrideAppliedAt": (
+                    distribution_override.get("appliedAt", "")
+                ),
+                "distributionDataQualityOverrideActive": (
+                    distribution_override.get("active", "")
+                ),
                 "issuer": str(source_row.get("issuer") or "").strip(),
                 "inceptionDate": str(
                     source_row.get("inceptionDate") or ""

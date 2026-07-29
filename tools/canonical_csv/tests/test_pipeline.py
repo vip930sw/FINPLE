@@ -50,6 +50,14 @@ UNIVERSE_HEADERS = (
     "resetFrequency",
     "distributionDataQualityStatus",
     "distributionDataQualityReason",
+    "cashEventBasis",
+    "cashEventNormalizationStatus",
+    "cashEventNormalizationMethod",
+    "distributionDataQualityOverrideAsOfDate",
+    "distributionDataQualityOverrideSourceUrl",
+    "distributionDataQualityOverrideAppliedBy",
+    "distributionDataQualityOverrideAppliedAt",
+    "distributionDataQualityOverrideActive",
     "reasonCode",
     "reasonMessage",
 )
@@ -125,6 +133,14 @@ def _asset_row(
         "resetFrequency": reset_frequency,
         "distributionDataQualityStatus": distribution_data_quality_status,
         "distributionDataQualityReason": distribution_data_quality_reason,
+        "cashEventBasis": "",
+        "cashEventNormalizationStatus": "",
+        "cashEventNormalizationMethod": "",
+        "distributionDataQualityOverrideAsOfDate": "",
+        "distributionDataQualityOverrideSourceUrl": "",
+        "distributionDataQualityOverrideAppliedBy": "",
+        "distributionDataQualityOverrideAppliedAt": "",
+        "distributionDataQualityOverrideActive": "",
         "reasonCode": reason_code,
         "reasonMessage": reason_message,
     }
@@ -443,6 +459,11 @@ class FullSchemaBuildTests(unittest.TestCase):
             ("leverageMultiple", "-3"),
             ("resetFrequency", "daily"),
             ("distributionDataQualityStatus", "provider_event_error"),
+            ("cashEventBasis", "provider_reported_cash_event"),
+            ("cashEventNormalizationStatus", "unresolved"),
+            ("cashEventNormalizationMethod", "operator_review"),
+            ("distributionDataQualityReason", "operator override changed"),
+            ("distributionDataQualityOverrideActive", "true"),
         ):
             with self.subTest(field=field):
                 with tempfile.TemporaryDirectory() as temporary:

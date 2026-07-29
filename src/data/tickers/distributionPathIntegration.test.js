@@ -354,14 +354,15 @@ test("metric overlay follows the public App Preview path through save/reload and
       assert.match(report, /예상 CAGR: 10\.00%/);
       assert.match(report, /예상 BETA: 1\.00/);
       assert.match(report, /예상 MDD: -20\.00%/);
-      assert.match(report, /예상 일반 배당률: 34\.98%/);
+      assert.match(report, /시뮬레이션 적용 현금분배율: 34\.98%/);
       assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
       assert.match(report, /최근 12개월 분배율 34\.98%/);
       assert.match(report, /주간 분배/);
-      assert.match(report, /일반 배당수익률·총수익률과 다름/);
-      assert.match(report, /옵션 프리미엄 및 원금환급 가능성 있음/);
+      assert.match(report, /옵션 분배/);
+      assert.match(report, /원금환급 가능/);
+      assert.doesNotMatch(report, /예상 배당률|예상 연배당금|배당 순위|배당 매력/);
     }
-    assert.match(fullReport, /배당 순위: 1위/);
+    assert.match(fullReport, /현금흐름 순위: 1위/);
     assert.match(fullReport, /CAGR 10\.0% \/ BETA 1\.00 \/ MDD -20\.0%/);
 
     const spy = roundTripSavedAsset(
@@ -387,10 +388,10 @@ test("metric overlay follows the public App Preview path through save/reload and
       result: ordinary,
       assets: [spy],
     });
-    assert.match(ordinaryFullReport, /예상 일반 배당률: 1\.01%/);
+    assert.match(ordinaryFullReport, /예상 배당률: 1\.01%/);
     assert.match(ordinaryFullReport, /일반 배당률 1\.01%/);
     assert.match(ordinaryFullReport, /배당 순위: 1위/);
-    assert.match(ordinarySummary, /예상 일반 배당률: 1\.01%/);
+    assert.match(ordinarySummary, /예상 배당률: 1\.01%/);
     assert.doesNotMatch(ordinaryFullReport, /기준 계산 보류/);
   } finally {
     await vite.close();

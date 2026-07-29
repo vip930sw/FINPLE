@@ -1,5 +1,9 @@
 import PortfolioCompareLineChart from "./PortfolioCompareLineChart";
-import { formatUserFacingBaselineBlockReasons } from "../utils/baselineBlockReasonLabels";
+import {
+  formatPortfolioEligibilityBlocks,
+  formatUserFacingBaselineBlockReasons,
+} from "../utils/baselineBlockReasonLabels";
+import { resolvePortfolioCashFlowDisplayPolicy } from "../../../data/tickers/distributionPolicy";
 
 function getCompactPortfolioName(name) {
   return String(name || "포트폴리오")
@@ -80,8 +84,8 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 </div>
 
                 <div>
-                  <p>배당</p>
-                  <strong>{formatRank(portfolio.dividendRank)}</strong>
+                  <p>{resolvePortfolioCashFlowDisplayPolicy(portfolio.assets).focusLabel}</p>
+                  <strong>{formatRank(portfolio.cashFlowRank ?? portfolio.dividendRank)}</strong>
                 </div>
               </div>
 
@@ -104,22 +108,23 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 </div>
 
                 <div>
-                  <dt>예상 배당률</dt>
-                  <dd>{formatMaybeFixed(portfolio.result.expectedDividendYield)}</dd>
+                  <dt>{resolvePortfolioCashFlowDisplayPolicy(portfolio.assets).yieldLabel}</dt>
+                  <dd>{formatMaybeFixed(portfolio.result.expectedSimulationCashYield ?? portfolio.result.expectedDividendYield)}</dd>
                 </div>
               </dl>
 
               <div className="portfolioInsightBox">
                 <span>{portfolio.insight.type}</span>
                 <p>{portfolio.insight.text}</p>
-                {portfolio.assets?.some((asset) =>
-                  asset?.internalPreviewReviewOnly || asset?.productionAppExportEnabled
-                ) &&
-                portfolio.result?.status === "blocked" ? (
-                  <ul aria-label={`${portfolio.name} 지표 계약 계산 보류 사유`}>
-                    {formatUserFacingBaselineBlockReasons(
-                      portfolio.result.blockReasons,
+                {portfolio.result?.status === "blocked" ? (
+                  <ul aria-label={`${portfolio.name} 계산 보류 사유`}>
+                    {(portfolio.result.portfolioEligibilityBlocks?.length
+                      ? formatPortfolioEligibilityBlocks(portfolio.result.portfolioEligibilityBlocks)
+                      : formatUserFacingBaselineBlockReasons(portfolio.result.blockReasons)
                     ).map((reason) => <li key={reason}>{reason}</li>)}
+                    {portfolio.result.portfolioEligibilityBlocks?.length
+                      ? <li>차단 자산을 제거하거나 이용 가능한 자산으로 교체하세요.</li>
+                      : null}
                   </ul>
                 ) : null}
               </div>

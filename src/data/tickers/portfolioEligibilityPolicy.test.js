@@ -7,6 +7,7 @@ import {
 } from "./portfolioEligibilityPolicy.js";
 import { buildMonthlyBaselineProjection } from "../../components/portfolio/utils/monthlyBaselineEngine.js";
 import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
+import { createPortfolioReportText } from "../../components/portfolio/utils/portfolioReports.js";
 
 const readyAsset = {
   ticker: "SPY",
@@ -23,23 +24,25 @@ const readyAsset = {
   overlayStatus: "ready",
 };
 
-test("2.9-year or one-year rolling history denies every portfolio ingress", () => {
-  for (const asset of [
-    {
+test("price and rolling history produce accurate deny reasons at the configured minimum", () => {
+  for (const [asset, reasonCode, message] of [
+    [{
       ...readyAsset,
       usablePriceHistoryYears: 2.9,
       rollingCagrWindowYears: 3,
       portfolioEligibleAfterDate: "2027-09-01",
-    },
-    {
+    }, "insufficient_usable_price_history", /가격 이력 2\.9년, 최소 3년 필요/],
+    [{
       ...readyAsset,
       usablePriceHistoryYears: 3.1,
       rollingCagrWindowYears: 1,
-    },
+    }, "insufficient_rolling_window_history", /적용 RM 1년, 최소 3년 필요/],
   ]) {
     const decision = getPortfolioAddDecision(asset);
     assert.equal(decision.policy, "deny");
-    assert.equal(decision.reasonCode, "insufficient_long_horizon_history");
+    assert.equal(decision.reasonCode, reasonCode);
+    assert.match(decision.message, message);
+    assert.doesNotMatch(decision.message, /3\.1년.*최소 3년/);
     const reloaded = {
       ...asset,
       ...normalizePersistedMetricFields(JSON.parse(JSON.stringify(asset))),
@@ -56,7 +59,58 @@ test("2.9-year or one-year rolling history denies every portfolio ingress", () =
     });
     assert.equal(result.status, "blocked");
     assert.match(result.blockReasons.join("|"), /portfolio_add_denied:SPY/);
+    assert.deepEqual(result.portfolioEligibilityBlocks, [{
+      market: "US",
+      ticker: "SPY",
+      reasonCode,
+      usablePriceHistoryYears: asset.usablePriceHistoryYears,
+      rollingCagrWindowYears: asset.rollingCagrWindowYears,
+      minimumPortfolioHistoryYears: 3,
+      eligibleAfter: asset.portfolioEligibleAfterDate || "",
+    }]);
   }
+});
+
+test("custom minimum history years controls both history checks", () => {
+  const decision = getPortfolioAddDecision({
+    ...readyAsset,
+    usablePriceHistoryYears: 4.9,
+    rollingCagrWindowYears: 4,
+    minimumPortfolioHistoryYears: 5,
+  });
+  assert.equal(decision.reasonCode, "insufficient_price_and_rolling_history");
+  assert.match(decision.message, /최소 5년 필요/);
+});
+
+test("multiple blocked assets are retained once each after persisted reload", () => {
+  const assets = ["AAA", "BBB"].map((ticker) => {
+    const source = {
+      ...readyAsset,
+      ticker,
+      targetWeight: 50,
+      usablePriceHistoryYears: 3.1,
+      rollingCagrWindowYears: 1,
+    };
+    return { ...source, ...normalizePersistedMetricFields(JSON.parse(JSON.stringify(source))) };
+  });
+  const result = buildMonthlyBaselineProjection({
+    settings: {
+      startValue: 1000,
+      years: 1,
+      monthlyCashFlow: 0,
+      inflationRate: 0,
+      dividendReinvest: true,
+    },
+    assets,
+  });
+  assert.deepEqual(
+    result.portfolioEligibilityBlocks.map((block) => `${block.market}:${block.ticker}`),
+    ["US:AAA", "US:BBB"],
+  );
+  const report = createPortfolioReportText({ result, assets });
+  assert.equal(report.match(/US:AAA:/g)?.length, 1);
+  assert.equal(report.match(/US:BBB:/g)?.length, 1);
+  assert.match(report, /제거하거나 이용 가능한 자산으로 교체/);
 });
 
 test("inactive and operator exclusion take priority over short history", () => {
@@ -120,5 +174,5 @@ test("explicit short-history deny wins over leveraged confirmation", () => {
     leverageMultiple: 3,
   });
   assert.equal(decision.policy, "deny");
-  assert.equal(decision.reasonCode, "insufficient_long_horizon_history");
+  assert.equal(decision.reasonCode, "insufficient_price_and_rolling_history");
 });

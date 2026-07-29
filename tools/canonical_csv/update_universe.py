@@ -37,6 +37,11 @@ OPERATOR_MANAGED_FIELDS = frozenset(
         "cashEventNormalizationMethod",
         "distributionDataQualityStatus",
         "distributionDataQualityReason",
+        "distributionDataQualityOverrideAsOfDate",
+        "distributionDataQualityOverrideSourceUrl",
+        "distributionDataQualityOverrideAppliedBy",
+        "distributionDataQualityOverrideAppliedAt",
+        "distributionDataQualityOverrideActive",
     }
 )
 

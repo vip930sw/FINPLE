@@ -4,7 +4,7 @@ const USER_FACING_BLOCK_REASON_LABELS = Object.freeze({
   unsupported_distribution_calculation_policy:
     "이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다.",
   missing_metric_lineage: "지표 출처 정보가 부족합니다.",
-  portfolio_add_denied: "장기 포트폴리오에 사용할 수 없는 자산이 포함되어 있습니다.",
+  portfolio_add_denied: "포트폴리오에 사용할 수 없는 자산이 포함되어 있습니다.",
   missing_cash_yield_for_reinvestment:
     "분배금 재투자에 필요한 현금수익률 데이터가 없습니다.",
 });
@@ -56,4 +56,27 @@ export function formatUserFacingBaselineBlockReasons(reasons = []) {
     })
     .map(formatUserFacingBaselineBlockReason);
   return [...new Set(labels)];
+}
+
+function formatYears(value, digits = 1) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue.toFixed(digits) : "-";
+}
+
+export function formatPortfolioEligibilityBlock(block = {}) {
+  const identity = [block.market, block.ticker].filter(Boolean).join(":") || "자산";
+  const minimum = formatYears(block.minimumPortfolioHistoryYears, 0);
+  const after = block.eligibleAfter ? ` ${block.eligibleAfter} 이후 다시 확인할 수 있습니다.` : "";
+  const detail = block.reasonCode === "insufficient_usable_price_history"
+    ? `가격 이력 ${formatYears(block.usablePriceHistoryYears)}년, 최소 ${minimum}년 필요`
+    : block.reasonCode === "insufficient_rolling_window_history"
+      ? `장기 RM 표본 부족, 적용 RM ${formatYears(block.rollingCagrWindowYears, 0)}년, 최소 ${minimum}년 필요`
+      : block.reasonCode === "insufficient_price_and_rolling_history"
+        ? `가격 이력 ${formatYears(block.usablePriceHistoryYears)}년 및 적용 RM ${formatYears(block.rollingCagrWindowYears, 0)}년, 최소 ${minimum}년 필요`
+        : "포트폴리오 이용 조건을 충족하지 않습니다";
+  return `${identity}: ${detail}. 신뢰도 낮음, 포트폴리오 이용 불가.${after}`;
+}
+
+export function formatPortfolioEligibilityBlocks(blocks = []) {
+  return [...new Set((Array.isArray(blocks) ? blocks : []).map(formatPortfolioEligibilityBlock))];
 }

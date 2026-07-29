@@ -166,6 +166,29 @@ def _asset_contract(asset: UniverseAsset) -> dict[str, object]:
             "distributionDataQualityStatus",
             "",
         ),
+        "distributionDataQualityReason": asset.row_data.get(
+            "distributionDataQualityReason",
+            "",
+        ),
+        "cashEventBasis": asset.row_data.get("cashEventBasis", ""),
+        "cashEventNormalizationStatus": asset.row_data.get(
+            "cashEventNormalizationStatus",
+            "",
+        ),
+        "cashEventNormalizationMethod": asset.row_data.get(
+            "cashEventNormalizationMethod",
+            "",
+        ),
+        "distributionDataQualityOverride": {
+            field: asset.row_data.get(field, "")
+            for field in (
+                "distributionDataQualityOverrideAsOfDate",
+                "distributionDataQualityOverrideSourceUrl",
+                "distributionDataQualityOverrideAppliedBy",
+                "distributionDataQualityOverrideAppliedAt",
+                "distributionDataQualityOverrideActive",
+            )
+        },
     }
 
 

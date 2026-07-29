@@ -8,6 +8,7 @@ import {
 import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
+  resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
 import {
   getPortfolioAddDecision,
@@ -113,8 +114,10 @@ function getRiskLabel(value) {
 function TickerResultCard({ item, isAdded, onAdd }) {
   const displayName = item.koreanName || item.name || item.ticker;
   const nonOrdinaryDistribution = isNonOrdinaryDistribution(item);
+  const distributionDisplay = resolveDistributionDisplayPolicy(item);
   const addDecision = getPortfolioAddDecision(item);
   const addDenied = addDecision.policy === "deny";
+  const addReasonId = `portfolio-add-reason-${item.market}-${item.ticker}`.replace(/[^a-zA-Z0-9_-]/g, "-");
 
   return (
     <article className={isAdded ? "tickerResultCard added" : "tickerResultCard"}>
@@ -130,13 +133,13 @@ function TickerResultCard({ item, isAdded, onAdd }) {
           disabled={isAdded || addDenied}
           aria-disabled={isAdded || addDenied}
           aria-label={addDecision.message || `${item.ticker} 포트폴리오에 추가`}
-          title={addDecision.message}
+          aria-describedby={addDenied ? addReasonId : undefined}
         >
           {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
         </button>
       </div>
 
-      {addDenied ? <p className="tickerResultRiskNotice">{addDecision.message}</p> : null}
+      {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addDecision.message}</p> : null}
       {isLeveragedOrInverse(item) ? <p className="tickerResultRiskNotice">일일 재설정과 경로 의존성으로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
 
       <p className="tickerResultDescription">
@@ -145,9 +148,10 @@ function TickerResultCard({ item, isAdded, onAdd }) {
 
       {nonOrdinaryDistribution ? (
         <p className="tickerResultRiskNotice">
-          최근 12개월 분배율 {formatPercentValue(item.trailingDistributionYield)} ·{" "}
-          {getDistributionFrequencyLabel(item.distributionFrequency)} 분배 · 일반 배당수익률·총수익률과 다름 ·
-          옵션 프리미엄 및 원금환급 가능성 있음
+          {distributionDisplay.title}
+          {distributionDisplay.kind === "provider_error" ? "" : ` · 최근 12개월 분배율 ${formatPercentValue(item.trailingDistributionYield)}`}
+          {" · "}{getDistributionFrequencyLabel(item.distributionFrequency)} 분배
+          {distributionDisplay.notices.map((notice) => ` · ${notice}`)}
         </p>
       ) : null}
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from tools.canonical_csv.bootstrap_universe import (
     build_universe_rows,
+    load_distribution_data_quality_overrides,
     write_universe,
 )
 from tools.canonical_csv.build import build_canonical_candidate
@@ -68,6 +69,45 @@ def _source_row(
 
 
 class BootstrapUniverseTests(unittest.TestCase):
+    def test_distribution_override_csv_validates_and_active_false_unlocks(self) -> None:
+        headers = (
+            "market", "ticker", "status", "cashEventBasis",
+            "cashEventNormalizationStatus", "cashEventNormalizationMethod",
+            "asOfDate", "sourceUrl", "reason", "appliedBy", "appliedAt",
+            "active",
+        )
+        base = {
+            "market": "US",
+            "ticker": "SOXS",
+            "status": "provider_event_error",
+            "cashEventBasis": "provider_reported_cash_event",
+            "cashEventNormalizationStatus": "unresolved",
+            "cashEventNormalizationMethod": "",
+            "asOfDate": "2026-07-28",
+            "sourceUrl": "https://example.com",
+            "reason": "review",
+            "appliedBy": "operator",
+            "appliedAt": "2026-07-29T00:00:00+09:00",
+            "active": "false",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "overrides.csv"
+
+            def write(rows: list[dict[str, str]]) -> None:
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=headers)
+                    writer.writeheader()
+                    writer.writerows(rows)
+
+            write([base])
+            self.assertEqual(load_distribution_data_quality_overrides(path), {})
+            write([{**base, "active": "true"}, base])
+            with self.assertRaisesRegex(ValueError, "duplicate"):
+                load_distribution_data_quality_overrides(path)
+            write([{**base, "status": "ready"}])
+            with self.assertRaisesRegex(ValueError, "invalid.*status"):
+                load_distribution_data_quality_overrides(path)
+
     def test_known_provider_event_errors_bootstrap_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             source_path = Path(temporary) / "source.csv"
@@ -248,6 +288,7 @@ class BootstrapUniverseTests(unittest.TestCase):
                 "exposureType": "manual-exposure",
                 "distributionType": "index_covered_call",
                 "distributionFrequency": "monthly",
+                "distributionDataQualityStatus": "operator_reviewed",
             },
             {
                 "market": "US",
@@ -276,6 +317,7 @@ class BootstrapUniverseTests(unittest.TestCase):
                 "exposureType": "source-exposure",
                 "distributionType": "ordinary_cash_dividend",
                 "distributionFrequency": "quarterly",
+                "distributionDataQualityStatus": "provider_event_error",
             },
             {
                 "market": "US",
@@ -303,6 +345,10 @@ class BootstrapUniverseTests(unittest.TestCase):
         self.assertEqual(rows[0]["exposureType"], "manual-exposure")
         self.assertEqual(rows[0]["distributionType"], "index_covered_call")
         self.assertEqual(rows[0]["distributionFrequency"], "monthly")
+        self.assertEqual(
+            rows[0]["distributionDataQualityStatus"],
+            "operator_reviewed",
+        )
         self.assertEqual(rows[0]["name"], "new source name")
         self.assertEqual(rows[1]["active"], "false")
         self.assertEqual(rows[1]["includeInSimulator"], "false")

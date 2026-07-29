@@ -45,6 +45,72 @@ export function isNonOrdinaryDistribution(asset = {}) {
   );
 }
 
+export function resolveDistributionDisplayPolicy(asset = {}) {
+  asset = asset || {};
+  const status = normalizeDividendState(asset.distributionDataQualityStatus);
+  const type = normalizeDividendState(asset.distributionType);
+  if (status === "provider_event_error") {
+    return {
+      kind: "provider_error",
+      title: "분배 데이터 확인 필요",
+      notices: ["공급자 현금 이벤트 기준 불일치", "시뮬레이션 재투자 제외"],
+    };
+  }
+  if (type === "special_or_liquidating_distribution") {
+    return {
+      kind: "special",
+      title: "특별·청산 분배",
+      notices: ["자산 매각·청산 지급", "반복 수익 아님", "시뮬레이션 재투자 제외"],
+    };
+  }
+  if (type === "futures_mixed_distribution") {
+    return {
+      kind: "futures",
+      title: "선물·파생 분배",
+      notices: ["자본이득 포함 가능", "롤오버 영향", "변동 분배율"],
+    };
+  }
+  if (isNonOrdinaryDistribution(asset)) {
+    return {
+      kind: "mixed",
+      title: "옵션 분배",
+      notices: ["원금환급 가능", "변동 분배율"],
+    };
+  }
+  return { kind: "ordinary", title: "일반 배당", notices: [] };
+}
+
+export function resolvePortfolioCashFlowDisplayPolicy(assets = []) {
+  const kinds = (assets || []).map((asset) => resolveDistributionDisplayPolicy(asset).kind);
+  const hasOrdinary = kinds.includes("ordinary");
+  const hasNonOrdinary = kinds.some((kind) => kind !== "ordinary");
+  if (hasOrdinary && !hasNonOrdinary) {
+    return {
+      kind: "dividend",
+      yieldLabel: "예상 배당률",
+      annualLabel: "예상 연배당금",
+      rankLabel: "배당 순위",
+      focusLabel: "배당",
+    };
+  }
+  if (!hasOrdinary && hasNonOrdinary) {
+    return {
+      kind: "cash_distribution",
+      yieldLabel: "시뮬레이션 적용 현금분배율",
+      annualLabel: "예상 연간 현금분배금",
+      rankLabel: "현금흐름 순위",
+      focusLabel: "현금흐름",
+    };
+  }
+  return {
+    kind: "cash_flow",
+    yieldLabel: "예상 현금수익률",
+    annualLabel: "예상 연간 현금지급액",
+    rankLabel: "현금흐름 순위",
+    focusLabel: "현금흐름",
+  };
+}
+
 export function resolveDividendYieldDisplay(asset = {}) {
   if (isNonOrdinaryDistribution(asset)) {
     return { kind: "non_ordinary", text: null };
@@ -129,6 +195,9 @@ export function resolveDistributionYieldFields(
     toNullableNumber(asset.cashDistributionYieldTtm) ??
     toNullableNumber(asset.trailingDistributionYield) ??
     numericYield;
+  const simulationExcluded =
+    normalizeDividendState(asset.distributionDataQualityStatus) === "provider_event_error" ||
+    normalizeDividendState(asset.distributionType) === "special_or_liquidating_distribution";
   return {
     dividendYield: null,
     displayDividendYield: "",
@@ -141,11 +210,15 @@ export function resolveDistributionYieldFields(
       asset.distributionCalculationStatus ||
       "review_only_no_approved_reinvestment_model",
     reinvestmentCashYield:
-      toNullableNumber(asset.reinvestmentCashYield) ?? cashYield,
+      simulationExcluded
+        ? 0
+        : toNullableNumber(asset.reinvestmentCashYield) ?? cashYield,
     simulationCashYield:
-      toNullableNumber(asset.simulationCashYield) ??
-      toNullableNumber(asset.reinvestmentCashYield) ??
-      cashYield,
+      simulationExcluded
+        ? 0
+        : toNullableNumber(asset.simulationCashYield) ??
+          toNullableNumber(asset.reinvestmentCashYield) ??
+          cashYield,
     distributionSimulationPolicy:
       asset.distributionSimulationPolicy || "repeat_ttm_distribution",
   };

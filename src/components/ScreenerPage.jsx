@@ -12,6 +12,7 @@ import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
   resolveDividendYieldDisplay,
+  resolveDistributionDisplayPolicy,
 } from "../data/tickers/distributionPolicy";
 import { resolveMetricReviewDisplay } from "../data/tickers/metricReviewPolicy";
 import {
@@ -266,19 +267,27 @@ function getPageNumbers(currentPage, totalPages) {
 export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const cardClassName = ["tickerResultCard", isAdded ? "added" : "", item.market === "KR" ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
   const metricReview = resolveMetricReviewDisplay(item);
+  const distributionDisplay = resolveDistributionDisplayPolicy(item);
   const addDecision = getPortfolioAddDecision(item);
   const addDenied = !canAdd || addDecision.policy === "deny";
   const addReason = addDenied
     ? addDecision.message || "현재 포트폴리오에 추가할 수 없습니다."
     : addDecision.message;
-  const historyYears = Number(item.usablePriceHistoryYears);
+  const addReasonId = `portfolio-add-reason-${item.market}-${item.ticker}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const historyBadges = [];
+  if (["insufficient_usable_price_history", "insufficient_price_and_rolling_history"].includes(addDecision.reasonCode)) {
+    historyBadges.push(`가격 이력 ${addDecision.usablePriceHistoryYears.toFixed(1)}년, 최소 ${addDecision.minimumPortfolioHistoryYears}년 필요`);
+  }
+  if (["insufficient_rolling_window_history", "insufficient_price_and_rolling_history"].includes(addDecision.reasonCode)) {
+    historyBadges.push(`장기 RM 표본 부족, 적용 RM ${addDecision.rollingCagrWindowYears.toFixed(0)}년, 최소 ${addDecision.minimumPortfolioHistoryYears}년 필요`);
+  }
   const leverage = Number(item.leverageMultiple);
   const leveragedOrInverse = isLeveragedOrInverse(item);
   return (
     <article className={cardClassName}>
       <div className="tickerResultMain">
         <div className="tickerResultTitleBlock"><strong className="tickerResultTicker">{item.ticker}</strong><span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span></div>
-        <span title={addReason}>
+        <span>
           <button
             type="button"
             className={isAdded ? "tickerResultAction added" : "tickerResultAction"}
@@ -286,20 +295,21 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
             disabled={isAdded || addDenied}
             aria-disabled={isAdded || addDenied}
             aria-label={addReason || `${item.ticker} 포트폴리오에 추가`}
+            aria-describedby={addDenied ? addReasonId : undefined}
           >
             {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
           </button>
         </span>
       </div>
-      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{Number.isFinite(historyYears) && historyYears < 3 ? <span>신규 상장 · 가격 이력 {historyYears.toFixed(1)}년</span> : null}{addDenied ? <span>포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leveragedOrInverse ? <span>레버리지·인버스 위험 확인</span> : null}{item.resetFrequency === "daily" && Number.isFinite(leverage) && Math.abs(leverage) >= 2 ? <span>일일 {leverage > 0 ? "+" : ""}{leverage}X</span> : null}{String(item.direction).toLowerCase() === "inverse" ? <span>인버스</span> : null}{leveragedOrInverse ? <span>장기보유 주의</span> : null}{leveragedOrInverse ? <span>극단 변동성</span> : null}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{historyBadges.map((text) => <span key={text}>{text}</span>)}{addDenied ? <span>신뢰도 낮음, 포트폴리오 이용 불가{item.portfolioEligibleAfterDate ? ` · ${item.portfolioEligibleAfterDate} 이후` : ""}</span> : null}{leveragedOrInverse ? <span>레버리지·인버스 위험 확인</span> : null}{item.resetFrequency === "daily" && Number.isFinite(leverage) && Math.abs(leverage) >= 2 ? <span>일일 {leverage > 0 ? "+" : ""}{leverage}X</span> : null}{String(item.direction).toLowerCase() === "inverse" ? <span>인버스</span> : null}{leveragedOrInverse ? <span>장기보유 주의</span> : null}{leveragedOrInverse ? <span>극단 변동성</span> : null}{item.distributionSimulationPolicy === "exclude_non_recurring_distribution" ? <span>특별·청산 분배금 · 재투자 제외</span> : null}{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      {addDenied ? <p id={addReasonId} className="tickerResultRiskNotice">{addReason}</p> : null}
       {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
       {isNonOrdinaryDistribution(item) ? (
         <div className="tickerResultDistributionNotice">
-          <strong>최근 12개월 분배율 {formatPercentValue(item.trailingDistributionYield, "확인 중")}</strong>
+          <strong>{distributionDisplay.title}{distributionDisplay.kind === "provider_error" ? "" : ` · 최근 12개월 분배율 ${formatPercentValue(item.trailingDistributionYield, "확인 중")}`}</strong>
           <span>{getDistributionFrequencyLabel(item.distributionFrequency)} 분배</span>
-          <span>일반 배당수익률·총수익률과 다름</span>
-          <span>옵션 프리미엄 및 원금환급 가능성 있음</span>
+          {distributionDisplay.notices.map((notice) => <span key={notice}>{notice}</span>)}
         </div>
       ) : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
