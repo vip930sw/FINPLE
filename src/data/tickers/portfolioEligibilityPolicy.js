@@ -6,6 +6,17 @@ function finiteNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function resetFrequencyLabel(value) {
+  const frequency = String(value || "").trim();
+  return {
+    daily: "일일",
+    weekly: "주간",
+    monthly: "월간",
+    quarterly: "분기",
+    annual: "연간",
+  }[frequency.toLowerCase()] || frequency;
+}
+
 function isLeveragedOrInverse(asset = {}) {
   const exposure = String(asset.exposureType || "").toLowerCase();
   const direction = String(asset.direction || "").toLowerCase();
@@ -59,21 +70,46 @@ const SEVERITY_LABELS = Object.freeze({
   critical: "위험강도 매우 높음",
 });
 
-const NON_EQUITY_FUTURES_COPY = Object.freeze({
-  currency_futures:
-    "통화선물의 일일 수익률을 배수로 추종합니다. 일일 재설정, 선물 롤오버와 경로의존성 때문에 장기 성과가 단순 배수와 달라질 수 있습니다.",
-  sovereign_bond_futures:
-    "국채선물의 일일 금리·듀레이션 움직임을 배수로 추종합니다. 일일 재설정, 장기채 금리민감도, 선물 롤오버와 경로의존성을 확인하세요.",
-  commodity_futures:
-    "단일 원자재선물의 일일 수익률을 배수로 추종합니다. 높은 변동성, 만기교체·롤오버, 경로의존성과 현물가격 대비 장기 성과 차이를 확인하세요.",
+const NON_EQUITY_COPY = Object.freeze({
+  currency_futures: {
+    scope: "통화선물",
+    message:
+      "통화선물의 일일 수익률을 배수로 추종합니다. 일일 재설정, 선물 롤오버와 경로의존성 때문에 장기 성과가 단순 배수와 달라질 수 있습니다.",
+  },
+  sovereign_bond_futures: {
+    scope: "국채선물",
+    message:
+      "국채선물의 일일 금리·듀레이션 움직임을 배수로 추종합니다. 일일 재설정, 장기채 금리민감도, 선물 롤오버와 경로의존성을 확인하세요.",
+  },
+  commodity_futures: {
+    scope: "원자재선물",
+    message:
+      "단일 원자재선물의 일일 수익률을 배수로 추종합니다. 높은 변동성, 만기교체·롤오버, 경로의존성과 현물가격 대비 장기 성과 차이를 확인하세요.",
+  },
+  commodity_asset: {
+    scope: "단일 원자재",
+    message:
+      "단일 원자재 노출의 일일 수익률을 배수로 추종합니다. 높은 변동성, 일일 재설정과 경로의존성으로 장기 성과가 단순 배수와 달라질 수 있습니다.",
+  },
+  crypto_asset: {
+    scope: "단일 암호자산",
+    message:
+      "단일 암호자산의 일일 수익률을 배수로 추종합니다. 24시간 시장의 높은 변동성, 일일 재설정과 경로의존성으로 큰 손실이 발생할 수 있습니다.",
+  },
+  corporate_bond_index: {
+    scope: "회사채 지수",
+    message:
+      "회사채 지수의 일일 수익률을 배수로 추종합니다. 신용스프레드·부도·유동성 위험, 일일 재설정과 경로의존성을 확인하세요.",
+  },
 });
 
-function dailyMultipleLabel(asset = {}) {
+function resetMultipleLabel(asset = {}) {
+  const reset = resetFrequencyLabel(asset.resetFrequency);
   const leverage = finiteNumber(asset.leverageMultiple);
-  if (String(asset.resetFrequency || "").toLowerCase() !== "daily" || leverage === null) {
+  if (!reset || leverage === null) {
     return "";
   }
-  return `일일 ${leverage > 0 ? "+" : ""}${leverage}X`;
+  return `${reset} ${leverage > 0 ? "+" : ""}${leverage}X`;
 }
 
 export function resolveLeverageRiskProfile(asset = {}) {
@@ -102,14 +138,13 @@ export function resolveLeverageRiskProfile(asset = {}) {
   if (status === "verified" && TIER_COPY[tier]) {
     const sectorOrTheme = tier === 2
       && ["sector_index", "thematic_index"].includes(asset.exposureScope);
-    const futuresMessage = tier === 2
-      ? NON_EQUITY_FUTURES_COPY[asset.exposureScope]
+    const nonEquityCopy = tier === 2
+      ? NON_EQUITY_COPY[asset.exposureScope]
       : "";
-    const base = futuresMessage
+    const base = nonEquityCopy
       ? {
           label: "높은 주의 필요",
-          scope: "비주식 선물",
-          message: futuresMessage,
+          ...nonEquityCopy,
         }
       : sectorOrTheme
       ? {
@@ -121,9 +156,14 @@ export function resolveLeverageRiskProfile(asset = {}) {
       : TIER_COPY[tier];
     const severity = asset.portfolioWarningSeverity
       || (tier === 1 ? "caution" : tier === 4 ? "critical" : "high");
-    const multiple = dailyMultipleLabel(asset);
+    const reset = resetFrequencyLabel(asset.resetFrequency) || "설정 주기";
+    const multiple = resetMultipleLabel(asset);
     const stronger = Math.abs(finiteNumber(asset.leverageMultiple) || 0) >= 3
-      ? " 3배 일일 목표로 높은 변동성과 대규모 손실 가능성이 더 큽니다."
+      ? " 높은 배수로 변동성과 대규모 손실 가능성이 더 큽니다."
+      : "";
+    const isEtn = String(asset.exposureType || "").toLowerCase().includes("_etn");
+    const etnCreditRisk = isEtn
+      ? " ETN은 발행사 신용위험이 있으며 발행사의 상환능력에 따라 손실이 발생할 수 있습니다."
       : "";
     return {
       kind: "verified",
@@ -136,10 +176,11 @@ export function resolveLeverageRiskProfile(asset = {}) {
       badges: [
         base.scope,
         multiple,
+        isEtn ? "ETN 발행사 신용위험" : "",
         SEVERITY_LABELS[severity],
         tier === 4 ? "장기보유 부적합" : "",
       ].filter(Boolean),
-      message: `${base.message}${stronger}`,
+      message: `${base.message.replaceAll("일일", reset)}${stronger}${etnCreditRisk}`,
     };
   }
   if (!isLeveragedOrInverse(asset)) return null;
@@ -153,14 +194,14 @@ export function resolveLeverageRiskProfile(asset = {}) {
     longTermSuitability: asset.longTermSuitability || "caution",
     exposureScope: asset.exposureScope || "",
     badges: [
-      dailyMultipleLabel(asset),
+      resetMultipleLabel(asset),
       String(asset.direction || "").toLowerCase() === "inverse" ? "인버스" : "",
       SEVERITY_LABELS[severity],
       "장기보유 주의",
       "극단 변동성",
     ].filter(Boolean),
     message:
-      "일일 수익률을 배수 또는 역방향으로 추종하므로 장기 성과가 단순 배수와 달라질 수 있습니다.",
+      `${resetFrequencyLabel(asset.resetFrequency) || "설정 주기"} 수익률을 배수 또는 역방향으로 추종하므로 장기 성과가 단순 배수와 달라질 수 있습니다.`,
   };
 }
 

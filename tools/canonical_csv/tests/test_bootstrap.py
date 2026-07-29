@@ -36,6 +36,29 @@ SOURCE_HEADERS = (
     "notes",
 )
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+EXISTING_US_REGISTRY_TICKERS = {
+    "TQQQ", "SQQQ", "SOXL", "SOXS", "SPXL", "SPXU", "UPRO",
+    "TECL", "TNA", "QLD", "SSO", "PSQ", "SH", "UDOW",
+}
+US_109_IDENTITY_HASH = (
+    "a3a3fb67d37b5d1ad9ebe21a3043d6668ec30279bc5d6099cc16581bba59595b"
+)
+EXISTING_102_ROW_HASH = (
+    "1885e40cd7a22115349ec56d5166bbca25e0faec6300f973048e8db53c30b23f"
+)
+
+
+def _registry_rows_hash(rows: list[dict[str, str]]) -> str:
+    headers = list(rows[0])
+    payload = json.dumps(
+        [
+            {field: row[field] for field in headers}
+            for row in sorted(rows, key=lambda row: (row["market"], row["ticker"]))
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _write_source(path: Path, rows: list[dict[str, str]]) -> None:
@@ -81,7 +104,7 @@ class BootstrapUniverseTests(unittest.TestCase):
             / "leverage_inverse_metadata_registry.csv"
         )
         registry = load_leverage_metadata_registry(registry_path)
-        self.assertEqual(len(registry), 102)
+        self.assertEqual(len(registry), 211)
         self.assertEqual(registry["US:TQQQ"]["leverageRiskTier"], "2")
         self.assertEqual(registry["US:SQQQ"]["leverageRiskTier"], "4")
         kr_identities = sorted(
@@ -93,6 +116,56 @@ class BootstrapUniverseTests(unittest.TestCase):
                 "\n".join(kr_identities).encode("utf-8")
             ).hexdigest(),
             "1f7cc74ee27968987927da6d8451b8af9c240dec3ec26921d6e4f5de62af8345",
+        )
+        new_us_identities = sorted(
+            identity
+            for identity in registry
+            if identity.startswith("US:")
+            and identity.split(":", 1)[1] not in EXISTING_US_REGISTRY_TICKERS
+        )
+        self.assertEqual(len(new_us_identities), 109)
+        self.assertEqual(
+            hashlib.sha256(
+                "\n".join(new_us_identities).encode("utf-8")
+            ).hexdigest(),
+            US_109_IDENTITY_HASH,
+        )
+        new_us_rows = [registry[identity] for identity in new_us_identities]
+        self.assertTrue(
+            all(
+                row["metadataVerificationStatus"] in {"verified", "rejected"}
+                for row in new_us_rows
+            )
+        )
+        self.assertEqual(
+            sum(row["metadataVerificationStatus"] == "verified" for row in new_us_rows),
+            109,
+        )
+        self.assertEqual(
+            {
+                scope: sum(row["exposureScope"] == scope for row in new_us_rows)
+                for scope in {
+                    "single_stock", "sector_index", "broad_market_index",
+                    "concentrated_index", "commodity_futures",
+                    "commodity_asset", "crypto_asset",
+                    "sovereign_bond_futures", "corporate_bond_index",
+                }
+            },
+            {
+                "single_stock": 49,
+                "sector_index": 23,
+                "broad_market_index": 3,
+                "concentrated_index": 4,
+                "commodity_futures": 7,
+                "commodity_asset": 2,
+                "crypto_asset": 8,
+                "sovereign_bond_futures": 11,
+                "corporate_bond_index": 2,
+            },
+        )
+        self.assertEqual(
+            sum(row["exposureType"].endswith("_etn") for row in new_us_rows),
+            10,
         )
         self.assertTrue(
             all(
@@ -128,20 +201,8 @@ class BootstrapUniverseTests(unittest.TestCase):
                 "US": ("US:SPY", "SPY"),
             },
         )
-        self.assertEqual(report["verifiedLeverageMetadataCount"], 102)
-        self.assertEqual(report["pendingLeverageMetadataCount"], 109)
-        pending_identities = sorted(
-            f"{row['market']}:{row['ticker']}"
-            for row in rows
-            if row["metadataVerificationStatus"]
-            == "pending_official_source"
-        )
-        self.assertEqual(
-            hashlib.sha256(
-                "\n".join(pending_identities).encode("utf-8")
-            ).hexdigest(),
-            "a3a3fb67d37b5d1ad9ebe21a3043d6668ec30279bc5d6099cc16581bba59595b",
-        )
+        self.assertEqual(report["verifiedLeverageMetadataCount"], 211)
+        self.assertEqual(report["pendingLeverageMetadataCount"], 0)
         self.assertEqual(
             report["verifiedLeverageMetadataCount"]
             + report["pendingLeverageMetadataCount"],
@@ -178,7 +239,7 @@ class BootstrapUniverseTests(unittest.TestCase):
                 == "pending_official_source"
                 for row in rows
             ),
-            109,
+            0,
         )
         self.assertEqual(
             {
@@ -208,6 +269,16 @@ class BootstrapUniverseTests(unittest.TestCase):
         with registry_path.open(encoding="utf-8", newline="") as handle:
             source_rows = list(csv.DictReader(handle))
             headers = tuple(source_rows[0])
+        existing_rows = [
+            row for row in source_rows
+            if row["market"] == "KR"
+            or row["ticker"] in EXISTING_US_REGISTRY_TICKERS
+        ]
+        self.assertEqual(len(existing_rows), 102)
+        self.assertEqual(
+            _registry_rows_hash(existing_rows),
+            EXISTING_102_ROW_HASH,
+        )
         for changed, message in (
             ([*source_rows, source_rows[0]], "duplicate"),
             ([{**source_rows[0], "officialSourceUrl": ""}], "URL"),
@@ -265,8 +336,19 @@ class BootstrapUniverseTests(unittest.TestCase):
                     {"market": row["market"], "ticker": row["ticker"]}
                     for row in korean
                 )
-            merged = merge_registry(worklist, resolutions, base)
-            self.assertEqual(len(merged), 102)
+            merged = merge_registry(
+                worklist,
+                resolutions,
+                base,
+                market="KR",
+                expected_count=88,
+                expected_identity_hash=(
+                    "1f7cc74ee27968987927da6d8451b8af"
+                    "9c240dec3ec26921d6e4f5de62af8345"
+                ),
+                expected_total_count=211,
+            )
+            self.assertEqual(len(merged), 211)
             self.assertEqual(
                 [f"{row['market']}:{row['ticker']}" for row in merged],
                 sorted(f"{row['market']}:{row['ticker']}" for row in rows),
@@ -285,7 +367,18 @@ class BootstrapUniverseTests(unittest.TestCase):
                 writer.writeheader()
                 writer.writerows([*korean, existing[0]])
             with self.assertRaisesRegex(ValueError, "KR rows only"):
-                merge_registry(worklist, resolutions, base)
+                merge_registry(
+                    worklist,
+                    resolutions,
+                    base,
+                    market="KR",
+                    expected_count=88,
+                    expected_identity_hash=(
+                        "1f7cc74ee27968987927da6d8451b8af"
+                        "9c240dec3ec26921d6e4f5de62af8345"
+                    ),
+                    expected_total_count=211,
+                )
 
             with resolutions.open(
                 "w",
@@ -302,7 +395,95 @@ class BootstrapUniverseTests(unittest.TestCase):
                     *korean[1:],
                 ])
             with self.assertRaisesRegex(ValueError, "not in the future"):
-                merge_registry(worklist, resolutions, base)
+                merge_registry(
+                    worklist,
+                    resolutions,
+                    base,
+                    market="KR",
+                    expected_count=88,
+                    expected_identity_hash=(
+                        "1f7cc74ee27968987927da6d8451b8af"
+                        "9c240dec3ec26921d6e4f5de62af8345"
+                    ),
+                    expected_total_count=211,
+                )
+
+    def test_us_registry_merge_is_deterministic(self) -> None:
+        registry_path = (
+            REPOSITORY_ROOT
+            / "tools"
+            / "canonical_csv"
+            / "leverage_inverse_metadata_registry.csv"
+        )
+        with registry_path.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+            headers = tuple(rows[0])
+        resolutions_rows = [
+            row for row in rows
+            if row["market"] == "US"
+            and row["ticker"] not in EXISTING_US_REGISTRY_TICKERS
+        ]
+        existing = [row for row in rows if row not in resolutions_rows]
+        self.assertEqual(len(resolutions_rows), 109)
+        self.assertEqual(len(existing), 102)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "registry.csv"
+            resolutions = root / "resolutions.csv"
+            worklist = root / "worklist.csv"
+            for path, source_rows in (
+                (base, existing),
+                (resolutions, resolutions_rows),
+            ):
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=headers)
+                    writer.writeheader()
+                    writer.writerows(source_rows)
+            with worklist.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=("market", "ticker"))
+                writer.writeheader()
+                writer.writerows(
+                    {"market": row["market"], "ticker": row["ticker"]}
+                    for row in resolutions_rows
+                )
+            merged = merge_registry(
+                worklist,
+                resolutions,
+                base,
+                market="US",
+                expected_count=109,
+                expected_identity_hash=US_109_IDENTITY_HASH,
+                expected_total_count=211,
+            )
+            self.assertEqual(len(merged), 211)
+            self.assertEqual(
+                [
+                    row for row in merged
+                    if row["market"] == "KR"
+                    or row["ticker"] in EXISTING_US_REGISTRY_TICKERS
+                ],
+                existing,
+            )
+
+            with resolutions.open(
+                "w",
+                encoding="utf-8",
+                newline="",
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=headers)
+                writer.writeheader()
+                writer.writerows([*resolutions_rows, resolutions_rows[0]])
+            with self.assertRaisesRegex(ValueError, "duplicate"):
+                merge_registry(
+                    worklist,
+                    resolutions,
+                    base,
+                    market="US",
+                    expected_count=109,
+                    expected_identity_hash=US_109_IDENTITY_HASH,
+                    expected_total_count=211,
+                )
 
     def test_leverage_registry_active_state_reconciles_only_derived_values(
         self,
