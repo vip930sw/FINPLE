@@ -27,6 +27,18 @@ const normalizeAssetType = (assetType = "") => {
   const value = String(assetType || "").trim().toLowerCase();
   return value === "stock" || value === "single_stock" ? "stock" : "ETF";
 };
+const REQUIRED_CANONICAL_HEADERS = [
+  "market",
+  "ticker",
+  "name",
+  "assetType",
+  "expectedCagr",
+  "beta",
+  "mdd",
+  "priceMetricsStatus",
+  "portfolioEligible",
+  "portfolioAddPolicy",
+];
 
 function parseCsvLine(line = "") {
   const cells = [];
@@ -49,27 +61,31 @@ function parseCsvLine(line = "") {
     }
   }
 
+  if (insideQuotes) {
+    throw new TypeError("canonical catalog CSV parse error: unterminated quoted field");
+  }
   cells.push(current);
   return cells.map((cell) => stripBom(cell).trim());
 }
 
 function parseCsv(csvText = "") {
-  const lines = String(csvText || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (lines.length < 2) return [];
+  const lines = String(csvText || "").split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) {
+    throw new TypeError("canonical catalog must contain at least one data row");
+  }
   const headers = parseCsvLine(lines[0]);
-  return lines.slice(1).map((line) => {
+  const missingHeaders = REQUIRED_CANONICAL_HEADERS.filter((header) => !headers.includes(header));
+  if (missingHeaders.length) {
+    throw new TypeError(`canonical catalog missing required header: ${missingHeaders.join(", ")}`);
+  }
+  return lines.slice(1).map((line, index) => {
     const cells = parseCsvLine(line);
-    return headers.reduce((row, header, index) => ({ ...row, [header]: cells[index] || "" }), {});
-  });
-}
-
-function uniqueByMarketTicker(candidates = []) {
-  const seen = new Set();
-  return candidates.filter((candidate) => {
-    const key = `${normalizeMarket(candidate?.market)}:${normalizeTicker(candidate?.ticker)}`;
-    if (!candidate?.ticker || seen.has(key)) return false;
-    seen.add(key);
-    return true;
+    if (cells.length !== headers.length) {
+      throw new TypeError(
+        `canonical catalog CSV row ${index + 2} has ${cells.length} cells; expected ${headers.length}`,
+      );
+    }
+    return Object.fromEntries(headers.map((header, cellIndex) => [header, cells[cellIndex]]));
   });
 }
 
@@ -235,21 +251,27 @@ export function normalizeScreenerCandidate(row = {}) {
 }
 
 export function loadScreenerCandidatesFromCsv(csvText = "") {
-  return uniqueByMarketTicker(
-    parseCsv(csvText).map(normalizeScreenerCandidate).filter((candidate) => candidate.ticker && candidate.koreanName)
-  );
+  const seen = new Set();
+  return parseCsv(csvText).map((row, index) => {
+    const market = String(row.market || "").trim().toUpperCase();
+    const ticker = normalizeTicker(row.ticker);
+    const name = String(row.nameKr || row.koreanName || row.name || "").trim();
+    if (market !== "KR" && market !== "US") {
+      throw new TypeError(`canonical catalog invalid market at row ${index + 2}: ${row.market}`);
+    }
+    if (!ticker) throw new TypeError(`canonical catalog missing ticker at row ${index + 2}`);
+    if (!name) throw new TypeError(`canonical catalog missing display name at row ${index + 2}`);
+    const identity = `${market}:${ticker}`;
+    if (seen.has(identity)) {
+      throw new TypeError(`canonical catalog duplicate identity: ${identity}`);
+    }
+    seen.add(identity);
+    return normalizeScreenerCandidate({ ...row, market, ticker });
+  });
 }
 
 export function createCanonicalScreenerCatalog(csvText = "") {
-  const candidates = loadScreenerCandidatesFromCsv(csvText);
-  const usCount = candidates.filter((candidate) => candidate.market === "US").length;
-  const krCount = candidates.filter((candidate) => candidate.market === "KR").length;
-  if (candidates.length !== 6029 || usCount !== 3029 || krCount !== 3000) {
-    throw new TypeError(
-      `canonical v2 candidate contract failed: total=${candidates.length}, US=${usCount}, KR=${krCount}`,
-    );
-  }
-  return candidates;
+  return loadScreenerCandidatesFromCsv(csvText);
 }
 
 let canonicalCatalogError = null;
@@ -427,6 +449,18 @@ export function subscribeScreenerCandidateSnapshot(subscriber) {
   return () => appPreviewSubscribers.delete(subscriber);
 }
 
+export function findScreenerCandidateInCatalog(candidates = [], ticker, market = "") {
+  const normalizedTicker = normalizeTicker(ticker);
+  const normalizedMarket = String(market || "").trim().toUpperCase();
+  if (!normalizedTicker) return null;
+  const matches = candidates.filter(
+    (candidate) =>
+      normalizeTicker(candidate?.ticker) === normalizedTicker &&
+      (!normalizedMarket || normalizeMarket(candidate?.market) === normalizedMarket),
+  );
+  return matches.length === 1 ? matches[0] : null;
+}
+
 export function findScreenerCandidateByTicker(ticker, market = "") {
   const normalizedTicker = normalizeTicker(ticker);
   const normalizedMarket = String(market || "").trim().toUpperCase();
@@ -434,10 +468,7 @@ export function findScreenerCandidateByTicker(ticker, market = "") {
   if (normalizedMarket) {
     return activeScreenerCandidateMap.get(`${normalizedMarket}:${normalizedTicker}`) || null;
   }
-  return (
-    activeScreenerCandidates.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker) ||
-    null
-  );
+  return findScreenerCandidateInCatalog(activeScreenerCandidates, normalizedTicker);
 }
 
 export function createAssetPatchFromScreenerCandidate(candidate = {}) {

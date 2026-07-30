@@ -6,9 +6,122 @@ import test from "node:test";
 import { createServer } from "vite";
 
 import { buildMonthlyBaselineProjection } from "../../components/portfolio/utils/monthlyBaselineEngine.js";
-import { formatUserFacingBaselineBlockReason } from "../../components/portfolio/utils/baselineBlockReasonLabels.js";
 
-const RUNTIME_CSV = "src/data/tickers/finple_app_candidates_v2.csv";
+const COLUMNS = [
+  "market",
+  "ticker",
+  "name",
+  "assetType",
+  "expectedCagr",
+  "beta",
+  "mdd",
+  "priceMetricsStatus",
+  "portfolioEligible",
+  "portfolioAddPolicy",
+  "rawPriceCagr",
+  "rollingCagrMedian",
+  "rollingCagrWindowYears",
+  "rollingCagrWindowCount",
+  "priceHistoryStartDate",
+  "usablePriceHistoryYears",
+  "minimumPortfolioHistoryYears",
+  "portfolioEligibilityStatus",
+  "portfolioEligibilityReason",
+  "cagrConfidence",
+  "simulatorReady",
+  "active",
+  "includeInSimulator",
+  "exposureType",
+  "distributionType",
+  "distributionFrequency",
+  "dividendYield",
+  "dividendStatus",
+  "cashDistributionYieldTtm",
+  "trailingDistributionYield",
+  "reinvestmentCashYield",
+  "simulationCashYield",
+  "distributionSimulationPolicy",
+  "distributionCalculationStatus",
+  "leverageMultiple",
+  "direction",
+  "resetFrequency",
+  "metadataVerificationStatus",
+];
+
+const BASE_ROWS = [
+  {
+    market: "US",
+    ticker: "AAA",
+    name: "Synthetic Alpha",
+    assetType: "ETF",
+    expectedCagr: "10",
+    rawPriceCagr: "8",
+    rollingCagrMedian: "10",
+    rollingCagrWindowYears: "10",
+    rollingCagrWindowCount: "12",
+    beta: "1.1",
+    mdd: "-20",
+    priceMetricsStatus: "ready",
+    portfolioEligible: "true",
+    portfolioEligibilityStatus: "eligible",
+    portfolioAddPolicy: "allow",
+    cagrConfidence: "high",
+    simulatorReady: "true",
+    active: "true",
+    includeInSimulator: "true",
+    exposureType: "ordinary_etf",
+    distributionType: "ordinary_cash_dividend",
+    distributionFrequency: "quarterly",
+    dividendYield: "2.5",
+    dividendStatus: "confirmed_value",
+    reinvestmentCashYield: "2.5",
+    simulationCashYield: "2.5",
+    distributionSimulationPolicy: "ordinary_cash_dividend",
+    distributionCalculationStatus: "confirmed_value",
+  },
+  {
+    market: "KR",
+    ticker: "000001",
+    name: "합성 단기이력",
+    assetType: "stock",
+    expectedCagr: "4",
+    rawPriceCagr: "6",
+    rollingCagrMedian: "4",
+    rollingCagrWindowYears: "3",
+    rollingCagrWindowCount: "2",
+    beta: "0.8",
+    mdd: "-15",
+    priceMetricsStatus: "ready",
+    portfolioEligible: "false",
+    portfolioEligibilityStatus: "insufficient_long_horizon_history",
+    portfolioEligibilityReason: "insufficient_usable_price_history",
+    portfolioAddPolicy: "deny",
+    cagrConfidence: "low",
+    simulatorReady: "false",
+    active: "true",
+    includeInSimulator: "true",
+    exposureType: "ordinary_equity",
+    distributionType: "ordinary_cash_dividend",
+    distributionFrequency: "annual",
+    dividendYield: "",
+    dividendStatus: "confirmed_zero",
+    reinvestmentCashYield: "0",
+    simulationCashYield: "0",
+    distributionSimulationPolicy: "ordinary_cash_dividend",
+    distributionCalculationStatus: "confirmed_zero",
+  },
+];
+
+function csv(rows = BASE_ROWS, columns = COLUMNS) {
+  const escape = (value) => {
+    const text = String(value ?? "");
+    return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  return [
+    columns.join(","),
+    ...rows.map((row) => columns.map((column) => escape(row[column])).join(",")),
+  ].join("\n");
+}
 
 function buildResult(asset) {
   return buildMonthlyBaselineProjection({
@@ -23,161 +136,185 @@ function buildResult(asset) {
   });
 }
 
-test("canonical v2 is the only 6029-asset runtime catalog and preserves RM fields", async () => {
+async function withLoader(run) {
   const vite = await createServer({
     root: process.cwd(),
     appType: "custom",
     logLevel: "silent",
     server: { middlewareMode: true },
   });
-
   try {
-    const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
-    const candidates = loader.ALL_SCREENER_CANDIDATES;
-    assert.equal(candidates.length, 6029);
-    assert.equal(loader.US_SCREENER_CANDIDATES.length, 3029);
-    assert.equal(loader.KR_SCREENER_CANDIDATES.length, 3000);
-    assert.equal(candidates.filter((asset) => asset.simulatorReady).length, 5489);
-    assert.equal(candidates.filter((asset) => asset.portfolioEligible).length, 4712);
-    assert.equal(candidates.filter((asset) => asset.portfolioAddPolicy === "allow").length, 4567);
-    assert.equal(candidates.filter((asset) => asset.portfolioAddPolicy === "confirm").length, 145);
-    assert.equal(candidates.filter((asset) => asset.portfolioAddPolicy === "deny").length, 1317);
-
-    const samples = new Map([
-      ["KR:069500", [8.56838451, 3.19786952]],
-      ["US:QQQ", [9.80545523, 12.00524973]],
-      ["US:TQQQ", [40.41644564, 37.18560852]],
-    ]);
-    for (const [identity, [rawPriceCagr, rollingCagrMedian]] of samples) {
-      const [market, ticker] = identity.split(":");
-      const candidate = loader.findScreenerCandidateByTicker(ticker, market);
-      assert.ok(candidate, identity);
-      assert.equal(candidate.rawPriceCagr, rawPriceCagr, identity);
-      assert.equal(candidate.rollingCagrMedian, rollingCagrMedian, identity);
-      assert.equal(candidate.expectedCagr, rollingCagrMedian, identity);
-      assert.equal(candidate.selectedCagr, rollingCagrMedian, identity);
-      const hydrated = loader.hydratePortfolioAssetFromActiveCatalog({
-        market,
-        ticker,
-        quantity: 1,
-        price: 100,
-      });
-      assert.equal(hydrated.cagr, rollingCagrMedian, identity);
-      assert.equal(hydrated.rawPriceCagr, rawPriceCagr, identity);
-      assert.equal(hydrated.rollingCagrMedian, rollingCagrMedian, identity);
-      assert.equal(hydrated.cagrConfidence, candidate.cagrConfidence, identity);
-      assert.equal(
-        hydrated.rollingCagrWindowCount,
-        candidate.rollingCagrWindowCount,
-        identity,
-      );
-    }
-
-    const qqq = loader.hydratePortfolioAssetFromActiveCatalog({
-      market: "US",
-      ticker: "QQQ",
-      quantity: 1,
-      price: 100,
-    });
-    const result = buildResult(qqq);
-    assert.equal(result.status, "ready");
-    assert.equal(result.expectedCagr, 12.00524973);
-
-    assert.equal(loader.findScreenerCandidateByTicker("069500", "US"), null);
-    assert.equal(loader.findScreenerCandidateByTicker("DZZ", "US").resetFrequency, "monthly");
-    assert.equal(loader.findScreenerCandidateByTicker("DZZ", "US").leverageMultiple, -2);
-    assert.equal(loader.findScreenerCandidateByTicker("SCDL", "US").resetFrequency, "quarterly");
-    assert.equal(loader.findScreenerCandidateByTicker("SCDL", "US").leverageMultiple, 2);
-    assert.equal(loader.findScreenerCandidateByTicker("491220", "KR").portfolioAddPolicy, "deny");
-    assert.equal(
-      candidates.filter((asset) => asset.metadataVerificationStatus === "verified").length,
-      211,
-    );
-    assert.equal(
-      candidates.filter((asset) => asset.metadataVerificationStatus === "pending").length,
-      0,
-    );
+    await run(await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"));
   } finally {
     await vite.close();
   }
+}
+
+test("synthetic canonical CSV parses metrics and enforces structural validity", async () => {
+  await withLoader(async (loader) => {
+    const candidates = loader.createCanonicalScreenerCatalog(csv());
+    const aaa = loader.findScreenerCandidateInCatalog(candidates, "AAA", "US");
+    const kr = loader.findScreenerCandidateInCatalog(candidates, "000001", "KR");
+
+    assert.equal(candidates.length, 2);
+    assert.equal(aaa.rawPriceCagr, 8);
+    assert.equal(aaa.rollingCagrMedian, 10);
+    assert.equal(aaa.expectedCagr, 10);
+    assert.equal(aaa.beta, 1.1);
+    assert.equal(aaa.mdd, -20);
+    assert.equal(aaa.dividendYield, 2.5);
+    assert.equal(kr.portfolioAddPolicy, "deny");
+
+    const blankMetrics = loader.createCanonicalScreenerCatalog(
+      csv([{ ...BASE_ROWS[0], expectedCagr: "", beta: "", mdd: "" }]),
+    )[0];
+    assert.equal(blankMetrics.expectedCagr, null);
+    assert.equal(blankMetrics.beta, null);
+    assert.equal(blankMetrics.mdd, null);
+
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv([BASE_ROWS[0], BASE_ROWS[0]])),
+      /canonical catalog duplicate identity: US:AAA/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv([{ ...BASE_ROWS[0], ticker: "" }])),
+      /canonical catalog missing ticker/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv([{ ...BASE_ROWS[0], name: "" }])),
+      /canonical catalog missing display name/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv([{ ...BASE_ROWS[0], market: "JP" }])),
+      /canonical catalog invalid market/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv([], COLUMNS)),
+      /at least one data row/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(csv(BASE_ROWS, COLUMNS.filter((field) => field !== "beta"))),
+      /canonical catalog missing required header: beta/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(`${COLUMNS.join(",")}\nUS,AAA`),
+      /has 2 cells; expected/,
+    );
+    assert.throws(
+      () => loader.createCanonicalScreenerCatalog(`${COLUMNS.join(",")}\n"US,AAA`),
+      /unterminated quoted field/,
+    );
+
+    const ambiguous = loader.createCanonicalScreenerCatalog(
+      csv([
+        BASE_ROWS[0],
+        { ...BASE_ROWS[1], ticker: "AAA" },
+      ]),
+    );
+    assert.equal(loader.findScreenerCandidateInCatalog(ambiguous, "AAA"), null);
+    assert.equal(loader.findScreenerCandidateInCatalog(ambiguous, "AAA", "US").market, "US");
+    assert.equal(loader.findScreenerCandidateInCatalog(ambiguous, "MISSING"), null);
+  });
 });
 
-test("canonical CSV replacement is sufficient to update runtime metrics", async () => {
-  const vite = await createServer({
-    root: process.cwd(),
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true },
-  });
-
-  try {
-    const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
-    const currentCsv = fs.readFileSync(RUNTIME_CSV, "utf8");
-    const replacementCagr = 12.12524973;
-    let changed = false;
-    const nextCsv = currentCsv.split(/\r?\n/).map((line) => {
-      if (!line.startsWith("US,QQQ,")) return line;
-      changed = true;
-      return line.replaceAll("12.00524973", String(replacementCagr));
-    }).join("\n");
-    assert.equal(changed, true);
-
-    const replacementCatalog = loader.createCanonicalScreenerCatalog(nextCsv);
-    const replacementQqq = replacementCatalog.find(
-      (candidate) => candidate.market === "US" && candidate.ticker === "QQQ",
+test("runtime canonical catalog is relationally consistent", async () => {
+  await withLoader(async (loader) => {
+    const candidates = loader.ALL_SCREENER_CANDIDATES;
+    const identities = candidates.map((asset) => `${asset.market}:${asset.ticker}`);
+    const usable = candidates.filter(
+      (asset) => asset.priceMetricsStatus === "ready" && asset.rollingCagrMedian !== null,
     );
-    assert.equal(replacementQqq.expectedCagr, replacementCagr);
-    assert.equal(replacementQqq.rawPriceCagr, 9.80545523);
-    assert.equal(replacementQqq.rollingCagrMedian, replacementCagr);
 
-    const hydrated = loader.hydratePortfolioAssetFromActiveCatalog(
-      {
-        market: "US",
-        ticker: "QQQ",
-        quantity: 3,
-        price: 100,
-        targetWeight: 100,
-        expectedCagr: 999,
-        selectedCagr: 999,
-      },
-      { candidate: replacementQqq },
+    assert.ok(candidates.length > 0);
+    assert.equal(
+      candidates.length,
+      loader.US_SCREENER_CANDIDATES.length + loader.KR_SCREENER_CANDIDATES.length,
     );
-    assert.equal(hydrated.quantity, 3);
-    assert.equal(hydrated.expectedCagr, replacementCagr);
-    assert.equal(hydrated.cagr, replacementCagr);
-    assert.equal(hydrated.selectedCagr, replacementCagr);
-    assert.equal(buildResult(hydrated).expectedCagr, replacementCagr);
+    assert.equal(new Set(identities).size, candidates.length);
+    assert.ok(usable.length > 0);
+    for (const candidate of usable) {
+      assert.equal(candidate.expectedCagr, candidate.rollingCagrMedian);
+      assert.equal(candidate.dataSource, "finple_app_candidates_v2");
+      const hydrated = loader.hydratePortfolioAssetFromActiveCatalog({
+        market: candidate.market,
+        ticker: candidate.ticker,
+      });
+      assert.equal(hydrated.cagr, candidate.expectedCagr);
+      assert.equal(hydrated.dataSource, "finple_app_candidates_v2");
+    }
 
     const loaderSource = fs.readFileSync(
       "src/data/tickers/screenerCandidateLoader.js",
       "utf8",
     );
-    const mbtiSource = fs.readFileSync("src/components/InvestmentMbtiPage.jsx", "utf8");
-    const presetSource = fs.readFileSync("src/components/portfolio/constants.js", "utf8");
-    const simulatorSource = fs.readFileSync(
-      "src/components/portfolio/hooks/usePortfolioSimulator.js",
-      "utf8",
-    );
     assert.doesNotMatch(loaderSource, /finple_app_candidates_6000_balanced_v1\.csv\?raw/);
     assert.doesNotMatch(loaderSource, /production_v1_fallback/);
-    assert.doesNotMatch(loaderSource, /selectedCagr:\s*metricRow/);
-    assert.match(mbtiSource, /hydrateAssetFromScreenerCandidate/);
-    assert.match(presetSource, /hydrateAssetFromScreenerCandidate/);
-    assert.match(simulatorSource, /hydratePortfolioAssetFromActiveCatalog/);
-    assert.match(
-      simulatorSource,
-      /fetchTickerCandidateByTicker\(ticker,\s*\{\s*market:/,
+  });
+});
+
+test("Screener, direct, MBTI, and preset paths use canonical hydration", () => {
+  const screener = fs.readFileSync("src/components/ScreenerPage.jsx", "utf8");
+  const simulator = fs.readFileSync(
+    "src/components/portfolio/hooks/usePortfolioSimulator.js",
+    "utf8",
+  );
+  const mbti = fs.readFileSync("src/components/InvestmentMbtiPage.jsx", "utf8");
+  const presets = fs.readFileSync("src/components/portfolio/constants.js", "utf8");
+
+  assert.match(screener, /US_SCREENER_CANDIDATES/);
+  assert.match(screener, /KR_SCREENER_CANDIDATES/);
+  assert.match(simulator, /hydratePortfolioAssetFromActiveCatalog/);
+  assert.match(
+    simulator,
+    /fetchTickerCandidateByTicker\(ticker,\s*\{\s*market:/,
+  );
+  assert.match(mbti, /hydrateAssetFromScreenerCandidate/);
+  assert.match(presets, /hydrateAssetFromScreenerCandidate/);
+});
+
+test("canonical CSV replacement and universe change update runtime without code changes", async () => {
+  await withLoader(async (loader) => {
+    const initial = loader.createCanonicalScreenerCatalog(csv());
+    const changedCagr = 11.25;
+    const replacement = loader.createCanonicalScreenerCatalog(
+      csv([
+        {
+          ...BASE_ROWS[0],
+          expectedCagr: String(changedCagr),
+          rollingCagrMedian: String(changedCagr),
+        },
+        BASE_ROWS[1],
+        { ...BASE_ROWS[0], ticker: "BBB", name: "Synthetic Beta" },
+      ]),
     );
-    assert.match(simulatorSource, /calculatePortfolioResult\(settings, \[\]\)/);
-    assert.equal(
-      formatUserFacingBaselineBlockReason("canonical_catalog_load_error"),
-      "최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    const changed = loader.findScreenerCandidateInCatalog(replacement, "AAA", "US");
+    const added = loader.findScreenerCandidateInCatalog(replacement, "BBB", "US");
+
+    assert.equal(replacement.length, initial.length + 1);
+    assert.ok(added);
+    assert.equal(changed.expectedCagr, changedCagr);
+
+    const saved = loader.hydratePortfolioAssetFromActiveCatalog(
+      {
+        market: "US",
+        ticker: "AAA",
+        name: "사용자 저장 이름",
+        quantity: 7,
+        targetWeight: 100,
+        expectedCagr: 999,
+        portfolioAddPolicy: "deny",
+      },
+      { candidate: changed },
     );
-    assert.throws(
-      () => loader.createCanonicalScreenerCatalog("market,ticker\nUS,QQQ\n"),
-      /canonical v2 candidate contract failed/,
-    );
-  } finally {
-    await vite.close();
-  }
+    assert.equal(saved.name, "사용자 저장 이름");
+    assert.equal(saved.quantity, 7);
+    assert.equal(saved.targetWeight, 100);
+    assert.equal(saved.expectedCagr, changedCagr);
+    assert.equal(saved.portfolioAddPolicy, "allow");
+    assert.equal(buildResult(saved).expectedCagr, changedCagr);
+
+    const removed = loader.createCanonicalScreenerCatalog(csv([BASE_ROWS[0]]));
+    assert.equal(removed.length, 1);
+    assert.equal(loader.findScreenerCandidateInCatalog(removed, "000001", "KR"), null);
+  });
 });

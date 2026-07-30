@@ -132,14 +132,10 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   );
 });
 
-test("public v1 and supplied canonical v2 artifacts remain byte unchanged", () => {
+test("legacy and reconciliation artifacts remain byte unchanged", () => {
   assert.equal(
     sha256("src/data/tickers/finple_app_candidates_6000_balanced_v1.csv"),
     "79c7a504d6769c2829b7f6d3e689f327585234a6ce7a294abbe06dce00a44faf",
-  );
-  assert.equal(
-    sha256("src/data/tickers/finple_app_candidates_v2.csv"),
-    "fd90a57997ff08e213042915c6f0812f165e860f7643ccfc6d82f1ffb4f19004",
   );
   assert.equal(
     sha256("src/data/tickers/finple_universe_v2_manifest.json"),
