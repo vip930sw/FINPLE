@@ -39,6 +39,38 @@ const REQUIRED_CANONICAL_HEADERS = [
   "portfolioEligible",
   "portfolioAddPolicy",
 ];
+const OPTIONAL_NUMERIC_HEADERS = [
+  "marketCap",
+  "aum",
+  "expectedCagr",
+  "rawPriceCagr",
+  "rollingCagrMedian",
+  "rollingCagrWindowYears",
+  "rollingCagrWindowCount",
+  "beta",
+  "mdd",
+  "annualizedVolatility",
+  "volatilityObservationCount",
+  "dividendYield",
+  "trailingDistributionYield",
+  "cashDistributionYieldTtm",
+  "reinvestmentCashYield",
+  "simulationCashYield",
+  "usablePriceHistoryYears",
+  "minimumPortfolioHistoryYears",
+  "leverageMultiple",
+  "optionCoverageRatio",
+];
+
+function validateOptionalNumericValue(value, field, rowNumber) {
+  if (value === "" || value === null || value === undefined) return;
+  const normalized = String(value).replaceAll(",", "").trim();
+  if (!Number.isFinite(Number(normalized))) {
+    throw new TypeError(
+      `canonical catalog invalid numeric value at row ${rowNumber}: field=${field} value=${value}`,
+    );
+  }
+}
 
 function parseCsvLine(line = "") {
   const cells = [];
@@ -266,6 +298,9 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
       throw new TypeError(`canonical catalog duplicate identity: ${identity}`);
     }
     seen.add(identity);
+    for (const field of OPTIONAL_NUMERIC_HEADERS) {
+      validateOptionalNumericValue(row[field], field, index + 2);
+    }
     return normalizeScreenerCandidate({ ...row, market, ticker });
   });
 }

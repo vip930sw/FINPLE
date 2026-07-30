@@ -172,6 +172,37 @@ test("synthetic canonical CSV parses metrics and enforces structural validity", 
     assert.equal(blankMetrics.beta, null);
     assert.equal(blankMetrics.mdd, null);
 
+    assert.equal(
+      loader.createCanonicalScreenerCatalog(
+        csv([{ ...BASE_ROWS[0], expectedCagr: "11.25" }]),
+      )[0].expectedCagr,
+      11.25,
+    );
+    assert.equal(
+      loader.createCanonicalScreenerCatalog(
+        csv([{ ...BASE_ROWS[0], expectedCagr: "1,234.56" }]),
+      )[0].expectedCagr,
+      1234.56,
+    );
+
+    for (const [field, value] of [
+      ["expectedCagr", "ERROR"],
+      ["beta", "N/A"],
+      ["mdd", "--"],
+      ["dividendYield", "unknown"],
+      ["leverageMultiple", "3x"],
+    ]) {
+      assert.throws(
+        () => loader.createCanonicalScreenerCatalog(
+          csv([{ ...BASE_ROWS[0], [field]: value }]),
+        ),
+        {
+          name: "TypeError",
+          message: `canonical catalog invalid numeric value at row 2: field=${field} value=${value}`,
+        },
+      );
+    }
+
     assert.throws(
       () => loader.createCanonicalScreenerCatalog(csv([BASE_ROWS[0], BASE_ROWS[0]])),
       /canonical catalog duplicate identity: US:AAA/,
