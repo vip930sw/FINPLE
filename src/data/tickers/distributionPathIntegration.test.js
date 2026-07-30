@@ -5,15 +5,8 @@ import test from "node:test";
 import { createServer } from "vite";
 
 import { sha256Hex } from "../../utils/sha256.js";
-import {
-  buildMonthlyBaselineProjection,
-} from "../../components/portfolio/utils/monthlyBaselineEngine.js";
-import {
-  createRankedComparisonPortfolios,
-} from "../../components/portfolio/utils/portfolioCalculations.js";
-import {
-  normalizePersistedMetricFields,
-} from "../../components/portfolio/utils/portfolioAssetPersistence.js";
+import { buildMonthlyBaselineProjection } from "../../components/portfolio/utils/monthlyBaselineEngine.js";
+import { normalizePersistedMetricFields } from "../../components/portfolio/utils/portfolioAssetPersistence.js";
 import {
   createPortfolioReportText,
   createReportSummaryText,
@@ -21,110 +14,157 @@ import {
 
 const BASE_URL = "http://distribution-path.test";
 const EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z";
-const DISTRIBUTION_POLICY =
-  "trailing_12m_cash_distribution_not_ordinary_dividend";
-const DISTRIBUTION_STATUS = "confirmed_value";
-const TARGETS = new Map([
-  ["AIPI", {
-    yield: 38.30069456,
-    fixtureYield: 34.98,
-    option: true,
-    resultStatus: "blocked",
-  }],
-  ["MSFY", {
-    yield: 27.09069567,
-    fixtureYield: 28.30,
-    option: true,
-    resultStatus: "blocked",
-  }],
-  ["TSLP", {
-    yield: 40.40466564,
-    fixtureYield: 28.11,
-    option: true,
-    resultStatus: "blocked",
-  }],
-  ["QYLG", { yield: 18.26314253, fixtureYield: 16.26, option: true }],
-  ["QQQ", { yield: 0.41, simulationYield: 0.45849517, option: false }],
-  ["TQQQ", {
-    yield: 0.47,
-    simulationYield: 0.65454545,
-    option: false,
-    reviewPolicy: true,
-  }],
-  ["SPY", { yield: 1.01, simulationYield: 1.03158498, option: false }],
-  ["GLD", { yield: 0, option: false, dividendStatus: "confirmed_zero" }],
-]);
+const STALE_OVERLAY_VALUE = 987.654321;
+const SYNTHETIC_COLUMNS = [
+  "market",
+  "ticker",
+  "name",
+  "assetType",
+  "expectedCagr",
+  "beta",
+  "mdd",
+  "priceMetricsStatus",
+  "portfolioEligible",
+  "portfolioAddPolicy",
+  "rawPriceCagr",
+  "rollingCagrMedian",
+  "rollingCagrWindowYears",
+  "rollingCagrWindowCount",
+  "portfolioEligibilityStatus",
+  "portfolioEligibilityReason",
+  "cagrConfidence",
+  "simulatorReady",
+  "active",
+  "includeInSimulator",
+  "exposureType",
+  "distributionType",
+  "distributionFrequency",
+  "dividendYield",
+  "dividendStatus",
+  "cashDistributionYieldTtm",
+  "trailingDistributionYield",
+  "reinvestmentCashYield",
+  "simulationCashYield",
+  "distributionSimulationPolicy",
+  "distributionCalculationStatus",
+];
+
+const SYNTHETIC_ROWS = [
+  {
+    market: "US",
+    ticker: "OPT",
+    name: "Synthetic Option Income",
+    assetType: "ETF",
+    expectedCagr: "9",
+    rawPriceCagr: "7",
+    rollingCagrMedian: "9",
+    rollingCagrWindowYears: "5",
+    rollingCagrWindowCount: "10",
+    beta: "1.2",
+    mdd: "-30",
+    priceMetricsStatus: "ready",
+    portfolioEligible: "true",
+    portfolioEligibilityStatus: "eligible",
+    portfolioAddPolicy: "allow",
+    cagrConfidence: "medium",
+    simulatorReady: "true",
+    active: "true",
+    includeInSimulator: "true",
+    exposureType: "index_covered_call",
+    distributionType: "mixed_distribution",
+    distributionFrequency: "monthly",
+    dividendYield: "",
+    dividendStatus: "confirmed_value",
+    cashDistributionYieldTtm: "17.25",
+    trailingDistributionYield: "17.25",
+    reinvestmentCashYield: "17.25",
+    simulationCashYield: "17.25",
+    distributionSimulationPolicy: "repeat_ttm_distribution",
+    distributionCalculationStatus: "confirmed_value",
+  },
+  {
+    market: "US",
+    ticker: "NEW",
+    name: "Synthetic Short History",
+    assetType: "ETF",
+    expectedCagr: "5",
+    rawPriceCagr: "5",
+    rollingCagrMedian: "5",
+    rollingCagrWindowYears: "1",
+    rollingCagrWindowCount: "1",
+    beta: "0.9",
+    mdd: "-12",
+    priceMetricsStatus: "ready",
+    portfolioEligible: "false",
+    portfolioEligibilityStatus: "insufficient_long_horizon_history",
+    portfolioEligibilityReason: "insufficient_usable_price_history",
+    portfolioAddPolicy: "deny",
+    cagrConfidence: "low",
+    simulatorReady: "false",
+    active: "true",
+    includeInSimulator: "true",
+    exposureType: "ordinary_etf",
+    distributionType: "ordinary_cash_dividend",
+    distributionFrequency: "quarterly",
+    dividendYield: "1",
+    dividendStatus: "confirmed_value",
+    reinvestmentCashYield: "1",
+    simulationCashYield: "1",
+    distributionSimulationPolicy: "ordinary_cash_dividend",
+    distributionCalculationStatus: "confirmed_value",
+  },
+];
+
+function syntheticCsv() {
+  return [
+    SYNTHETIC_COLUMNS.join(","),
+    ...SYNTHETIC_ROWS.map((row) =>
+      SYNTHETIC_COLUMNS.map((column) => row[column] ?? "").join(","),
+    ),
+  ].join("\n");
+}
 
 function jsonBytes(value) {
   return new TextEncoder().encode(`${JSON.stringify(value)}\n`);
 }
 
-function createMetricRow(candidate) {
-  const target = TARGETS.get(candidate.ticker);
-  return {
-    identity: `${candidate.market}:${candidate.ticker}`,
-    market: candidate.market,
-    ticker: candidate.ticker,
-    selectedCagr: 10,
-    rawPriceCagr10y: 10,
-    rollingCagr10yMedian: 10,
-    rollingCagr10yP25: 9,
-    rollingCagr10yP75: 11,
-    validRollingWindowCount10y: 24,
-    cagrPolicy: "rolling_10y_median",
-    selectedMdd: -20,
-    mddPolicy: "full_period_actual",
-    selectedBeta: 1,
-    betaPolicy: "aligned_monthly_return_beta",
-    dividendYield: target?.fixtureYield ?? target?.yield ?? null,
-    dividendStatus: target?.dividendStatus || (target ? "available" : "missing"),
-    dataStatus: "ready",
-    reviewFlag: "none",
-    reviewReason: "",
-    metricBaseDate: "2026-07-22",
-    rawPriceCoverageStatus: "covered",
-    internalPreviewReviewOnly: true,
-    productionPublishReady: false,
-    appExportApproved: false,
-    sourceHash: "distribution-path-fixture-source",
-    ...(target?.reviewPolicy
-      ? {
-        exposureType: "leveraged_etf",
-        leverageMultiple: 3,
-        direction: "long",
-        resetFrequency: "daily",
-        underlyingTicker: "NDX",
-        inceptionDate: "2010-02-09",
-        officialSourceUrl: "https://www.proshares.com/our-etfs/leveraged-and-inverse/tqqq",
-        sourceCheckedAt: "2026-07-27",
-        reviewApprovalPolicyVersion: "leveraged-inverse-review-policy-v1-step114",
-        reviewApprovalStatus: "ready",
-        reviewApprovalReason: "daily_reset_geared_metrics_reproduced_and_coherent",
-        reviewApprovalReasonCodes: [],
-        reviewApprovalAudit: { validRollingWindowCount10y: 77 },
-      }
-      : {}),
-  };
-}
-
 function createFixture(candidates) {
-  const rows = candidates.map(createMetricRow);
   const overlay = {
     exportVersion: EXPORT_VERSION,
     metricDataThroughMonth: "2026-06",
-    rows,
+    rows: candidates.map((candidate) => ({
+      identity: `${candidate.market}:${candidate.ticker}`,
+      market: candidate.market,
+      ticker: candidate.ticker,
+      selectedCagr: STALE_OVERLAY_VALUE,
+      rawPriceCagr10y: STALE_OVERLAY_VALUE,
+      rollingCagr10yMedian: STALE_OVERLAY_VALUE,
+      rollingCagr10yP25: STALE_OVERLAY_VALUE,
+      rollingCagr10yP75: STALE_OVERLAY_VALUE,
+      validRollingWindowCount10y: 2,
+      cagrPolicy: "rolling_10y_median",
+      selectedMdd: -99,
+      mddPolicy: "full_period_actual",
+      selectedBeta: 9,
+      betaPolicy: "aligned_monthly_return_beta",
+      dividendYield: STALE_OVERLAY_VALUE,
+      dividendStatus: "available",
+      dataStatus: "ready",
+      reviewFlag: "none",
+      reviewReason: "",
+      metricBaseDate: "2026-07-22",
+      rawPriceCoverageStatus: "covered",
+      internalPreviewReviewOnly: true,
+      productionPublishReady: false,
+      appExportApproved: false,
+      sourceHash: "stale-overlay-source",
+    })),
   };
   const overlayBytes = jsonBytes(overlay);
   const marketAssetCounts = candidates.reduce((counts, candidate) => {
     counts[candidate.market] = (counts[candidate.market] || 0) + 1;
     return counts;
   }, {});
-  const shardInventory = Array.from({ length: 64 }, (_, index) => ({
-    path: `monthly-returns/monthly-returns-${index.toString(16).padStart(2, "0")}.json`,
-    sha256: "0".repeat(64),
-    assetCount: 0,
-    rowCount: 0,
-  }));
   const manifest = {
     exportVersion: EXPORT_VERSION,
     candidatePackageReady: true,
@@ -139,7 +179,12 @@ function createFixture(candidates) {
     monthlyReturnAssetCount: 0,
     monthlyReturnRowCount: 0,
     shardCount: 64,
-    shardInventory,
+    shardInventory: Array.from({ length: 64 }, (_, index) => ({
+      path: `monthly-returns/monthly-returns-${index.toString(16).padStart(2, "0")}.json`,
+      sha256: "0".repeat(64),
+      assetCount: 0,
+      rowCount: 0,
+    })),
     metricBaseDate: "2026-07-22",
     metricDataThroughMonth: "2026-06",
     sourceCandidatePackageHash: "distribution-path-fixture-package",
@@ -172,19 +217,7 @@ function createFetch(files) {
 
 function roundTripSavedAsset(asset) {
   const parsed = JSON.parse(JSON.stringify(asset));
-  return {
-    ...parsed,
-    ...normalizePersistedMetricFields(parsed),
-  };
-}
-
-function assertOptionDistributionContract(asset, expectedYield) {
-  assert.equal(asset.dividendYield, null);
-  assert.equal(asset.displayDividendYield, "");
-  assert.equal(asset.trailingDistributionYield, expectedYield);
-  assert.equal(asset.cashDistributionYieldTtm, expectedYield);
-  assert.equal(asset.distributionYieldPolicy, DISTRIBUTION_POLICY);
-  assert.equal(asset.distributionCalculationStatus, DISTRIBUTION_STATUS);
+  return { ...parsed, ...normalizePersistedMetricFields(parsed) };
 }
 
 function buildResult(asset) {
@@ -200,234 +233,164 @@ function buildResult(asset) {
   });
 }
 
-test("metric overlay follows the public App Preview path through save/reload and baseline policy", async () => {
+function reportTexts(asset, result) {
+  const input = {
+    activePortfolio: { name: asset.ticker },
+    detailReport: { type: "canonical", tags: [], summary: "canonical" },
+    result,
+    assets: [asset],
+    detailPortfolio: {
+      realValueRank: 1,
+      growthRank: 1,
+      stabilityRank: 1,
+      dividendRank: 1,
+    },
+  };
+  return [createPortfolioReportText(input), createReportSummaryText(input)];
+}
+
+test("synthetic distribution and short-history contracts flow through persistence and baseline", async () => {
   const vite = await createServer({
     root: process.cwd(),
     appType: "custom",
     logLevel: "silent",
     server: { middlewareMode: true },
   });
-
   try {
     const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
-    const candidates = await loader.loadCanonicalV2ScreenerCandidates();
-    assert.equal(candidates.length, 6029);
+    const [optionCandidate, shortHistoryCandidate] =
+      loader.createCanonicalScreenerCatalog(syntheticCsv());
+    const option = roundTripSavedAsset(
+      loader.hydratePortfolioAssetFromActiveCatalog(
+        { market: "US", ticker: "OPT", quantity: 1, targetWeight: 100 },
+        { candidate: optionCandidate },
+      ),
+    );
+
+    assert.equal(option.dividendYield, null);
+    assert.equal(option.cashDistributionYieldTtm, 17.25);
+    assert.equal(option.trailingDistributionYield, 17.25);
+    assert.equal(option.reinvestmentCashYield, 17.25);
+    assert.equal(option.simulationCashYield, 17.25);
+    assert.equal(option.distributionSimulationPolicy, "repeat_ttm_distribution");
+    const optionResult = buildResult(option);
+    assert.equal(optionResult.status, "ready");
+    assert.equal(optionResult.expectedDividendYield, 17.25);
+    for (const report of reportTexts(option, optionResult)) {
+      assert.match(report, /17\.25%/);
+    }
+
+    const shortHistory = loader.hydratePortfolioAssetFromActiveCatalog(
+      { market: "US", ticker: "NEW", quantity: 1, targetWeight: 100 },
+      { candidate: shortHistoryCandidate },
+    );
+    const blocked = buildResult(roundTripSavedAsset(shortHistory));
+    assert.equal(blocked.status, "blocked");
+    assert.match(blocked.blockReasons.join("|"), /portfolio_add_denied:NEW/);
+  } finally {
+    await vite.close();
+  }
+});
+
+test("runtime canonical values beat a stale artifact through hydration, persistence, calculation, and report", async () => {
+  const vite = await createServer({
+    root: process.cwd(),
+    appType: "custom",
+    logLevel: "silent",
+    server: { middlewareMode: true },
+  });
+  try {
+    const loader = await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js");
+    const before = await loader.loadCanonicalV2ScreenerCandidates();
+    const eligible = (candidate) =>
+      candidate.portfolioAddPolicy === "allow" &&
+      candidate.priceMetricsStatus === "ready" &&
+      Number.isFinite(candidate.expectedCagr) &&
+      Number.isFinite(candidate.beta) &&
+      Number.isFinite(candidate.mdd);
+    const nonOrdinary = before.find(
+      (candidate) =>
+        eligible(candidate) &&
+        candidate.dividendYield === null &&
+        Number.isFinite(candidate.cashDistributionYieldTtm) &&
+        candidate.cashDistributionYieldTtm <= 100 &&
+        candidate.simulationCashYield === candidate.cashDistributionYieldTtm &&
+        candidate.distributionSimulationPolicy === "repeat_ttm_distribution",
+    );
+    const ordinary = before.find(
+      (candidate) => eligible(candidate) && Number.isFinite(candidate.dividendYield),
+    );
+    assert.ok(nonOrdinary);
+    assert.ok(ordinary);
+
+    const sourceByIdentity = new Map(
+      [nonOrdinary, ordinary].map((candidate) => [
+        `${candidate.market}:${candidate.ticker}`,
+        {
+          expectedCagr: candidate.expectedCagr,
+          beta: candidate.beta,
+          mdd: candidate.mdd,
+          dividendYield: candidate.dividendYield,
+          cashDistributionYieldTtm: candidate.cashDistributionYieldTtm,
+          distributionType: candidate.distributionType,
+          portfolioAddPolicy: candidate.portfolioAddPolicy,
+          dataSource: candidate.dataSource,
+        },
+      ]),
+    );
+
     const snapshot = await loader.loadScreenerAppPreview({
       enabled: true,
       baseUrl: BASE_URL,
-      fetchImpl: createFetch(createFixture(candidates)),
+      fetchImpl: createFetch(createFixture(before)),
       disableCache: true,
     });
     assert.equal(snapshot.preview.status, "internal_preview_review_only");
 
-    const kodeX200Candidate = loader.findScreenerCandidateByTicker(
-      "069500",
-      "KR",
-    );
-    assert.ok(kodeX200Candidate);
-    const correctedKodeX200 = loader.hydratePortfolioAssetFromActiveCatalog(
-      {
-        id: "persisted-market-mismatch",
-        ticker: "069500",
-        market: "US",
-        quantity: 7,
-        price: 42_000,
-        targetEvaluationAmount: 294_000,
-        targetWeight: 20,
-        reviewApprovalPolicyVersion: "stale-us-policy",
-        reviewApprovalStatus: "blocked",
-        reviewApprovalAudit: { source: "US:069500" },
-        sourceHash: "stale-us-source",
-        proxyLineageStatus: "legacy_unproven",
-        isProxy: true,
-        proxyTicker: "SPY",
-        productionAppExportEnabled: true,
-        productionReleaseContractVersion: "stale-production-release",
-        productionPublishReady: true,
-        appExportApproved: true,
-      },
-      { candidate: kodeX200Candidate },
-    );
-    assert.equal(correctedKodeX200.market, "KR");
-    assert.equal(correctedKodeX200.ticker, "069500");
-    assert.equal(correctedKodeX200.quantity, 7);
-    assert.equal(correctedKodeX200.price, 42_000);
-    assert.equal(correctedKodeX200.targetEvaluationAmount, 294_000);
-    assert.equal(correctedKodeX200.targetWeight, 20);
-    assert.notEqual(
-      correctedKodeX200.reviewApprovalPolicyVersion,
-      "stale-us-policy",
-    );
-    assert.notDeepEqual(correctedKodeX200.reviewApprovalAudit, {
-      source: "US:069500",
-    });
-    assert.notEqual(correctedKodeX200.sourceHash, "stale-us-source");
-    assert.notEqual(correctedKodeX200.proxyLineageStatus, "legacy_unproven");
-    assert.notEqual(correctedKodeX200.proxyTicker, "SPY");
-    assert.notEqual(
-      correctedKodeX200.productionReleaseContractVersion,
-      "stale-production-release",
-    );
-    const reloadedCorrectedKodeX200 =
-      loader.hydratePortfolioAssetFromActiveCatalog(
-        roundTripSavedAsset(correctedKodeX200),
+    for (const source of [nonOrdinary, ordinary]) {
+      const identity = `${source.market}:${source.ticker}`;
+      const candidate = loader.findScreenerCandidateByTicker(source.ticker, source.market);
+      const expected = sourceByIdentity.get(identity);
+      assert.deepEqual(
+        {
+          expectedCagr: candidate.expectedCagr,
+          beta: candidate.beta,
+          mdd: candidate.mdd,
+          dividendYield: candidate.dividendYield,
+          cashDistributionYieldTtm: candidate.cashDistributionYieldTtm,
+          distributionType: candidate.distributionType,
+          portfolioAddPolicy: candidate.portfolioAddPolicy,
+          dataSource: candidate.dataSource,
+        },
+        expected,
       );
-    assert.equal(reloadedCorrectedKodeX200.market, "KR");
-    assert.equal(reloadedCorrectedKodeX200.ticker, "069500");
-    assert.notEqual(
-      reloadedCorrectedKodeX200.reviewApprovalPolicyVersion,
-      "stale-us-policy",
-    );
-    assert.notEqual(reloadedCorrectedKodeX200.sourceHash, "stale-us-source");
-    assert.notEqual(reloadedCorrectedKodeX200.proxyTicker, "SPY");
+      assert.notEqual(candidate.expectedCagr, STALE_OVERLAY_VALUE);
 
-    for (const [ticker, expected] of TARGETS) {
-      const candidate = loader.findScreenerCandidateByTicker(ticker, "US");
-      assert.ok(candidate, ticker);
-      const patch = loader.createAssetPatchFromScreenerCandidate(candidate);
-      const hydrated = loader.hydrateAssetFromScreenerCandidate({
-        ticker,
-        market: "US",
-        quantity: 1,
-        price: 100,
+      const hydrated = loader.hydratePortfolioAssetFromActiveCatalog({
+        market: source.market,
+        ticker: source.ticker,
+        name: "saved name",
+        quantity: 3,
         targetWeight: 100,
+        expectedCagr: STALE_OVERLAY_VALUE,
       });
-      const reloaded = roundTripSavedAsset(hydrated);
-      const result = buildResult(reloaded);
+      const persisted = roundTripSavedAsset(hydrated);
+      assert.equal(persisted.name, "saved name");
+      assert.equal(persisted.quantity, 3);
+      assert.equal(persisted.cagr, expected.expectedCagr);
+      assert.equal(persisted.beta, expected.beta);
+      assert.equal(persisted.mdd, expected.mdd);
+      assert.equal(persisted.dataSource, "finple_app_candidates_v2");
 
-      assert.equal(patch.dividendYield, expected.option ? null : expected.yield, ticker);
-      assert.equal(reloaded.dividendYield, expected.option ? null : expected.yield, ticker);
-
-      if (expected.option) {
-        assertOptionDistributionContract(candidate, expected.yield);
-        assertOptionDistributionContract(patch, expected.yield);
-        assertOptionDistributionContract(hydrated, expected.yield);
-        assertOptionDistributionContract(reloaded, expected.yield);
-        assert.equal(result.status, expected.resultStatus || "ready", ticker);
-        if (expected.resultStatus === "blocked") {
-          assert.match(
-            result.blockReasons.join("|"),
-            new RegExp(`portfolio_add_denied:${ticker}`),
-            ticker,
-          );
-          continue;
-        }
-        assert.equal(result.expectedDividendYield, expected.yield, ticker);
-        assert.equal(result.assets[0].annualDividendYield, expected.yield, ticker);
-        assert.ok(result.monthlyBaselinePoints.length > 1, ticker);
-        assert.ok(result.performanceRows.length > 0, ticker);
-        const [ranked] = createRankedComparisonPortfolios([
-          { id: ticker, name: ticker, assets: [reloaded], result },
-        ]);
-        assert.equal(ranked.dividendRank, 1, ticker);
-      } else {
-        assert.equal(result.status, "ready", ticker);
-        assert.equal(
-          result.expectedDividendYield,
-          expected.simulationYield ?? expected.yield,
-          ticker,
-        );
-        assert.equal(
-          result.assets[0].annualDividendYield,
-          expected.simulationYield ?? expected.yield,
-          ticker,
-        );
-        if (expected.reviewPolicy) {
-          assert.equal(reloaded.exposureType, "leveraged_etf", ticker);
-          assert.equal(reloaded.leverageMultiple, 3, ticker);
-          assert.equal(
-            reloaded.reviewApprovalPolicyVersion,
-            "leveraged-inverse-review-policy-v1-step114",
-            ticker,
-          );
-          assert.equal(reloaded.reviewApprovalStatus, "ready", ticker);
-          assert.deepEqual(reloaded.reviewApprovalReasonCodes, [], ticker);
-          assert.deepEqual(
-            reloaded.reviewApprovalAudit,
-            { validRollingWindowCount10y: 77 },
-            ticker,
-          );
-        }
-      }
-
-      if (ticker === "GLD") {
-        assert.equal(candidate.dividendStatus, "confirmed_zero");
-        assert.equal(reloaded.dividendStatus, "confirmed_zero");
-        assert.notEqual(reloaded.dividendYield, null);
-      }
-      if (ticker === "QYLG") {
-        assert.equal(reloaded.exposureType, "index_covered_call_growth");
+      const result = buildResult(persisted);
+      assert.equal(result.status, "ready");
+      assert.equal(result.expectedCagr, expected.expectedCagr);
+      const cashYield = expected.dividendYield ?? expected.cashDistributionYieldTtm;
+      assert.equal(result.expectedDividendYield, cashYield);
+      for (const report of reportTexts(persisted, result)) {
+        assert.match(report, new RegExp(`${cashYield.toFixed(2)}%`));
       }
     }
-
-    const aipi = roundTripSavedAsset(
-      loader.hydrateAssetFromScreenerCandidate({
-        ticker: "AIPI",
-        market: "US",
-        quantity: 1,
-        price: 100,
-        targetWeight: 100,
-      }),
-    );
-    const blocked = buildResult(aipi);
-    const reportInput = {
-      activePortfolio: { name: "AIPI blocked contract" },
-      detailReport: { type: "검토 필요", tags: [], summary: "분배 계약 검토" },
-      result: blocked,
-      assets: [aipi],
-      detailPortfolio: {
-        realValueRank: 1,
-        growthRank: 1,
-        stabilityRank: 1,
-        dividendRank: 1,
-      },
-    };
-    const fullReport = createPortfolioReportText(reportInput);
-    const summaryReport = createReportSummaryText(reportInput);
-    for (const report of [fullReport, summaryReport]) {
-      assert.match(report, /기준 계산 보류/);
-      assert.match(report, /예상 CAGR: -/);
-      assert.match(report, /예상 BETA: -/);
-      assert.match(report, /예상 MDD: -/);
-      assert.match(report, /시뮬레이션 적용 현금분배율: -/);
-      assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
-      assert.match(report, /최근 12개월 분배율 38\.30%/);
-      assert.match(report, /주간 분배/);
-      assert.match(report, /옵션분배/);
-      assert.match(report, /ROC\(원금환급\) 포함 가능/);
-      assert.doesNotMatch(report, /예상 배당률|예상 연배당금|배당 순위|배당 매력/);
-    }
-    assert.match(fullReport, /현금흐름 순위: -/);
-    assert.match(fullReport, /CAGR - \/ BETA - \/ MDD -/);
-
-    const spy = roundTripSavedAsset(
-      loader.hydrateAssetFromScreenerCandidate({
-        ticker: "SPY",
-        market: "US",
-        quantity: 1,
-        price: 100,
-        targetWeight: 100,
-      }),
-    );
-    const ordinary = buildResult(spy);
-    const ordinaryFullReport = createPortfolioReportText({
-      activePortfolio: { name: "SPY ordinary contract" },
-      detailReport: { type: "일반 배당", tags: [], summary: "ordinary" },
-      result: ordinary,
-      assets: [spy],
-      detailPortfolio: { dividendRank: 1 },
-    });
-    const ordinarySummary = createReportSummaryText({
-      activePortfolio: { name: "SPY ordinary contract" },
-      detailReport: { type: "일반 배당", tags: [], summary: "ordinary" },
-      result: ordinary,
-      assets: [spy],
-    });
-    assert.match(ordinaryFullReport, /예상 배당률: 1\.03%/);
-    assert.match(ordinaryFullReport, /일반 배당률 1\.01%/);
-    assert.match(ordinaryFullReport, /배당 순위: 1위/);
-    assert.match(ordinarySummary, /예상 배당률: 1\.03%/);
-    assert.doesNotMatch(ordinaryFullReport, /기준 계산 보류/);
   } finally {
     await vite.close();
   }

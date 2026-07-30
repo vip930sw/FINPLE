@@ -17,20 +17,19 @@ function sha256(relative) {
     .digest("hex");
 }
 
-test("Production loader stays separate from Preview and keeps v1 as atomic fallback", () => {
+test("Production monthly artifacts stay separate from the canonical v2 runtime catalog", () => {
   const loader = read("src/data/tickers/screenerCandidateLoader.js");
   const production = read("src/data/tickers/productionAppExportDataSource.js");
   assert.match(
     loader,
-    /import finpleAppCandidates6000Csv from "\.\/finple_app_candidates_6000_balanced_v1\.csv\?raw"/,
+    /^import finpleCanonicalV2Csv from "\.\/finple_app_candidates_v2\.csv\?raw"/m,
   );
-  assert.match(loader, /import\("\.\/finple_app_candidates_v2\.csv\?raw"\)/);
-  assert.doesNotMatch(loader, /^import finpleAppCandidatesV2Csv/m);
+  assert.doesNotMatch(loader, /finple_app_candidates_6000_balanced_v1\.csv\?raw/);
   assert.match(loader, /PRODUCTION_APP_EXPORT_LOADING_STATUS = "production_app_export_loading"/);
-  assert.match(loader, /productionAppExportConfiguredAtStartup\s*\?\s*\[\]\s*:\s*ALL_SCREENER_CANDIDATES/);
-  assert.match(loader, /beginProductionAppExportLoading/);
-  assert.match(loader, /status: "production_v1_fallback"/);
   assert.match(loader, /activeScreenerCandidates = ALL_SCREENER_CANDIDATES/);
+  assert.match(loader, /beginProductionAppExportLoading/);
+  assert.doesNotMatch(loader, /production_v1_fallback/);
+  assert.doesNotMatch(loader, /selectedCagr:\s*metricRow/);
   assert.match(loader, /production_app_export_ready/);
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED/);
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_RELEASE_SHA256/);
@@ -38,18 +37,16 @@ test("Production loader stays separate from Preview and keeps v1 as atomic fallb
   assert.doesNotMatch(production, /VITE_FINPLE_APP_PREVIEW_ENABLED/);
 });
 
-test("Production initialization hides v1 metrics and holds Screener and Simulator actions", () => {
+test("Production initialization keeps canonical metrics available while monthly artifacts load", () => {
   const screener = read("src/components/ScreenerPage.jsx");
-  const simulator = read("src/components/PortfolioSimulator.jsx");
   const hook = read("src/components/portfolio/hooks/usePortfolioSimulator.js");
   const styles = read("src/App.css");
-  assert.match(screener, /검증된 자산 지표를 불러오는 중입니다\./);
-  assert.match(screener, /aria-live="polite"/);
-  assert.match(screener, /disabled=\{isLoading\}/);
-  assert.match(simulator, /productionCatalogLoadingPanel/);
-  assert.match(simulator, /포트폴리오 계산을 보류합니다\./);
-  assert.match(hook, /createProductionCatalogLoadingResult/);
-  assert.match(hook, /isProductionCatalogLoading\s*\?\s*createProductionCatalogLoadingResult/);
+  assert.match(screener, /canonical_catalog_load_error/);
+  assert.match(screener, /최신 자산 데이터를 불러오지 못했습니다/);
+  assert.match(screener, /role="alert"/);
+  assert.doesNotMatch(hook, /createProductionCatalogLoadingResult/);
+  assert.doesNotMatch(hook, /production_v1_fallback/);
+  assert.match(hook, /calculatePortfolioResult\(settings, assets\)/);
   assert.match(styles, /@media \(max-width: 480px\)/);
 });
 
@@ -135,14 +132,10 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   );
 });
 
-test("public v1 and supplied canonical v2 artifacts remain byte unchanged", () => {
+test("legacy and reconciliation artifacts remain byte unchanged", () => {
   assert.equal(
     sha256("src/data/tickers/finple_app_candidates_6000_balanced_v1.csv"),
     "79c7a504d6769c2829b7f6d3e689f327585234a6ce7a294abbe06dce00a44faf",
-  );
-  assert.equal(
-    sha256("src/data/tickers/finple_app_candidates_v2.csv"),
-    "5df224b508c178d87a7e82d1881b24e0b58ff3ff678ae1448e1dafe91c77472e",
   );
   assert.equal(
     sha256("src/data/tickers/finple_universe_v2_manifest.json"),

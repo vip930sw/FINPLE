@@ -1,6 +1,5 @@
 /* global process */
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import test from "node:test";
 import { createServer } from "vite";
 
@@ -43,40 +42,37 @@ const BASE_URL = "https://production-app-export.test/app-data/finple-universe-v2
 const SOURCE_APP_EXPORT_SHA256 = "e".repeat(64);
 const encoder = new TextEncoder();
 
-function parseCsvLine(line) {
-  const values = [];
-  let value = "";
-  let quoted = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    if (char === '"' && quoted && line[index + 1] === '"') {
-      value += '"';
-      index += 1;
-    } else if (char === '"') {
-      quoted = !quoted;
-    } else if (char === "," && !quoted) {
-      values.push(value);
-      value = "";
-    } else {
-      value += char;
-    }
-  }
-  values.push(value);
-  return values;
+function canonicalIdentities() {
+  return [
+    "US:QQQ",
+    "US:TQQQ",
+    "US:AIPI",
+    "US:SPY",
+    ...Array.from({ length: 3025 }, (_, index) =>
+      `US:FIX${String(index).padStart(4, "0")}`),
+    ...Array.from({ length: 3000 }, (_, index) =>
+      `KR:${String(index).padStart(6, "0")}`),
+  ];
 }
 
-function canonicalIdentities() {
-  const lines = fs.readFileSync(
-    new URL("./finple_app_candidates_v2.csv", import.meta.url),
-    "utf8",
-  ).trim().split(/\r?\n/);
-  const headers = parseCsvLine(lines[0].replace(/^\uFEFF/, ""));
-  const marketIndex = headers.indexOf("market");
-  const tickerIndex = headers.indexOf("ticker");
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line);
-    return `${values[marketIndex]}:${values[tickerIndex]}`;
-  });
+function runtimeCandidateSignature(candidate) {
+  return {
+    identity: `${candidate.market}:${candidate.ticker}`,
+    expectedCagr: candidate.expectedCagr,
+    rawPriceCagr: candidate.rawPriceCagr,
+    rollingCagrMedian: candidate.rollingCagrMedian,
+    beta: candidate.beta,
+    mdd: candidate.mdd,
+    dividendYield: candidate.dividendYield,
+    cashDistributionYieldTtm: candidate.cashDistributionYieldTtm,
+    distributionType: candidate.distributionType,
+    portfolioEligible: candidate.portfolioEligible,
+    portfolioAddPolicy: candidate.portfolioAddPolicy,
+    leverageMultiple: candidate.leverageMultiple,
+    direction: candidate.direction,
+    resetFrequency: candidate.resetFrequency,
+    dataSource: candidate.dataSource,
+  };
 }
 
 function jsonBytes(value) {
@@ -105,40 +101,25 @@ function makeFixture({
   overlayRowOverrides = {},
 } = {}) {
   const identities = canonicalIdentities();
-  assert.equal(identities.length, 6029);
-  const dividendYields = new Map([
-    ["US:AIPI", 34.98],
-    ["US:MSFY", 28.30],
-    ["US:TSLP", 28.11],
-    ["US:QYLG", 16.26],
-    ["US:QQQ", 0.41],
-    ["US:SPY", 1.01],
-    ["US:VOO", 1.18],
-    ["KR:069500", 1.52],
-    ["US:GLD", 0],
-  ]);
   const rows = identities.map((identity) => {
     const [market, ticker] = identity.split(":");
-    const qqq = identity === "US:QQQ";
     return {
       identity,
       market,
       ticker,
-      selectedCagr: qqq ? 17.11 : 8,
-      rawPriceCagr10y: qqq ? 21.21 : 8,
-      rollingCagr10yMedian: qqq ? 17.11 : 8,
-      rollingCagr10yP25: qqq ? 15.62 : 7,
-      rollingCagr10yP75: qqq ? 18.59 : 9,
-      validRollingWindowCount10y: qqq ? 120 : 24,
+      selectedCagr: 8,
+      rawPriceCagr10y: 8,
+      rollingCagr10yMedian: 8,
+      rollingCagr10yP25: 7,
+      rollingCagr10yP75: 9,
+      validRollingWindowCount10y: 24,
       cagrPolicy: "rolling_10y_median",
       selectedMdd: -20,
       mddPolicy: "full_period_actual",
       selectedBeta: 1,
       betaPolicy: "aligned_monthly_return_beta",
-      dividendYield: dividendYields.get(identity) ?? null,
-      dividendStatus: ticker === "GLD"
-        ? "confirmed_zero"
-        : dividendYields.has(identity) ? "available" : "missing",
+      dividendYield: null,
+      dividendStatus: "missing",
       dataStatus: "ready",
       reviewFlag: "none",
       reviewReason: "",
@@ -357,7 +338,7 @@ test("legacy rows decode as unproven without inventing non-proxy defaults", () =
   assert.equal(rows[0].proxyLineageStatus, "legacy_unproven");
 });
 
-test("production catalog validates 6029 rows and fixed RM/monthly bindings", async () => {
+test("production catalog validates its pinned release and monthly bindings", async () => {
   resetProductionAppExportDataSourceForTests();
   const fixture = makeFixture();
   const catalog = await loadProductionAppExportCatalog(options(fixture));
@@ -373,10 +354,7 @@ test("production catalog validates 6029 rows and fixed RM/monthly bindings", asy
   );
   assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity), true);
   assert.equal(Object.isFrozen(catalog.catalogPolicyByIdentity["US:QQQ"]), true);
-  assert.equal(
-    catalog.overlay.rows.find((row) => row.identity === "US:QQQ").selectedCagr,
-    17.11,
-  );
+  assert.equal(catalog.overlay.rows[0].selectedCagr, 8);
 });
 
 test("verified overlay identity policy owns pinned legacy eligibility", async () => {
@@ -520,7 +498,7 @@ test("missing monthly identity is unavailable without zero fill or proxy request
   assert.deepEqual(result.requestedShardPaths, []);
 });
 
-test("build-time configured Production starts with an empty loading snapshot, never v1 metrics", async () => {
+test("build-time configured monthly artifacts keep the canonical catalog available while loading", async () => {
   const envKey = "VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED";
   const previous = process.env[envKey];
   process.env[envKey] = "true";
@@ -537,9 +515,11 @@ test("build-time configured Production starts with an empty loading snapshot, ne
     const snapshot = loader.getScreenerCandidateSnapshot();
     assert.equal(snapshot.preview.status, "production_app_export_loading");
     assert.equal(snapshot.preview.enabled, true);
-    assert.equal(snapshot.candidates.length, 0);
-    assert.equal(snapshot.usCandidates.length, 0);
-    assert.equal(snapshot.krCandidates.length, 0);
+    assert.ok(snapshot.candidates.length > 0);
+    assert.equal(
+      snapshot.candidates.length,
+      snapshot.usCandidates.length + snapshot.krCandidates.length,
+    );
   } finally {
     await vite.close();
     if (previous === undefined) delete process.env[envKey];
@@ -547,7 +527,7 @@ test("build-time configured Production starts with an empty loading snapshot, ne
   }
 });
 
-test("production loader applies RM and distribution policy through saved hydration then atomically falls back", async () => {
+test("production monthly artifacts never hydrate canonical metrics and failures stay scenario-local", async () => {
   const vite = await createServer({
     root: process.cwd(),
     appType: "custom",
@@ -561,7 +541,8 @@ test("production loader applies RM and distribution policy through saved hydrati
       "/src/components/portfolio/utils/portfolioFactory.js",
     );
     const unconfigured = loader.getScreenerCandidateSnapshot();
-    assert.equal(unconfigured.preview.status, "production_v1_fallback");
+    const canonicalSignatures = unconfigured.candidates.map(runtimeCandidateSignature);
+    assert.equal(unconfigured.preview.status, "canonical_v2_ready");
     assert.equal(unconfigured.preview.operationalReasonCode, "");
     assert.equal(unconfigured.candidates.length, loader.ALL_SCREENER_CANDIDATES.length);
 
@@ -577,46 +558,60 @@ test("production loader applies RM and distribution policy through saved hydrati
     const duplicateLoad = loader.loadScreenerProductionAppExport(productionOptions);
     const loading = loader.getScreenerCandidateSnapshot();
     assert.equal(loading.preview.status, "production_app_export_loading");
-    assert.equal(loading.candidates.length, 0);
-    assert.equal(loading.usCandidates.length, 0);
-    assert.equal(loading.krCandidates.length, 0);
+    assert.equal(loading.candidates.length, unconfigured.candidates.length);
+    assert.deepEqual(loading.candidates.map(runtimeCandidateSignature), canonicalSignatures);
     const [snapshot, duplicateSnapshot] = await Promise.all([firstLoad, duplicateLoad]);
     unsubscribe();
     assert.deepEqual(duplicateSnapshot, snapshot);
     assert.equal(snapshot.preview.status, "production_app_export_ready");
-    assert.equal(snapshot.candidates.length, 6029);
+    assert.deepEqual(snapshot.candidates.map(runtimeCandidateSignature), canonicalSignatures);
     assert.deepEqual(transitions, [
-      { status: "production_app_export_loading", candidateCount: 0 },
-      { status: "production_app_export_ready", candidateCount: 6029 },
+      {
+        status: "production_app_export_loading",
+        candidateCount: unconfigured.candidates.length,
+      },
+      {
+        status: "production_app_export_ready",
+        candidateCount: unconfigured.candidates.length,
+      },
     ]);
-    const expectations = new Map([
-      ["QQQ", { market: "US", cagr: 17.11, dividendYield: 0.41 }],
-      ["SPY", { market: "US", cagr: 8, dividendYield: 1.01 }],
-      ["VOO", { market: "US", cagr: 8 }],
-      ["069500", { market: "KR", cagr: 8 }],
-      ["GLD", { market: "US", cagr: 8, dividendYield: 0 }],
-      ["AIPI", {
-        market: "US",
-        distributionYield: 38.30069456,
-        resultStatus: "blocked",
-      }],
-      ["MSFY", {
-        market: "US",
-        distributionYield: 27.09069567,
-        resultStatus: "blocked",
-      }],
-      ["TSLP", {
-        market: "US",
-        distributionYield: 40.40466564,
-        resultStatus: "blocked",
-      }],
-      ["QYLG", { market: "US", distributionYield: 18.26314253 }],
-    ]);
+    const ordinaryCandidates = snapshot.candidates.filter(
+      (candidate) =>
+        candidate.portfolioAddPolicy === "allow" &&
+        candidate.priceMetricsStatus === "ready" &&
+        Number.isFinite(candidate.expectedCagr) &&
+        Number.isFinite(candidate.dividendYield),
+    ).slice(0, 5);
+    const distributionCandidate = snapshot.candidates.find(
+      (candidate) =>
+        candidate.portfolioAddPolicy === "allow" &&
+        candidate.priceMetricsStatus === "ready" &&
+        candidate.dividendYield === null &&
+        Number.isFinite(candidate.cashDistributionYieldTtm) &&
+        candidate.cashDistributionYieldTtm <= 100 &&
+        candidate.simulationCashYield === candidate.cashDistributionYieldTtm &&
+        candidate.distributionSimulationPolicy === "repeat_ttm_distribution",
+    );
+    assert.equal(ordinaryCandidates.length, 5);
+    assert.ok(distributionCandidate);
+    const expectations = new Map(
+      [...ordinaryCandidates, distributionCandidate].map((candidate) => [
+        candidate.ticker,
+        {
+          market: candidate.market,
+          cagr: candidate.expectedCagr,
+          dividendYield: candidate.dividendYield,
+          distributionYield: candidate.dividendYield === null
+            ? candidate.cashDistributionYieldTtm
+            : undefined,
+        },
+      ]),
+    );
     const savedAssets = new Map();
     for (const [ticker, expected] of expectations) {
       const candidate = loader.findScreenerCandidateByTicker(ticker, expected.market);
       assert.ok(candidate, ticker);
-      assert.equal(candidate.expectedCagr, expected.cagr ?? 8, ticker);
+      assert.equal(candidate.expectedCagr, expected.cagr, ticker);
       const hydrated = loader.hydrateAssetFromScreenerCandidate({
         ticker,
         market: expected.market,
@@ -633,9 +628,10 @@ test("production loader applies RM and distribution policy through saved hydrati
       assert.equal(saved.quantity, 1, ticker);
       assert.equal(saved.price, 100, ticker);
       assert.equal(saved.targetWeight, 100, ticker);
-      assert.equal(saved.productionAppExportEnabled, true, ticker);
-      assert.equal(saved.productionPublishReady, true, ticker);
-      assert.equal(saved.appExportApproved, true, ticker);
+      assert.equal(saved.productionAppExportEnabled, false, ticker);
+      assert.equal(saved.productionPublishReady, false, ticker);
+      assert.equal(saved.appExportApproved, false, ticker);
+      assert.equal(saved.dataSource, "finple_app_candidates_v2", ticker);
       assert.equal(saved.sourceHash, "", ticker);
       assert.equal(saved.rawSourceSha256, "", ticker);
       assert.equal(saved.normalizedSeriesHash, "", ticker);
@@ -687,16 +683,14 @@ test("production loader applies RM and distribution policy through saved hydrati
           assets: [saved],
         });
         assert.equal(ordinaryBaseline.status, "ready", ticker);
-        assert.equal(ordinaryBaseline.assets[0].annualPriceCagr, expected.cagr ?? 8, ticker);
-      }
-      if (ticker === "GLD") assert.equal(saved.dividendStatus, "confirmed_zero");
-      if (ticker === "QYLG") {
-        assert.equal(saved.exposureType, "index_covered_call_growth");
+        assert.equal(ordinaryBaseline.assets[0].annualPriceCagr, expected.cagr, ticker);
       }
     }
 
-    const ordinaryMixedAssets = ["QQQ", "SPY", "VOO", "069500", "GLD"]
-      .map((ticker) => ({ ...savedAssets.get(ticker), targetWeight: 20 }));
+    const ordinaryMixedAssets = ordinaryCandidates.map((candidate) => ({
+      ...savedAssets.get(candidate.ticker),
+      targetWeight: 20,
+    }));
     const baselineSettings = {
       startValue: 500,
       monthlyCashFlow: 10,
@@ -713,8 +707,10 @@ test("production loader applies RM and distribution policy through saved hydrati
       "ready",
       mixedBaseline.blockReasons.join("|"),
     );
-    assert.equal(savedAssets.get("QQQ").selectedCagr, 17.11);
-    assert.equal(savedAssets.get("GLD").dividendStatus, "confirmed_zero");
+    assert.equal(
+      savedAssets.get(ordinaryCandidates[0].ticker).selectedCagr,
+      ordinaryCandidates[0].expectedCagr,
+    );
 
     const comparison = buildStep2MonthlyBaselineComparison({
       portfolios: [{
@@ -747,27 +743,29 @@ test("production loader applies RM and distribution policy through saved hydrati
     assert.equal(detail.status, "ready");
     assert.ok(detail.performanceRows.length > 0);
 
-    const fallback = await loader.loadScreenerProductionAppExport({
+    const failedMonthlyArtifact = await loader.loadScreenerProductionAppExport({
       ...options(fixture),
       releaseManifestSha256: "0".repeat(64),
       disableCache: true,
     });
-    assert.equal(fallback.preview.status, "production_v1_fallback");
+    assert.equal(failedMonthlyArtifact.preview.status, "production_app_export_error");
     assert.equal(
-      fallback.preview.operationalReasonCode,
+      failedMonthlyArtifact.preview.operationalReasonCode,
       "production_release_manifest_unavailable",
     );
-    assert.equal(fallback.candidates.length, loader.ALL_SCREENER_CANDIDATES.length);
-    assert.ok(fallback.candidates.length < 6029);
-    const fallbackQqq = loader.hydrateAssetForProductionFallback({
-      ticker: "QQQ",
-      market: "US",
-      productionAppExportEnabled: true,
-      dataSource: "finple_production_app_export_step114_2zc",
-      selectedCagr: 17.11,
-    });
-    assert.equal(fallbackQqq.productionAppExportEnabled, false);
-    assert.notEqual(fallbackQqq.dataSource, "finple_production_app_export_step114_2zc");
+    assert.equal(
+      failedMonthlyArtifact.candidates.length,
+      loader.ALL_SCREENER_CANDIDATES.length,
+    );
+    assert.deepEqual(
+      failedMonthlyArtifact.candidates.map(runtimeCandidateSignature),
+      canonicalSignatures,
+    );
+    assert.ok(
+      failedMonthlyArtifact.candidates.every(
+        (candidate) => candidate.dataSource === "finple_app_candidates_v2",
+      ),
+    );
   } finally {
     await vite.close();
   }

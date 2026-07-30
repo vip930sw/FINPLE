@@ -8,25 +8,28 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = (relative) => JSON.parse(fs.readFileSync(path.join(root, relative), "utf8"));
 const readCsv = (relative) => fs.readFileSync(path.join(root, relative), "utf8").trim().split(/\r?\n/);
 
-test("canonical v2 is over 6000 and reconciles without removing v1 identities", () => {
+test("canonical v2 reconciliation is internally consistent without fixing runtime row count", () => {
   const manifest = readJson("src/data/tickers/finple_universe_v2_manifest.json");
   const reconciliation = readJson("src/data/tickers/finple_universe_v2_reconciliation.json");
-  assert.equal(manifest.assetCount, 6029);
-  assert.deepEqual(manifest.marketAssetCounts, { KR: 3000, US: 3029 });
+  assert.ok(manifest.assetCount > 0);
+  assert.equal(
+    manifest.assetCount,
+    Object.values(manifest.marketAssetCounts).reduce((sum, count) => sum + count, 0),
+  );
   assert.equal(reconciliation.existingIdentityCount, 6000);
   assert.equal(reconciliation.removedExistingIdentityCount, 0);
   assert.equal(reconciliation.duplicateIdentityCount, 0);
-  assert.equal(readCsv("src/data/tickers/finple_app_candidates_v2.csv").length - 1, 6029);
+  assert.ok(readCsv("src/data/tickers/finple_app_candidates_v2.csv").length > 1);
 });
 
-test("production selector and immutable public v1 CSV stay unchanged", () => {
+test("production selector imports canonical v2 directly without the legacy runtime CSV", () => {
   const loader = fs.readFileSync(
     path.join(root, "src/data/tickers/screenerCandidateLoader.js"),
     "utf8",
   );
-  assert.match(loader, /RAW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv\(finpleAppCandidates6000Csv\)/);
-  assert.match(loader, /import\("\.\/finple_app_candidates_v2\.csv\?raw"\)/);
-  assert.doesNotMatch(loader, /^import finpleAppCandidatesV2Csv/m);
+  assert.match(loader, /^import finpleCanonicalV2Csv from "\.\/finple_app_candidates_v2\.csv\?raw"/m);
+  assert.doesNotMatch(loader, /finple_app_candidates_6000_balanced_v1\.csv\?raw/);
+  assert.doesNotMatch(loader, /production_v1_fallback/);
   assert.equal(readCsv("src/data/tickers/finple_app_candidates_6000_balanced_v1.csv").length - 1, 6000);
   assert.equal(manifestFromV2().productionSelectorChanged, false);
   assert.equal(manifestFromV2().publicCsvChanged, false);
@@ -62,7 +65,7 @@ test("lifecycle metadata survives candidate-to-saved-asset hydration", () => {
   }
 });
 
-test("preview metric dividend is routed through the non-ordinary distribution contract", () => {
+test("canonical dividends are routed through the non-ordinary distribution contract", () => {
   const loader = fs.readFileSync(
     path.join(root, "src/data/tickers/screenerCandidateLoader.js"),
     "utf8",
@@ -73,6 +76,10 @@ test("preview metric dividend is routed through the non-ordinary distribution co
   );
   const screener = fs.readFileSync(
     path.join(root, "src/components/ScreenerPage.jsx"),
+    "utf8",
+  );
+  const distributionPolicy = fs.readFileSync(
+    path.join(root, "src/data/tickers/distributionPolicy.js"),
     "utf8",
   );
   const screenerCss = fs.readFileSync(
@@ -87,11 +94,12 @@ test("preview metric dividend is routed through the non-ordinary distribution co
     path.join(root, "src/components/portfolio/utils/portfolioReports.js"),
     "utf8",
   );
-  assert.match(loader, /resolveDistributionYieldFields\(\s*baseCandidate,\s*metricRow\.dividendYield/);
-  assert.doesNotMatch(loader, /dividendYield:\s*metricRow\.dividendYield/);
-  assert.match(baseline, /unsupported_distribution_calculation_policy/);
+  assert.match(loader, /resolveDistributionYieldFields\(\s*\{\s*\.\.\.row/);
+  assert.doesNotMatch(loader, /selectedCagr:\s*metricRow/);
+  assert.match(baseline, /isCanonicalV2MetricSource/);
   assert.match(screener, /최근 12개월 분배율/);
-  assert.match(screener, /일반 배당수익률·총수익률과 다름/);
+  assert.match(screener, /distributionDisplay\.notices\.map/);
+  assert.match(distributionPolicy, /ROC\(원금환급\) 포함 가능/);
   assert.doesNotMatch(screener, /배당 \{formatPercentValue\(item\.trailingDistributionYield/);
   assert.match(screenerCss, /\.tickerResultDistributionNotice/);
   assert.match(screenerCss, /@media \(max-width: 640px\)[\s\S]*\.tickerResultDistributionNotice/);
@@ -99,7 +107,7 @@ test("preview metric dividend is routed through the non-ordinary distribution co
   assert.match(detailPanel, /일반 배당과 분리된 분배 정보/);
   assert.match(detailPanel, /배당 순위에서 제외됩니다/);
   assert.match(reports, /describeAssetDistribution/);
-  assert.match(reports, /예상 일반 배당률/);
+  assert.match(reports, /일반 배당률/);
 });
 
 function manifestFromV2() {
