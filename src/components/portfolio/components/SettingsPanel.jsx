@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { createManualCashAsset } from "../../../data/tickers/manualCashAsset";
+import { FINPLE_PLAN_CONFIGS, getStoredFinplePlan } from "../config/planConfig";
 import AssetInputTable from "./AssetInputTable";
 import NewPortfolioMenu from "./NewPortfolioMenu";
 import "./TargetWeightControls.css";
@@ -105,6 +107,41 @@ export default function SettingsPanel({
     const normalized = toOneDecimal(toNumber(inflationInput));
     updateSetting("inflationRate", normalized);
     setInflationInput(formatDecimal(normalized, 1));
+  };
+
+  const addCashAsset = () => {
+    const hasCash = assets.some(
+      (asset) =>
+        !isEmptyAssetRow(asset) &&
+        String(asset?.ticker || "").trim().toUpperCase() === "CASH",
+    );
+    if (hasCash) {
+      window.alert("현금 자산은 포트폴리오에 한 번만 추가할 수 있습니다.");
+      return;
+    }
+
+    const plan = FINPLE_PLAN_CONFIGS[getStoredFinplePlan()] || FINPLE_PLAN_CONFIGS.free;
+    const activeAssetCount = assets.filter(
+      (asset) =>
+        !isEmptyAssetRow(asset) &&
+        Boolean(String(asset?.ticker || "").trim()),
+    ).length;
+    const assetLimit = plan?.limits?.assetsPerPortfolio;
+    if (Number.isFinite(assetLimit) && activeAssetCount >= assetLimit) {
+      window.alert(`${plan.label} 플랜은 포트폴리오당 자산 ${assetLimit}개까지 추가할 수 있습니다.`);
+      return;
+    }
+
+    const cashAsset = createManualCashAsset({ id: `cash-${Date.now()}` });
+    const emptyIndex = assets.findIndex((asset) => isEmptyAssetRow(asset));
+    if (emptyIndex >= 0) {
+      assets[emptyIndex] = cashAsset;
+      updateAsset(emptyIndex, "name", cashAsset.name);
+      return;
+    }
+
+    assets.push(cashAsset);
+    updateAsset(assets.length - 1, "name", cashAsset.name);
   };
 
   const targetWeightNotice = summary.overAmount > 0
@@ -246,6 +283,7 @@ export default function SettingsPanel({
       <div className="tableActionRow simulatorTableActionRow">
         <div className="tableActionLeftGroup">
           <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
+          <button className="resetPortfolioButton secondary" onClick={addCashAsset} disabled={isBulkAssetLookupLoading}>현금 추가</button>
           <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
           <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows}>빈 행 정리</button>
           <button className="resetPortfolioButton danger" onClick={resetActivePortfolioAssets}>포트폴리오 초기화</button>
