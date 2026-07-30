@@ -303,6 +303,10 @@ test("canonical CSV replacement and universe change update runtime without code 
         targetWeight: 100,
         expectedCagr: 999,
         portfolioAddPolicy: "deny",
+        leverageMultiple: -3,
+        direction: "inverse",
+        resetFrequency: "daily",
+        metadataVerificationStatus: "verified",
       },
       { candidate: changed },
     );
@@ -311,6 +315,10 @@ test("canonical CSV replacement and universe change update runtime without code 
     assert.equal(saved.targetWeight, 100);
     assert.equal(saved.expectedCagr, changedCagr);
     assert.equal(saved.portfolioAddPolicy, "allow");
+    assert.equal(saved.leverageMultiple, null);
+    assert.equal(saved.direction, "long");
+    assert.equal(saved.resetFrequency, "not_applicable");
+    assert.equal(saved.metadataVerificationStatus, "");
     assert.equal(buildResult(saved).expectedCagr, changedCagr);
 
     const removed = loader.createCanonicalScreenerCatalog(csv([BASE_ROWS[0]]));
