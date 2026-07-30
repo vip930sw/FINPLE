@@ -595,10 +595,22 @@ test("production loader applies RM and distribution policy through saved hydrati
       ["VOO", { market: "US", cagr: 8 }],
       ["069500", { market: "KR", cagr: 8 }],
       ["GLD", { market: "US", cagr: 8, dividendYield: 0 }],
-      ["AIPI", { market: "US", distributionYield: 34.98 }],
-      ["MSFY", { market: "US", distributionYield: 28.30 }],
-      ["TSLP", { market: "US", distributionYield: 28.11 }],
-      ["QYLG", { market: "US", distributionYield: 16.26 }],
+      ["AIPI", {
+        market: "US",
+        distributionYield: 38.30069456,
+        resultStatus: "blocked",
+      }],
+      ["MSFY", {
+        market: "US",
+        distributionYield: 27.09069567,
+        resultStatus: "blocked",
+      }],
+      ["TSLP", {
+        market: "US",
+        distributionYield: 40.40466564,
+        resultStatus: "blocked",
+      }],
+      ["QYLG", { market: "US", distributionYield: 18.26314253 }],
     ]);
     const savedAssets = new Map();
     for (const [ticker, expected] of expectations) {
@@ -632,7 +644,7 @@ test("production loader applies RM and distribution policy through saved hydrati
         assert.equal(saved.trailingDistributionYield, expected.distributionYield, ticker);
         assert.equal(
           saved.distributionCalculationStatus,
-          "review_only_no_approved_reinvestment_model",
+          "confirmed_value",
           ticker,
         );
         const result = buildMonthlyBaselineProjection({
@@ -645,7 +657,15 @@ test("production loader applies RM and distribution policy through saved hydrati
           },
           assets: [saved],
         });
-        assert.equal(result.status, "ready", ticker);
+        assert.equal(result.status, expected.resultStatus || "ready", ticker);
+        if (expected.resultStatus === "blocked") {
+          assert.match(
+            result.blockReasons.join("|"),
+            new RegExp(`portfolio_add_denied:${ticker}`),
+            ticker,
+          );
+          continue;
+        }
         assert.equal(
           result.assets[0].annualDividendYield,
           expected.distributionYield,

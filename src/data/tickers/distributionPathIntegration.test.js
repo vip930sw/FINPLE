@@ -23,16 +23,35 @@ const BASE_URL = "http://distribution-path.test";
 const EXPORT_VERSION = "finple-app-preview-export-v1-step114-2z";
 const DISTRIBUTION_POLICY =
   "trailing_12m_cash_distribution_not_ordinary_dividend";
-const DISTRIBUTION_STATUS =
-  "review_only_no_approved_reinvestment_model";
+const DISTRIBUTION_STATUS = "confirmed_value";
 const TARGETS = new Map([
-  ["AIPI", { yield: 34.98, option: true }],
-  ["MSFY", { yield: 28.30, option: true }],
-  ["TSLP", { yield: 28.11, option: true }],
-  ["QYLG", { yield: 16.26, option: true }],
-  ["QQQ", { yield: 0.41, option: false }],
-  ["TQQQ", { yield: 0.47, option: false, reviewPolicy: true }],
-  ["SPY", { yield: 1.01, option: false }],
+  ["AIPI", {
+    yield: 38.30069456,
+    fixtureYield: 34.98,
+    option: true,
+    resultStatus: "blocked",
+  }],
+  ["MSFY", {
+    yield: 27.09069567,
+    fixtureYield: 28.30,
+    option: true,
+    resultStatus: "blocked",
+  }],
+  ["TSLP", {
+    yield: 40.40466564,
+    fixtureYield: 28.11,
+    option: true,
+    resultStatus: "blocked",
+  }],
+  ["QYLG", { yield: 18.26314253, fixtureYield: 16.26, option: true }],
+  ["QQQ", { yield: 0.41, simulationYield: 0.45849517, option: false }],
+  ["TQQQ", {
+    yield: 0.47,
+    simulationYield: 0.65454545,
+    option: false,
+    reviewPolicy: true,
+  }],
+  ["SPY", { yield: 1.01, simulationYield: 1.03158498, option: false }],
   ["GLD", { yield: 0, option: false, dividendStatus: "confirmed_zero" }],
 ]);
 
@@ -57,7 +76,7 @@ function createMetricRow(candidate) {
     mddPolicy: "full_period_actual",
     selectedBeta: 1,
     betaPolicy: "aligned_monthly_return_beta",
-    dividendYield: target?.yield ?? null,
+    dividendYield: target?.fixtureYield ?? target?.yield ?? null,
     dividendStatus: target?.dividendStatus || (target ? "available" : "missing"),
     dataStatus: "ready",
     reviewFlag: "none",
@@ -284,7 +303,15 @@ test("metric overlay follows the public App Preview path through save/reload and
         assertOptionDistributionContract(patch, expected.yield);
         assertOptionDistributionContract(hydrated, expected.yield);
         assertOptionDistributionContract(reloaded, expected.yield);
-        assert.equal(result.status, "ready", ticker);
+        assert.equal(result.status, expected.resultStatus || "ready", ticker);
+        if (expected.resultStatus === "blocked") {
+          assert.match(
+            result.blockReasons.join("|"),
+            new RegExp(`portfolio_add_denied:${ticker}`),
+            ticker,
+          );
+          continue;
+        }
         assert.equal(result.expectedDividendYield, expected.yield, ticker);
         assert.equal(result.assets[0].annualDividendYield, expected.yield, ticker);
         assert.ok(result.monthlyBaselinePoints.length > 1, ticker);
@@ -295,8 +322,16 @@ test("metric overlay follows the public App Preview path through save/reload and
         assert.equal(ranked.dividendRank, 1, ticker);
       } else {
         assert.equal(result.status, "ready", ticker);
-        assert.equal(result.expectedDividendYield, expected.yield, ticker);
-        assert.equal(result.assets[0].annualDividendYield, expected.yield, ticker);
+        assert.equal(
+          result.expectedDividendYield,
+          expected.simulationYield ?? expected.yield,
+          ticker,
+        );
+        assert.equal(
+          result.assets[0].annualDividendYield,
+          expected.simulationYield ?? expected.yield,
+          ticker,
+        );
         if (expected.reviewPolicy) {
           assert.equal(reloaded.exposureType, "leveraged_etf", ticker);
           assert.equal(reloaded.leverageMultiple, 3, ticker);
@@ -334,11 +369,11 @@ test("metric overlay follows the public App Preview path through save/reload and
         targetWeight: 100,
       }),
     );
-    const ready = buildResult(aipi);
+    const blocked = buildResult(aipi);
     const reportInput = {
       activePortfolio: { name: "AIPI blocked contract" },
       detailReport: { type: "검토 필요", tags: [], summary: "분배 계약 검토" },
-      result: ready,
+      result: blocked,
       assets: [aipi],
       detailPortfolio: {
         realValueRank: 1,
@@ -350,20 +385,20 @@ test("metric overlay follows the public App Preview path through save/reload and
     const fullReport = createPortfolioReportText(reportInput);
     const summaryReport = createReportSummaryText(reportInput);
     for (const report of [fullReport, summaryReport]) {
-      assert.match(report, /계산 완료/);
-      assert.match(report, /예상 CAGR: 10\.00%/);
-      assert.match(report, /예상 BETA: 1\.00/);
-      assert.match(report, /예상 MDD: -20\.00%/);
-      assert.match(report, /시뮬레이션 적용 현금분배율: 34\.98%/);
+      assert.match(report, /기준 계산 보류/);
+      assert.match(report, /예상 CAGR: -/);
+      assert.match(report, /예상 BETA: -/);
+      assert.match(report, /예상 MDD: -/);
+      assert.match(report, /시뮬레이션 적용 현금분배율: -/);
       assert.doesNotMatch(report, /unsupported_distribution_calculation_policy/);
-      assert.match(report, /최근 12개월 분배율 34\.98%/);
+      assert.match(report, /최근 12개월 분배율 38\.30%/);
       assert.match(report, /주간 분배/);
       assert.match(report, /옵션분배/);
       assert.match(report, /ROC\(원금환급\) 포함 가능/);
       assert.doesNotMatch(report, /예상 배당률|예상 연배당금|배당 순위|배당 매력/);
     }
-    assert.match(fullReport, /현금흐름 순위: 1위/);
-    assert.match(fullReport, /CAGR 10\.0% \/ BETA 1\.00 \/ MDD -20\.0%/);
+    assert.match(fullReport, /현금흐름 순위: -/);
+    assert.match(fullReport, /CAGR - \/ BETA - \/ MDD -/);
 
     const spy = roundTripSavedAsset(
       loader.hydrateAssetFromScreenerCandidate({
@@ -388,10 +423,10 @@ test("metric overlay follows the public App Preview path through save/reload and
       result: ordinary,
       assets: [spy],
     });
-    assert.match(ordinaryFullReport, /예상 배당률: 1\.01%/);
+    assert.match(ordinaryFullReport, /예상 배당률: 1\.03%/);
     assert.match(ordinaryFullReport, /일반 배당률 1\.01%/);
     assert.match(ordinaryFullReport, /배당 순위: 1위/);
-    assert.match(ordinarySummary, /예상 배당률: 1\.01%/);
+    assert.match(ordinarySummary, /예상 배당률: 1\.03%/);
     assert.doesNotMatch(ordinaryFullReport, /기준 계산 보류/);
   } finally {
     await vite.close();
