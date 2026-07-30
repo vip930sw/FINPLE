@@ -125,6 +125,102 @@ test("one asset positive 12-month price baseline compounds to annual CAGR", () =
   assertClose(result.monthlyBaselinePoints[12].contributionExcludedIndex, 112);
 });
 
+test("one completely empty asset row is excluded without changing a ready baseline", () => {
+  const withoutEmptyRows = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [asset()],
+  });
+  const withOneEmptyRow = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [asset(), { id: "empty-1", ticker: "", name: "", quantity: 0, price: 0 }],
+  });
+
+  assert.equal(withOneEmptyRow.status, "ready");
+  assert.deepEqual(withOneEmptyRow, withoutEmptyRows);
+});
+
+test("multiple completely empty asset rows are excluded from a ready baseline", () => {
+  const withoutEmptyRows = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [asset()],
+  });
+  const withManyEmptyRows = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      { id: "empty-1", ticker: "", name: "", quantity: 0, price: 0 },
+      asset(),
+      { id: "empty-2", ticker: "", name: "", quantity: 0, price: 0 },
+    ],
+  });
+
+  assert.equal(withManyEmptyRows.status, "ready");
+  assert.deepEqual(withManyEmptyRows, withoutEmptyRows);
+});
+
+test("all empty rows remain blocked as missing_assets", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      { id: "empty-1", ticker: "", name: "", quantity: 0, price: 0 },
+      { id: "empty-2", ticker: "", name: "", quantity: 0, price: 0 },
+    ],
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.match(result.blockReasons.join("|"), /missing_assets/);
+});
+
+test("a partially entered ticker row is not hidden as empty", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [{ ticker: "PARTIAL" }],
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    result.blockReasons.join("|"),
+    /missing_metric|missing_selected_cagr|metric_source_not_publish_approved/,
+  );
+});
+
+test("invalid asset entries are not hidden as empty", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [null, [], "invalid"],
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.match(result.blockReasons.join("|"), /invalid_asset_entry/);
+});
+
+test("a valid 0% asset calculates without return impact", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      asset({ ticker: "AAA", targetWeight: 100, cagr: 12 }),
+      asset({ ticker: "BBB", targetWeight: 0, cagr: -99 }),
+    ],
+  });
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.assets.length, 2);
+  assert.equal(result.assets.find((item) => item.ticker === "BBB").targetWeight, 0);
+  assert.equal(result.expectedCagr, 12);
+});
+
+test("a duplicate 0% asset remains fail-closed", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      asset({ ticker: "AAA", targetWeight: 100 }),
+      asset({ ticker: "AAA", targetWeight: 0 }),
+    ],
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.match(result.blockReasons.join("|"), /duplicate_asset_identity:US:AAA/);
+});
+
 test("zero configured start value uses current portfolio value for simulator calculations", () => {
   const result = calculatePortfolioResult(
     { ...BASE_SETTINGS, startValue: 0 },
