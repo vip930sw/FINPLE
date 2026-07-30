@@ -1,0 +1,92 @@
+name: CASH Policy PR Validation
+
+on:
+  push:
+    branches:
+      - codex/cash-policy-2pct-and-add-button
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-clean-mbti-seeds:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: codex/cash-policy-2pct-and-add-button
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Remove legacy MBTI CASH seed values
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/components/InvestmentMbtiPage.jsx")
+          text = path.read_text(encoding="utf-8")
+          old = 'cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },'
+          new = 'cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.0, beta: 0, mdd: 0, dividendYield: 0 },'
+          count = text.count(old)
+          if count != 2:
+              raise SystemExit(f"expected exactly two legacy MBTI CASH seeds, found {count}")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Official portfolio baseline regression
+        run: npm run check:official-portfolio-baseline
+
+      - name: Manual CASH focused regression
+        run: node --test src/data/tickers/manualCashAsset.test.js
+
+      - name: Canonical Python regression
+        run: python -m unittest discover -s tools/canonical_csv/tests -p 'test_*.py' -v
+
+      - name: Production build
+        run: npm run build
+
+      - name: AI production check
+        run: npm run check:ai-production
+
+      - name: Focused ESLint
+        run: >-
+          npx eslint
+          src/data/tickers/manualCashAsset.js
+          src/data/tickers/manualCashAsset.test.js
+          src/components/portfolio/constants.js
+          src/components/portfolio/utils/portfolioFactory.js
+          src/components/portfolio/components/AssetInputTable.jsx
+          src/components/portfolio/components/SettingsPanel.jsx
+          scripts/check-official-portfolio-baseline.test.mjs
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit corrected MBTI CASH seeds
+        shell: bash
+        run: |
+          if git diff --quiet -- src/components/InvestmentMbtiPage.jsx; then
+            echo "No MBTI seed change to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/InvestmentMbtiPage.jsx
+          git commit -m "Align MBTI CASH seed values with 2.0% policy"
+          git push origin HEAD:codex/cash-policy-2pct-and-add-button
