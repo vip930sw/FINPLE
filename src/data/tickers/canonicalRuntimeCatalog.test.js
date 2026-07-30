@@ -144,11 +144,95 @@ async function withLoader(run) {
     server: { middlewareMode: true },
   });
   try {
-    await run(await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"));
+    await run(
+      await vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"),
+      vite,
+    );
   } finally {
     await vite.close();
   }
 }
+
+test("official preset and persistence hydration paths apply the manual CASH contract", async () => {
+  await withLoader(async (loader, vite) => {
+    const constants = await vite.ssrLoadModule("/src/components/portfolio/constants.js");
+    const presetNames = [
+      "DEFAULT_ASSETS",
+      "DIVIDEND_ASSETS",
+      "STABLE_ASSETS",
+      "GROWTH_ASSETS",
+      "GOLD_DEFENSE_ASSETS",
+      "REIT_INCOME_ASSETS",
+      "GROWTH_ZERO_ASSETS",
+      "GROWTH_FOCUS_ASSETS",
+      "ALL_WEATHER_ASSETS",
+      "HIGH_CONVICTION_ASSETS",
+    ];
+    const settings = {
+      startValue: 50_000_000,
+      monthlyCashFlow: 1_000_000,
+      years: 10,
+      inflationRate: 2.5,
+      dividendReinvest: true,
+    };
+
+    for (const name of presetNames) {
+      const result = buildMonthlyBaselineProjection({
+        settings,
+        assets: constants[name],
+      });
+      assert.equal(result.status, "ready", `${name}:${result.blockReasons.join("|")}`);
+    }
+
+    for (const dataSource of [
+      "preset-cash",
+      "investment-mbti-cash",
+      "manual-cash",
+      "finple_manual_cash_reference",
+    ]) {
+      const preserved = {
+        ticker: "CASH",
+        market: "CASH",
+        assetType: "CASH",
+        dataSource,
+        id: `saved-${dataSource}`,
+        name: "사용자 현금",
+        quantity: 7,
+        price: 12345,
+        targetWeight: 10,
+        targetEvaluationAmount: 86415,
+        createdAt: "2026-07-01T00:00:00.000Z",
+        updatedAt: "2026-07-02T00:00:00.000Z",
+        cagr: 2.5,
+        dividendYield: 2,
+      };
+      const hydrated = loader.hydratePortfolioFromActiveCatalog({
+        assets: [{ ...preserved }],
+      }).assets[0];
+      assert.equal(hydrated.id, preserved.id);
+      assert.equal(hydrated.name, preserved.name);
+      assert.equal(hydrated.quantity, preserved.quantity);
+      assert.equal(hydrated.price, preserved.price);
+      assert.equal(hydrated.targetWeight, preserved.targetWeight);
+      assert.equal(hydrated.targetEvaluationAmount, preserved.targetEvaluationAmount);
+      assert.equal(hydrated.createdAt, preserved.createdAt);
+      assert.equal(hydrated.updatedAt, preserved.updatedAt);
+      assert.equal(hydrated.dataSource, "finple_manual_cash_reference");
+      assert.equal(hydrated.expectedCagr, 2.5);
+      assert.equal(hydrated.dividendYield, 0);
+      assert.equal(hydrated.simulationCashYield, 0);
+      assert.equal(hydrated.portfolioAddPolicy, "allow");
+    }
+
+    const rejected = {
+      ticker: "CASH",
+      market: "CASH",
+      assetType: "CASH",
+      dataSource: "user-input",
+    };
+    assert.strictEqual(loader.hydratePortfolioAssetFromActiveCatalog(rejected), rejected);
+  });
+});
 
 test("synthetic canonical CSV parses metrics and enforces structural validity", async () => {
   await withLoader(async (loader) => {
@@ -300,6 +384,8 @@ test("Screener, direct, MBTI, and preset paths use canonical hydration", () => {
     /fetchTickerCandidateByTicker\(ticker,\s*\{\s*market:/,
   );
   assert.match(mbti, /hydrateAssetFromScreenerCandidate/);
+  assert.match(mbti, /dataSource: isCash \? "investment-mbti-cash"/);
+  assert.match(mbti, /dataSource: baseAsset\.dataSource/);
   assert.match(presets, /hydrateAssetFromScreenerCandidate/);
 });
 
