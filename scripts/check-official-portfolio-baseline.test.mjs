@@ -55,6 +55,7 @@ let mbti;
 let loader;
 let persistence;
 let serverPersistence;
+let portfolioFactory;
 
 before(async () => {
   vite = await createServer({
@@ -63,13 +64,14 @@ before(async () => {
     logLevel: "silent",
     server: { middlewareMode: true },
   });
-  [constants, mbti, loader, persistence, serverPersistence] =
+  [constants, mbti, loader, persistence, serverPersistence, portfolioFactory] =
     await Promise.all([
       vite.ssrLoadModule("/src/components/portfolio/constants.js"),
       vite.ssrLoadModule("/src/components/portfolio/utils/mbtiProfileStorage.js"),
       vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"),
       vite.ssrLoadModule("/src/components/portfolio/utils/portfolioPersistenceContract.js"),
       vite.ssrLoadModule("/server/src/services/portfolioPersistenceModel.js"),
+      vite.ssrLoadModule("/src/components/portfolio/utils/portfolioFactory.js"),
     ]);
 });
 
@@ -79,8 +81,10 @@ after(async () => {
 
 function assertCashContract(asset, label) {
   assert.equal(asset.dataSource, "finple_manual_cash_reference", label);
+  assert.equal(asset.market, "CASH", `${label}:market`);
+  assert.equal(asset.assetType, "CASH", `${label}:assetType`);
   for (const field of ["expectedCagr", "cagr", "selectedCagr"]) {
-    assert.equal(asset[field], 2.5, `${label}:${field}`);
+    assert.equal(asset[field], 2.0, `${label}:${field}`);
   }
   for (const field of [
     "dividendYield",
@@ -89,6 +93,8 @@ function assertCashContract(asset, label) {
   ]) {
     assert.equal(asset[field], 0, `${label}:${field}`);
   }
+  assert.equal(asset.beta, 0, `${label}:beta`);
+  assert.equal(asset.mdd, 0, `${label}:mdd`);
   assert.equal(asset.portfolioAddPolicy, "allow", label);
 }
 
@@ -132,12 +138,12 @@ test("Investment MBTI: 16/16 presets", () => {
   }
 });
 
-function savedCash() {
+function savedCash(overrides = {}) {
   return {
     ticker: "CASH",
-    market: "CASH",
-    assetType: "CASH",
-    dataSource: "manual-cash",
+    market: "US",
+    assetType: "ETF",
+    dataSource: "preset-cash",
     id: "saved-cash",
     name: "사용자 현금",
     quantity: 7,
@@ -147,35 +153,55 @@ function savedCash() {
     userNote: "keep-me",
     createdAt: "2026-07-01T00:00:00.000Z",
     updatedAt: "2026-07-02T00:00:00.000Z",
+    cagr: 2.5,
+    dividendYield: 2.0,
+    shouldAutoLookup: false,
+    ...overrides,
   };
 }
 
 const persistencePaths = {
-  "localStorage legacy": (cash) =>
-    JSON.parse(JSON.stringify({ assets: [cash] })).assets,
-  "localStorage current": (cash) =>
-    persistence.normalizePortfolioPersistenceSnapshot({
-      portfolioList: [{ id: "current", assets: [cash] }],
-    }).portfolios[0].assets,
-  "server snapshot": (cash) =>
-    serverPersistence.createPortfolioApiSnapshot([
-      { id: "server", assets: [cash] },
-    ]).portfolios[0].assets,
-  "backup restore": (cash) =>
-    persistence.normalizePortfolioPersistenceSnapshot(
-      JSON.parse(JSON.stringify({
-        portfolioList: [{ id: "backup", assets: [cash] }],
-      })),
-    ).portfolios[0].assets,
-  "portfolio clone": (cash) => structuredClone([cash]),
+  "localStorage legacy": {
+    fixture: () => savedCash({
+      dataSource: "manual",
+      name: "현금 / 대기자금",
+      price: 10_000,
+    }),
+    restore: (cash) => JSON.parse(JSON.stringify({ assets: [cash] })).assets,
+  },
+  "localStorage current": {
+    fixture: savedCash,
+    restore: (cash) =>
+      persistence.normalizePortfolioPersistenceSnapshot({
+        portfolioList: [{ id: "current", assets: [cash] }],
+      }).portfolios[0].assets,
+  },
+  "server snapshot": {
+    fixture: savedCash,
+    restore: (cash) =>
+      serverPersistence.createPortfolioApiSnapshot([
+        { id: "server", assets: [cash] },
+      ]).portfolios[0].assets,
+  },
+  "backup restore": {
+    fixture: savedCash,
+    restore: (cash) =>
+      persistence.normalizePortfolioPersistenceSnapshot(
+        JSON.parse(JSON.stringify({
+          portfolioList: [{ id: "backup", assets: [cash] }],
+        })),
+      ).portfolios[0].assets,
+  },
+  "portfolio clone": {
+    fixture: savedCash,
+    restore: (cash) => structuredClone([cash]),
+  },
 };
 
-for (const [name, restore] of Object.entries(persistencePaths)) {
+for (const [name, path] of Object.entries(persistencePaths)) {
   test(`persistence: ${name}`, () => {
-    const original = savedCash();
-    const assets = loader.hydratePortfolioFromActiveCatalog({
-      assets: restore(original),
-    }).assets;
+    const original = path.fixture();
+    const assets = portfolioFactory.cloneAssets(path.restore(original));
     const cash = assets[0];
     for (const field of PRESERVED_FIELDS) {
       assert.equal(cash[field], original[field], `${name}:${field}`);
@@ -184,11 +210,24 @@ for (const [name, restore] of Object.entries(persistencePaths)) {
   });
 }
 
+test("CASH stays outside the canonical and Screener catalogs", () => {
+  assert.equal(
+    loader.CANONICAL_SCREENER_CANDIDATES.some((asset) => asset.ticker === "CASH"),
+    false,
+  );
+  assert.equal(
+    loader.ALL_SCREENER_CANDIDATES.some((asset) => asset.ticker === "CASH"),
+    false,
+  );
+});
+
 test("unknown-source CASH remains blocked", () => {
   const result = buildMonthlyBaselineProjection({
     settings: SETTINGS,
     assets: [{
       ...savedCash(),
+      market: "CASH",
+      assetType: "CASH",
       dataSource: "user-input",
       cagr: null,
       selectedCagr: null,
