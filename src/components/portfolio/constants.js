@@ -24,7 +24,7 @@ const PRESET_ASSET_CATALOG = {
   VNQ: { ticker: "VNQ", name: "미국 리츠 ETF", price: 120000, market: "US" },
   GLD: { ticker: "GLD", name: "금 ETF", price: 300000, market: "US" },
   BLOK: { ticker: "BLOK", name: "블록체인 테마 ETF", price: 45000, market: "US", cagr: 9, beta: 1.4, mdd: -65, dividendYield: 1.0 },
-  CASH: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  CASH: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.0, beta: 0, mdd: 0, dividendYield: 0 },
 };
 
 function createWeightedPresetAssets(weights = {}, initialAmount = 50000000) {
@@ -133,12 +133,12 @@ export const MOCK_ASSET_DATA = {
     },
     CASH: {
       name: "현금 / 대기자금",
-      market: "KR",
+      market: "CASH",
       currency: "KRW",
       price: 10000,
-      cagr: 2.5,
+      cagr: 2.0,
       beta: 0,
       mdd: 0,
-      dividendYield: 2,
+      dividendYield: 0,
     },
   };
