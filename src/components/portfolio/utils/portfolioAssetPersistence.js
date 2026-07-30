@@ -12,7 +12,8 @@ function normalizeNullableNumber(value, fallback = null) {
 function normalizeMetricNumber(asset, field) {
   const fallback =
     asset?.internalPreviewReviewOnly === true ||
-    asset?.productionAppExportEnabled === true
+    asset?.productionAppExportEnabled === true ||
+    asset?.dataSource === "finple_app_candidates_v2"
       ? null
       : 0;
   return normalizeNullableNumber(asset?.[field], fallback);
@@ -31,8 +32,28 @@ export function normalizePersistedMetricFields(asset = {}) {
     targetEvaluationAmount: normalizeNullableNumber(asset.targetEvaluationAmount, null),
     targetWeight: normalizeNullableNumber(asset.targetWeight, null),
     cagr: normalizeMetricNumber(asset, "cagr"),
+    expectedCagr: normalizeNullableNumber(asset.expectedCagr, null),
+    rawPriceCagr: normalizeNullableNumber(asset.rawPriceCagr, null),
+    rollingCagrMedian: normalizeNullableNumber(asset.rollingCagrMedian, null),
+    rollingCagrWindowCount: normalizeNullableNumber(
+      asset.rollingCagrWindowCount,
+      null,
+    ),
     beta: normalizeMetricNumber(asset, "beta"),
     mdd: normalizeMetricNumber(asset, "mdd"),
+    annualizedVolatility: normalizeNullableNumber(
+      asset.annualizedVolatility,
+      null,
+    ),
+    volatilityObservationCount: normalizeNullableNumber(
+      asset.volatilityObservationCount,
+      null,
+    ),
+    priceDataEndDate: asset.priceDataEndDate || "",
+    priceBasis: asset.priceBasis || "",
+    priceMetricsStatus: asset.priceMetricsStatus || "",
+    reasonCode: asset.reasonCode || "",
+    reasonMessage: asset.reasonMessage || "",
     dividendYield: distributionFields.dividendYield,
     displayDividendYield: distributionFields.displayDividendYield,
     dividendPolicy: asset.dividendPolicy || "",

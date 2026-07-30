@@ -44,14 +44,14 @@ const TARGETS = new Map([
     resultStatus: "blocked",
   }],
   ["QYLG", { yield: 18.26314253, fixtureYield: 16.26, option: true }],
-  ["QQQ", { yield: 0.41, simulationYield: 0.45849517, option: false }],
+  ["QQQ", { yield: 0.45849517, fixtureYield: 0.41, option: false }],
   ["TQQQ", {
-    yield: 0.47,
-    simulationYield: 0.65454545,
+    yield: 0.65454545,
+    fixtureYield: 0.47,
     option: false,
     reviewPolicy: true,
   }],
-  ["SPY", { yield: 1.01, simulationYield: 1.03158498, option: false }],
+  ["SPY", { yield: 1.03158498, fixtureYield: 1.01, option: false }],
   ["GLD", { yield: 0, option: false, dividendStatus: "confirmed_zero" }],
 ]);
 
@@ -200,7 +200,7 @@ function buildResult(asset) {
   });
 }
 
-test("metric overlay follows the public App Preview path through save/reload and baseline policy", async () => {
+test("monthly artifact never overrides the canonical catalog through save, reload, and baseline", async () => {
   const vite = await createServer({
     root: process.cwd(),
     appType: "custom",
@@ -324,29 +324,19 @@ test("metric overlay follows the public App Preview path through save/reload and
         assert.equal(result.status, "ready", ticker);
         assert.equal(
           result.expectedDividendYield,
-          expected.simulationYield ?? expected.yield,
+          expected.yield,
           ticker,
         );
         assert.equal(
           result.assets[0].annualDividendYield,
-          expected.simulationYield ?? expected.yield,
+          expected.yield,
           ticker,
         );
         if (expected.reviewPolicy) {
-          assert.equal(reloaded.exposureType, "leveraged_etf", ticker);
+          assert.equal(reloaded.exposureType, "index_leveraged", ticker);
           assert.equal(reloaded.leverageMultiple, 3, ticker);
-          assert.equal(
-            reloaded.reviewApprovalPolicyVersion,
-            "leveraged-inverse-review-policy-v1-step114",
-            ticker,
-          );
-          assert.equal(reloaded.reviewApprovalStatus, "ready", ticker);
-          assert.deepEqual(reloaded.reviewApprovalReasonCodes, [], ticker);
-          assert.deepEqual(
-            reloaded.reviewApprovalAudit,
-            { validRollingWindowCount10y: 77 },
-            ticker,
-          );
+          assert.equal(reloaded.portfolioAddPolicy, "confirm", ticker);
+          assert.equal(reloaded.dataSource, "finple_app_candidates_v2", ticker);
         }
       }
 
@@ -424,7 +414,7 @@ test("metric overlay follows the public App Preview path through save/reload and
       assets: [spy],
     });
     assert.match(ordinaryFullReport, /예상 배당률: 1\.03%/);
-    assert.match(ordinaryFullReport, /일반 배당률 1\.01%/);
+    assert.match(ordinaryFullReport, /일반 배당률 1\.03%/);
     assert.match(ordinaryFullReport, /배당 순위: 1위/);
     assert.match(ordinarySummary, /예상 배당률: 1\.03%/);
     assert.doesNotMatch(ordinaryFullReport, /기준 계산 보류/);

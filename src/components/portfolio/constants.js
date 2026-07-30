@@ -38,7 +38,7 @@ function createWeightedPresetAssets(weights = {}, initialAmount = 50000000) {
       quantity: price > 0 ? Number((targetEvaluationAmount / price).toFixed(6)) : 0,
       price,
       targetEvaluationAmount,
-      priceMode: template.ticker === "CASH" ? "manual" : "final_csv_v1_price_close",
+      priceMode: template.ticker === "CASH" ? "manual" : "canonical_v2_price_close",
       metricMode: template.ticker === "CASH" ? "manual" : "manual",
       dataSource: template.ticker === "CASH" ? "preset-cash" : "preset-weighted",
       lookupDisabled: template.ticker === "CASH",

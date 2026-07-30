@@ -63,11 +63,9 @@ import {
 import { normalizeSimulatorTab } from "../utils/simulatorNavigation";
 import {
   getScreenerCandidateSnapshot,
-  hydrateAssetForProductionFallback,
   hydratePortfolioAssetFromActiveCatalog,
   hydratePortfolioFromActiveCatalog,
   loadScreenerCandidateRuntime,
-  PRODUCTION_APP_EXPORT_LOADING_STATUS,
   subscribeScreenerCandidateSnapshot,
 } from "../../../data/tickers/screenerCandidateLoader";
 import { reconcileIdentityScopedAssetMetadata } from "../../../data/tickers/portfolioAssetIdentityMetadata";
@@ -129,39 +127,25 @@ function preserveNullableNumber(value, fallback = null) { if (value === null || 
 function getAssetActualValue(asset = {}) { const value = Number(asset.quantity || 0) * Number(asset.price || 0); return Number.isFinite(value) && value > 0 ? value : 0; }
 function getAssetPlannedValue(asset = {}) { const value = Number(asset.targetEvaluationAmount || 0); return Number.isFinite(value) && value > 0 ? value : 0; }
 function getAssetWeightValue(asset = {}) { return getAssetPlannedValue(asset) || getAssetActualValue(asset); }
-function createProductionCatalogLoadingResult(settings = {}) {
+function hydrateLoadedPortfolioState(portfolioState = {}) {
+  const portfolioList = Array.isArray(portfolioState.portfolioList)
+    ? portfolioState.portfolioList.map(hydratePortfolioFromActiveCatalog)
+    : [];
+  const activePortfolio = portfolioList.find(
+    (portfolio) => portfolio.id === portfolioState.activePortfolioId,
+  ) || portfolioList[0] || null;
   return {
-    status: "loading",
-    ready: false,
-    blockReasons: [],
-    portfolioEligibilityBlocks: [],
-    settings,
-    yearlyContribution: null,
-    totalAssetValue: null,
-    simulationStartValue: null,
-    expectedCagr: null,
-    expectedDividendYield: null,
-    expectedSimulationCashYield: null,
-    expectedBeta: null,
-    simpleMdd: null,
-    expectedCalmar: null,
-    expectedAnnualDividend: null,
-    expectedAnnualCashDistribution: null,
-    cashFlowMetricLabel: "예상 현금수익률",
-    performanceRows: [],
-    futureValue: null,
-    inflationAdjustedFutureValue: null,
-    monthlyBaselinePoints: [],
-    step3BlockedState: {
-      status: "loading",
-      operatorAction: "wait_for_verified_production_catalog",
-      userFacingState: "production_catalog_loading",
-    },
+    ...portfolioState,
+    portfolioList,
+    activePortfolioId: activePortfolio?.id || null,
+    activePortfolio,
   };
 }
 
 export default function usePortfolioSimulator() {
-  const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
+  const [initialPortfolioState] = useState(() => hydrateLoadedPortfolioState(
+    applyPortfolioPlanLimitToState(loadPortfolioState()),
+  ));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
   const [activePortfolioId, setActivePortfolioId] = useState(initialPortfolioState.activePortfolioId);
   const [settings, setSettings] = useState(initialPortfolioState.globalSettings || DEFAULT_SETTINGS);
@@ -199,36 +183,19 @@ export default function usePortfolioSimulator() {
   useEffect(() => { writeScopedPortfolioStorageItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings)); setLastLocalSaveAt(new Date().toISOString()); }, [settings]);
   useEffect(() => { if (!pendingTemplateAutoLookupRef.current) return; pendingTemplateAutoLookupRef.current = false; window.setTimeout(() => fetchAllAssetData(), 160); }, [assets]);
   useEffect(() => {
-    let appliedPackageHash = "";
+    let canonicalCatalogApplied = false;
     function applySnapshot(snapshot) {
       setScreenerCandidateSnapshot(snapshot);
-      if (snapshot.preview.status === PRODUCTION_APP_EXPORT_LOADING_STATUS) {
-        setAssetLookupSummary("검증된 자산 지표를 불러오는 중입니다.");
+      if (snapshot.preview.status === "canonical_catalog_load_error") {
+        setAssetLookupSummary(
+          "최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        );
         return;
       }
-      if (snapshot.preview.status === "production_v1_fallback" &&
-          snapshot.preview.operationalReasonCode) {
-        setPortfolioList((previousList) => previousList.map((portfolio) => ({
-          ...portfolio,
-          assets: portfolio.assets.map((asset, index) =>
-            normalizeAsset(hydrateAssetForProductionFallback(asset), index)
-          ),
-        })));
-        setAssets((previousAssets) => previousAssets.map((asset, index) =>
-          normalizeAsset(hydrateAssetForProductionFallback(asset), index)
-        ));
-        setAssetLookupSummary("기존 Production 데이터로 안전하게 전환했습니다.");
-        appliedPackageHash = "";
+      if (canonicalCatalogApplied || snapshot.candidates.length === 0) {
         return;
       }
-      if (!["internal_preview_review_only", "production_app_export_ready"].includes(
-        snapshot.preview.status,
-      )) return;
-      const packageHash = snapshot.preview.manifest?.sourceCandidatePackageHash ||
-        snapshot.preview.release?.candidatePackageHash ||
-        snapshot.preview.status;
-      if (appliedPackageHash === packageHash) return;
-      appliedPackageHash = packageHash;
+      canonicalCatalogApplied = true;
       setPortfolioList((previousList) => previousList.map((portfolio) => ({
           ...portfolio,
           assets: portfolio.assets.map((asset, index) =>
@@ -239,25 +206,33 @@ export default function usePortfolioSimulator() {
           normalizeAsset(hydratePortfolioAssetFromActiveCatalog(asset), index)
         ));
       setAssetLookupSummary(
-        `Internal Preview 데이터 ${snapshot.candidates.length.toLocaleString("ko-KR")}개 자산을 불러왔습니다.`,
+        `최신 canonical 데이터 ${snapshot.candidates.length.toLocaleString("ko-KR")}개 자산을 불러왔습니다.`,
       );
     }
     const unsubscribe = subscribeScreenerCandidateSnapshot(applySnapshot);
     loadScreenerCandidateRuntime()
       .then(applySnapshot)
       .catch((error) => {
-        setAssetLookupSummary(`Internal Preview 로드 실패: ${error?.message || "알 수 없는 오류"}`);
+        console.error("[FINPLE monthly scenario artifact load error]", error);
       });
     return unsubscribe;
   }, []);
 
-  const isProductionCatalogLoading =
-    screenerCandidateSnapshot.preview.status === PRODUCTION_APP_EXPORT_LOADING_STATUS;
-  const result = isProductionCatalogLoading
-    ? createProductionCatalogLoadingResult(settings)
+  const isCanonicalCatalogUnavailable =
+    screenerCandidateSnapshot.preview.status === "canonical_catalog_load_error";
+  const result = isCanonicalCatalogUnavailable
+    ? {
+        ...calculatePortfolioResult(settings, []),
+        blockReasons: ["canonical_catalog_load_error"],
+        step3BlockedState: {
+          status: "blocked",
+          operatorAction: "reload_canonical_catalog",
+          userFacingState: "canonical_catalog_load_error",
+        },
+      }
     : calculatePortfolioResult(settings, assets);
   const { yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue } = result;
-  const comparisonPortfolios = isProductionCatalogLoading
+  const comparisonPortfolios = isCanonicalCatalogUnavailable
     ? []
     : createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings);
   const rankedComparisonPortfolios = createRankedComparisonPortfolios(comparisonPortfolios);
@@ -265,7 +240,7 @@ export default function usePortfolioSimulator() {
   const chartComparisonPortfolios = getChartComparisonPortfolios(insightComparisonPortfolios);
   const activePortfolio = getActivePortfolioById(portfolioList, activePortfolioId);
   const detailPortfolio = getDetailPortfolioById(rankedComparisonPortfolios, activePortfolioId);
-  const detailReport = isProductionCatalogLoading
+  const detailReport = isCanonicalCatalogUnavailable
     ? null
     : activePortfolio
     ? getPortfolioDetailReport({ ...activePortfolio, assets, result }, rankedComparisonPortfolios)
@@ -490,7 +465,9 @@ export default function usePortfolioSimulator() {
     const ticker = normalizeTicker(options.ticker || targetAsset?.ticker);
     if (!ticker) return null;
     try {
-      const candidate = await fetchTickerCandidateByTicker(ticker);
+      const candidate = await fetchTickerCandidateByTicker(ticker, {
+        market: options.market || targetAsset?.market,
+      });
       setAssets((previousAssets) => {
         const nextAssets = [...previousAssets];
         const currentAsset = nextAssets[index];
@@ -595,7 +572,7 @@ export default function usePortfolioSimulator() {
       index,
     );
   }
-  async function fetchAssetData(index) { const targetAsset = assets[index]; const ticker = normalizeTicker(targetAsset?.ticker); const statusKey = getAssetStatusKey(targetAsset, index); if (!ticker) { window.alert("티커를 먼저 입력해주세요."); return; } const currentPlan = getCurrentPlanConfig(); if (currentPlan.key === "free") { const usage = consumeFreeApiLookup(1); if (!usage.ok) { showPlanLimitNotice("api"); setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "error", message: "Free 조회 한도" } })); return; } } setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "loading", message: "조회 중" } })); setAssetLookupSummary(`${ticker} 조회 중...`); try { const tickerCandidate = await resolveTickerCandidate(index, { silent: true }); const assetData = await fetchAssetDataByTicker(ticker); setAssets((previousAssets) => { const nextAssets = [...previousAssets]; const currentAsset = nextAssets[index]; if (!currentAsset) return previousAssets; const candidateAppliedAsset = tickerCandidate ? applyTickerCandidateToAsset(currentAsset, tickerCandidate, index) : currentAsset; nextAssets[index] = applyFetchedAssetData(candidateAppliedAsset, assetData, index); return nextAssets; }); setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "success", message: assetData?.cacheMode === "hit" ? "캐시값" : "조회 완료" } })); setAssetLookupSummary(assetData?.cacheMode === "hit" ? `${ticker} 캐시값 적용` : `${ticker} 조회 완료`); } catch (error) { const message = error?.message || "자산 데이터를 조회하지 못했습니다."; setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "error", message } })); setAssetLookupSummary(isRateLimitMessage(message) ? `Alpha Vantage 호출 제한: ${ticker} 기존값 유지` : `${ticker} 조회 실패: ${message}`); } }
+  async function fetchAssetData(index) { const targetAsset = assets[index]; const ticker = normalizeTicker(targetAsset?.ticker); const statusKey = getAssetStatusKey(targetAsset, index); if (!ticker) { window.alert("티커를 먼저 입력해주세요."); return; } const currentPlan = getCurrentPlanConfig(); if (currentPlan.key === "free") { const usage = consumeFreeApiLookup(1); if (!usage.ok) { showPlanLimitNotice("api"); setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "error", message: "Free 조회 한도" } })); return; } } setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "loading", message: "조회 중" } })); setAssetLookupSummary(`${ticker} 조회 중...`); try { const tickerCandidate = await resolveTickerCandidate(index, { silent: true, market: targetAsset?.market }); const assetData = await fetchAssetDataByTicker(ticker, { market: targetAsset?.market }); setAssets((previousAssets) => { const nextAssets = [...previousAssets]; const currentAsset = nextAssets[index]; if (!currentAsset) return previousAssets; const candidateAppliedAsset = tickerCandidate ? applyTickerCandidateToAsset(currentAsset, tickerCandidate, index) : currentAsset; nextAssets[index] = applyFetchedAssetData(candidateAppliedAsset, assetData, index); return nextAssets; }); setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "success", message: assetData?.cacheMode === "hit" ? "캐시값" : "조회 완료" } })); setAssetLookupSummary(assetData?.cacheMode === "hit" ? `${ticker} 캐시값 적용` : `${ticker} 조회 완료`); } catch (error) { const message = error?.message || "자산 데이터를 조회하지 못했습니다."; setAssetLookupStatus((previousStatus) => ({ ...previousStatus, [statusKey]: { status: "error", message } })); setAssetLookupSummary(isRateLimitMessage(message) ? `Alpha Vantage 호출 제한: ${ticker} 기존값 유지` : `${ticker} 조회 실패: ${message}`); } }
 
   async function fetchAllAssetData() { if (isBulkAssetLookupLoading) return; const targetRows = assets.map((asset, index) => ({ asset, index, ticker: normalizeTicker(asset?.ticker), statusKey: getAssetStatusKey(asset, index) })).filter((row) => { if (!row.ticker) return false; if (row.ticker === "XXX" && isEmptyAssetRow(row.asset)) return false; if (row.ticker === "CASH") return false; return true; }); if (targetRows.length === 0) { setAssetLookupSummary("조회할 티커가 없습니다. 현금성 자산은 조회 대상에서 제외됩니다."); return; } const currentPlan = getCurrentPlanConfig(); if (currentPlan.key === "free") { const rowsNeedingLookup = targetRows.filter((row) => !isRecentlyFetchedAsset(row.asset)); const usage = consumeFreeApiLookup(rowsNeedingLookup.length || 1); if (!usage.ok) { showPlanLimitNotice("api"); return; } } const cachedRows = targetRows.filter((row) => isRecentlyFetchedAsset(row.asset)); const fetchRows = targetRows.filter((row) => !isRecentlyFetchedAsset(row.asset)); const uniqueTickers = Array.from(new Set(fetchRows.map((row) => row.ticker))); setIsBulkAssetLookupLoading(true); setAssetLookupSummary(fetchRows.length > 0 ? `${fetchRows.length}개 자산 전체 조회 준비 중... 최근 조회값 ${cachedRows.length}개 유지` : `전체 조회 완료: 성공 ${targetRows.length}개, 실패 0개 (최근 조회값 유지)`); setAssetLookupStatus((previousStatus) => { const nextStatus = { ...previousStatus }; cachedRows.forEach((row) => { nextStatus[row.statusKey] = { status: "success", message: "최근 조회값 유지" }; }); fetchRows.forEach((row) => { nextStatus[row.statusKey] = { status: "loading", message: "조회 중" }; }); return nextStatus; }); try { const lookupResults = uniqueTickers.length > 0 ? await fetchAssetDataBatch(uniqueTickers, { onProgress: ({ ticker, index, total, status }) => { const stepText = `${index + 1}/${total}`; if (status === "waiting") { setAssetLookupSummary(`전체 조회 중: ${stepText} ${ticker} 대기 중...`); return; } if (status === "loading") { setAssetLookupSummary(`전체 조회 중: ${stepText} ${ticker} 조회 중...`); return; } if (status === "success") { setAssetLookupSummary(`전체 조회 중: ${stepText} ${ticker} 조회 완료`); return; } if (status === "rate-limit") { setAssetLookupSummary(`Alpha Vantage 호출 제한: ${ticker}부터 기존값 유지`); return; } if (status === "error") setAssetLookupSummary(`전체 조회 중: ${stepText} ${ticker} 조회 실패`); } }) : []; const resultMap = new Map(lookupResults.map((lookupResult) => [lookupResult.ticker, lookupResult])); const rowResults = targetRows.map((row) => isRecentlyFetchedAsset(row.asset) ? { ...row, lookupResult: { ticker: row.ticker, status: "success", data: row.asset, cacheMode: "client-recent" } } : { ...row, lookupResult: resultMap.get(row.ticker) }); const successCount = rowResults.filter((row) => row.lookupResult?.status === "success").length; const errorCount = rowResults.filter((row) => row.lookupResult?.status !== "success").length; setAssets((previousAssets) => previousAssets.map((asset, index) => { const rowResult = rowResults.find((row) => row.index === index); if (rowResult?.lookupResult?.status === "success") return applyFetchedAssetData(asset, rowResult.lookupResult.data, index); return asset; })); setAssetLookupStatus((previousStatus) => { const nextStatus = { ...previousStatus }; rowResults.forEach((row) => { nextStatus[row.statusKey] = row.lookupResult?.status === "success" ? { status: "success", message: row.lookupResult?.cacheMode === "client-recent" || row.lookupResult?.data?.cacheMode === "hit" ? "캐시값" : "조회 완료" } : { status: "error", message: row.lookupResult?.error || "조회 실패" }; }); return nextStatus; }); const failedTickers = Array.from(new Set(rowResults.filter((row) => row.lookupResult?.status !== "success").map((row) => row.ticker))); const failedTickerText = failedTickers.length > 0 ? ` (${failedTickers.join(", ")})` : ""; const cacheCount = rowResults.filter((row) => row.lookupResult?.cacheMode === "client-recent" || row.lookupResult?.data?.cacheMode === "hit" || String(row.lookupResult?.data?.dataSource || "").includes("cache")).length; const cacheText = cacheCount > 0 ? `, 캐시 ${cacheCount}개` : ""; const rateLimitRows = rowResults.filter((row) => isRateLimitMessage(row.lookupResult?.error || "")); setAssetLookupSummary(rateLimitRows.length > 0 ? `Alpha Vantage 호출 제한: 성공 ${successCount}개, 실패 ${errorCount}개${cacheText}. 기존값을 유지합니다.` : `전체 조회 완료: 성공 ${successCount}개, 실패 ${errorCount}개${cacheText}${failedTickerText}`); } catch (error) { setAssetLookupSummary(`전체 조회 중 오류: ${error?.message || "알 수 없는 오류"}`); } finally { setIsBulkAssetLookupLoading(false); } }
 

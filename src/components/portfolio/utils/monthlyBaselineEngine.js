@@ -22,6 +22,7 @@ const PRODUCTION_APP_EXPORT_OVERLAY_STATUS = "production_app_export_approved";
 const PRODUCTION_APP_EXPORT_RELEASE_CONTRACT_VERSION =
   "finple-production-app-export-release-v1-step114-2zc";
 const PRODUCTION_APP_EXPORT_SOURCE = "finple_production_app_export_step114_2zc";
+const CANONICAL_V2_SOURCE = "finple_app_candidates_v2";
 
 const LEGACY_MAY_APP_READY_SOURCES = new Map([
   [
@@ -232,6 +233,10 @@ function validatePublishApproval(metadata, reasons, ticker) {
   }
 }
 
+function isCanonicalV2MetricSource(metadata = {}) {
+  return String(metadata.dataSource || "").trim() === CANONICAL_V2_SOURCE;
+}
+
 function validateProductionAppExportApproval(metadata, reasons, ticker) {
   const overlayStatus = normalizeStatus(metadata.overlayStatus);
   const hasProductionEvidence =
@@ -347,7 +352,7 @@ function getAssetWeightValue(asset = {}) {
 
 function getAnnualCagr(asset = {}) {
   return toFiniteNumber(
-    asset.selectedCagrAnnual ?? asset.selectedCagr ?? asset.expectedCagr ?? asset.cagr ?? asset.priceCagr10y,
+    asset.expectedCagr ?? asset.cagr ?? asset.selectedCagrAnnual ?? asset.selectedCagr ?? asset.priceCagr10y,
   );
 }
 
@@ -456,15 +461,18 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
     new Set([
       "app_ready",
       "ready",
+      "canonical_v2_ready",
       "internal_preview_review_only",
       PRODUCTION_APP_EXPORT_OVERLAY_STATUS,
     ]),
     reasons,
     ticker,
   );
-  validateProductionAppExportApproval(metadata, reasons, ticker);
-  validatePublishApproval(metadata, reasons, ticker);
-  validateRequiredLineage(metadata, reasons, ticker);
+  if (!isCanonicalV2MetricSource(metadata)) {
+    validateProductionAppExportApproval(metadata, reasons, ticker);
+    validatePublishApproval(metadata, reasons, ticker);
+    validateRequiredLineage(metadata, reasons, ticker);
+  }
 
   if (getAnnualCagr(metadata) === null) {
     addBlockReason(reasons, "missing_selected_cagr", ticker);

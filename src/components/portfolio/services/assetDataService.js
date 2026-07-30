@@ -170,6 +170,21 @@ function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
     reviewReason: patch.reviewReason || "",
     ...Object.fromEntries(
       [
+        "expectedCagr",
+        "rawPriceCagr",
+        "rollingCagrMedian",
+        "rollingCagrWindowYears",
+        "rollingCagrWindowCount",
+        "priceHistoryStartDate",
+        "usablePriceHistoryYears",
+        "cagrConfidence",
+        "annualizedVolatility",
+        "volatilityObservationCount",
+        "priceDataEndDate",
+        "priceBasis",
+        "priceMetricsStatus",
+        "reasonCode",
+        "reasonMessage",
         "priceCagr10y",
         "rawPriceCagr10y",
         "rollingCagr10yMedian",
@@ -255,6 +270,7 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
   if (!candidate) return assetData;
 
   const csvData = createLocalCsvAssetData(assetData.ticker || ticker, candidate, assetData.market || fallbackMarket || candidate.market);
+  const canonicalMetrics = csvData.dataSource === "finple_app_candidates_v2";
 
   return {
     ...assetData,
@@ -263,25 +279,50 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
     currency: assetData.currency || csvData.currency,
     quoteCurrency: assetData.quoteCurrency || csvData.quoteCurrency,
     assetType: assetData.assetType || csvData.assetType,
-    cagr: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+    cagr: canonicalMetrics || csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
       ? csvData.cagr
       : csvData.cagr ?? assetData.cagr,
-    beta: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+    beta: canonicalMetrics || csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
       ? csvData.beta
       : csvData.beta ?? assetData.beta,
-    mdd: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+    mdd: canonicalMetrics || csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
       ? csvData.mdd
       : csvData.mdd ?? assetData.mdd,
-    dividendYield: csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
+    dividendYield: canonicalMetrics || csvData.internalPreviewReviewOnly || csvData.productionAppExportEnabled
       ? csvData.dividendYield
       : csvData.dividendYield ?? assetData.dividendYield,
-    displayDividendYield: csvData.displayDividendYield || assetData.displayDividendYield || "",
-    dividendPolicy: csvData.dividendPolicy || assetData.dividendPolicy || "",
-    dividendSource: csvData.dividendSource || assetData.dividendSource || "",
-    reviewTag: csvData.reviewTag || assetData.reviewTag || "",
-    reviewReason: csvData.reviewReason || assetData.reviewReason || "",
+    displayDividendYield: canonicalMetrics
+      ? csvData.displayDividendYield
+      : csvData.displayDividendYield || assetData.displayDividendYield || "",
+    dividendPolicy: canonicalMetrics
+      ? csvData.dividendPolicy
+      : csvData.dividendPolicy || assetData.dividendPolicy || "",
+    dividendSource: canonicalMetrics
+      ? csvData.dividendSource
+      : csvData.dividendSource || assetData.dividendSource || "",
+    reviewTag: canonicalMetrics
+      ? csvData.reviewTag
+      : csvData.reviewTag || assetData.reviewTag || "",
+    reviewReason: canonicalMetrics
+      ? csvData.reviewReason
+      : csvData.reviewReason || assetData.reviewReason || "",
     ...Object.fromEntries(
       [
+        "expectedCagr",
+        "rawPriceCagr",
+        "rollingCagrMedian",
+        "rollingCagrWindowYears",
+        "rollingCagrWindowCount",
+        "priceHistoryStartDate",
+        "usablePriceHistoryYears",
+        "cagrConfidence",
+        "annualizedVolatility",
+        "volatilityObservationCount",
+        "priceDataEndDate",
+        "priceBasis",
+        "priceMetricsStatus",
+        "reasonCode",
+        "reasonMessage",
         "priceCagr10y",
         "rawPriceCagr10y",
         "rollingCagr10yMedian",

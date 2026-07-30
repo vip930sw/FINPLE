@@ -520,7 +520,7 @@ test("missing monthly identity is unavailable without zero fill or proxy request
   assert.deepEqual(result.requestedShardPaths, []);
 });
 
-test("build-time configured Production starts with an empty loading snapshot, never v1 metrics", async () => {
+test("build-time configured monthly artifacts keep the canonical catalog available while loading", async () => {
   const envKey = "VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED";
   const previous = process.env[envKey];
   process.env[envKey] = "true";
@@ -537,9 +537,9 @@ test("build-time configured Production starts with an empty loading snapshot, ne
     const snapshot = loader.getScreenerCandidateSnapshot();
     assert.equal(snapshot.preview.status, "production_app_export_loading");
     assert.equal(snapshot.preview.enabled, true);
-    assert.equal(snapshot.candidates.length, 0);
-    assert.equal(snapshot.usCandidates.length, 0);
-    assert.equal(snapshot.krCandidates.length, 0);
+    assert.equal(snapshot.candidates.length, 6029);
+    assert.equal(snapshot.usCandidates.length, 3029);
+    assert.equal(snapshot.krCandidates.length, 3000);
   } finally {
     await vite.close();
     if (previous === undefined) delete process.env[envKey];
@@ -547,7 +547,7 @@ test("build-time configured Production starts with an empty loading snapshot, ne
   }
 });
 
-test("production loader applies RM and distribution policy through saved hydration then atomically falls back", async () => {
+test("production monthly artifacts never hydrate canonical metrics and failures stay scenario-local", async () => {
   const vite = await createServer({
     root: process.cwd(),
     appType: "custom",
@@ -561,7 +561,7 @@ test("production loader applies RM and distribution policy through saved hydrati
       "/src/components/portfolio/utils/portfolioFactory.js",
     );
     const unconfigured = loader.getScreenerCandidateSnapshot();
-    assert.equal(unconfigured.preview.status, "production_v1_fallback");
+    assert.equal(unconfigured.preview.status, "canonical_v2_ready");
     assert.equal(unconfigured.preview.operationalReasonCode, "");
     assert.equal(unconfigured.candidates.length, loader.ALL_SCREENER_CANDIDATES.length);
 
@@ -577,46 +577,53 @@ test("production loader applies RM and distribution policy through saved hydrati
     const duplicateLoad = loader.loadScreenerProductionAppExport(productionOptions);
     const loading = loader.getScreenerCandidateSnapshot();
     assert.equal(loading.preview.status, "production_app_export_loading");
-    assert.equal(loading.candidates.length, 0);
-    assert.equal(loading.usCandidates.length, 0);
-    assert.equal(loading.krCandidates.length, 0);
+    assert.equal(loading.candidates.length, 6029);
+    assert.equal(loading.usCandidates.length, 3029);
+    assert.equal(loading.krCandidates.length, 3000);
     const [snapshot, duplicateSnapshot] = await Promise.all([firstLoad, duplicateLoad]);
     unsubscribe();
     assert.deepEqual(duplicateSnapshot, snapshot);
     assert.equal(snapshot.preview.status, "production_app_export_ready");
     assert.equal(snapshot.candidates.length, 6029);
     assert.deepEqual(transitions, [
-      { status: "production_app_export_loading", candidateCount: 0 },
+      { status: "production_app_export_loading", candidateCount: 6029 },
       { status: "production_app_export_ready", candidateCount: 6029 },
     ]);
     const expectations = new Map([
-      ["QQQ", { market: "US", cagr: 17.11, dividendYield: 0.41 }],
-      ["SPY", { market: "US", cagr: 8, dividendYield: 1.01 }],
-      ["VOO", { market: "US", cagr: 8 }],
-      ["069500", { market: "KR", cagr: 8 }],
-      ["GLD", { market: "US", cagr: 8, dividendYield: 0 }],
+      ["QQQ", { market: "US", cagr: 12.00524973, dividendYield: 0.45849517 }],
+      ["SPY", { market: "US", cagr: 6.89002993, dividendYield: 1.03158498 }],
+      ["VOO", { market: "US", cagr: 11.27705223 }],
+      ["069500", { market: "KR", cagr: 3.19786952 }],
+      ["GLD", { market: "US", cagr: 4.40791086, dividendYield: 0 }],
       ["AIPI", {
         market: "US",
+        cagr: -16.23955531,
         distributionYield: 38.30069456,
         resultStatus: "blocked",
       }],
       ["MSFY", {
         market: "US",
+        cagr: -8.62776516,
         distributionYield: 27.09069567,
         resultStatus: "blocked",
       }],
       ["TSLP", {
         market: "US",
+        cagr: -5.32514496,
         distributionYield: 40.40466564,
         resultStatus: "blocked",
       }],
-      ["QYLG", { market: "US", distributionYield: 18.26314253 }],
+      ["QYLG", {
+        market: "US",
+        cagr: -1.41174268,
+        distributionYield: 18.26314253,
+      }],
     ]);
     const savedAssets = new Map();
     for (const [ticker, expected] of expectations) {
       const candidate = loader.findScreenerCandidateByTicker(ticker, expected.market);
       assert.ok(candidate, ticker);
-      assert.equal(candidate.expectedCagr, expected.cagr ?? 8, ticker);
+      assert.equal(candidate.expectedCagr, expected.cagr, ticker);
       const hydrated = loader.hydrateAssetFromScreenerCandidate({
         ticker,
         market: expected.market,
@@ -633,9 +640,10 @@ test("production loader applies RM and distribution policy through saved hydrati
       assert.equal(saved.quantity, 1, ticker);
       assert.equal(saved.price, 100, ticker);
       assert.equal(saved.targetWeight, 100, ticker);
-      assert.equal(saved.productionAppExportEnabled, true, ticker);
-      assert.equal(saved.productionPublishReady, true, ticker);
-      assert.equal(saved.appExportApproved, true, ticker);
+      assert.equal(saved.productionAppExportEnabled, false, ticker);
+      assert.equal(saved.productionPublishReady, false, ticker);
+      assert.equal(saved.appExportApproved, false, ticker);
+      assert.equal(saved.dataSource, "finple_app_candidates_v2", ticker);
       assert.equal(saved.sourceHash, "", ticker);
       assert.equal(saved.rawSourceSha256, "", ticker);
       assert.equal(saved.normalizedSeriesHash, "", ticker);
@@ -687,7 +695,7 @@ test("production loader applies RM and distribution policy through saved hydrati
           assets: [saved],
         });
         assert.equal(ordinaryBaseline.status, "ready", ticker);
-        assert.equal(ordinaryBaseline.assets[0].annualPriceCagr, expected.cagr ?? 8, ticker);
+        assert.equal(ordinaryBaseline.assets[0].annualPriceCagr, expected.cagr, ticker);
       }
       if (ticker === "GLD") assert.equal(saved.dividendStatus, "confirmed_zero");
       if (ticker === "QYLG") {
@@ -713,7 +721,7 @@ test("production loader applies RM and distribution policy through saved hydrati
       "ready",
       mixedBaseline.blockReasons.join("|"),
     );
-    assert.equal(savedAssets.get("QQQ").selectedCagr, 17.11);
+    assert.equal(savedAssets.get("QQQ").selectedCagr, 12.00524973);
     assert.equal(savedAssets.get("GLD").dividendStatus, "confirmed_zero");
 
     const comparison = buildStep2MonthlyBaselineComparison({
@@ -747,27 +755,24 @@ test("production loader applies RM and distribution policy through saved hydrati
     assert.equal(detail.status, "ready");
     assert.ok(detail.performanceRows.length > 0);
 
-    const fallback = await loader.loadScreenerProductionAppExport({
+    const failedMonthlyArtifact = await loader.loadScreenerProductionAppExport({
       ...options(fixture),
       releaseManifestSha256: "0".repeat(64),
       disableCache: true,
     });
-    assert.equal(fallback.preview.status, "production_v1_fallback");
+    assert.equal(failedMonthlyArtifact.preview.status, "production_app_export_error");
     assert.equal(
-      fallback.preview.operationalReasonCode,
+      failedMonthlyArtifact.preview.operationalReasonCode,
       "production_release_manifest_unavailable",
     );
-    assert.equal(fallback.candidates.length, loader.ALL_SCREENER_CANDIDATES.length);
-    assert.ok(fallback.candidates.length < 6029);
-    const fallbackQqq = loader.hydrateAssetForProductionFallback({
-      ticker: "QQQ",
-      market: "US",
-      productionAppExportEnabled: true,
-      dataSource: "finple_production_app_export_step114_2zc",
-      selectedCagr: 17.11,
-    });
-    assert.equal(fallbackQqq.productionAppExportEnabled, false);
-    assert.notEqual(fallbackQqq.dataSource, "finple_production_app_export_step114_2zc");
+    assert.equal(
+      failedMonthlyArtifact.candidates.length,
+      loader.ALL_SCREENER_CANDIDATES.length,
+    );
+    assert.equal(failedMonthlyArtifact.candidates.length, 6029);
+    const canonicalQqq = loader.findScreenerCandidateByTicker("QQQ", "US");
+    assert.equal(canonicalQqq.dataSource, "finple_app_candidates_v2");
+    assert.equal(canonicalQqq.expectedCagr, 12.00524973);
   } finally {
     await vite.close();
   }

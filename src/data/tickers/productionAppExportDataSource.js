@@ -504,7 +504,7 @@ export async function loadProductionAppExportCatalog(options = {}) {
   if (!config.enabled) {
     return {
       enabled: false,
-      status: "production_v1_fallback",
+      status: "production_app_export_disabled",
       release: null,
       catalogPolicyByIdentity: Object.freeze({}),
     };

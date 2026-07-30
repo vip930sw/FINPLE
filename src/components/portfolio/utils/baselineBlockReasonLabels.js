@@ -1,4 +1,6 @@
 const USER_FACING_BLOCK_REASON_LABELS = Object.freeze({
+  canonical_catalog_load_error:
+    "최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
   unsupported_metric_status: "승인된 지표 상태를 확인할 수 없습니다.",
   invalid_production_metric_approval: "승인된 지표 상태를 확인할 수 없습니다.",
   unsupported_distribution_calculation_policy:

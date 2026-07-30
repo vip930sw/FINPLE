@@ -5,7 +5,6 @@ import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import { normalizeTicker } from "./portfolio/services/assetDataService";
 import {
   KR_SCREENER_CANDIDATES,
-  PRODUCTION_APP_EXPORT_LOADING_STATUS,
   US_SCREENER_CANDIDATES,
 } from "../data/tickers/screenerCandidateLoader";
 import {
@@ -389,8 +388,8 @@ function ScreenerPage({ onBack }) {
   const krCandidates = screenerCandidateSnapshot?.krCandidates || KR_SCREENER_CANDIDATES;
   const activeCandidates = activeMarket === "KR" ? krCandidates : activeMarket === "US" ? usCandidates : [...usCandidates, ...krCandidates];
   const isInternalPreview = screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only";
-  const isProductionCatalogLoading =
-    screenerCandidateSnapshot?.preview?.status === PRODUCTION_APP_EXPORT_LOADING_STATUS;
+  const canonicalCatalogLoadError =
+    screenerCandidateSnapshot?.preview?.status === "canonical_catalog_load_error";
   const initialQuery = typeof window === "undefined"
     ? ""
     : new URLSearchParams(window.location.search).get("asset") || "";
@@ -417,7 +416,13 @@ function ScreenerPage({ onBack }) {
             지표 기준월 {screenerCandidateSnapshot.preview.manifest?.metricDataThroughMonth || "-"}
           </p>
         ) : null}
-        <CandidateScreenerPanel key={`${activeMarket}-${initialQuery}`} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} initialQuery={initialQuery} isLoading={isProductionCatalogLoading} />
+        {canonicalCatalogLoadError ? (
+          <div className="tickerResultEmpty" role="alert">
+            최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </div>
+        ) : (
+          <CandidateScreenerPanel key={`${activeMarket}-${initialQuery}`} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} initialQuery={initialQuery} isLoading={false} />
+        )}
       </section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />
       <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="자산 파인더 상단으로 이동">↑ TOP</button>
