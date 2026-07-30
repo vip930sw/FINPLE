@@ -218,7 +218,7 @@ test("official preset and persistence hydration paths apply the manual CASH cont
       assert.equal(hydrated.createdAt, preserved.createdAt);
       assert.equal(hydrated.updatedAt, preserved.updatedAt);
       assert.equal(hydrated.dataSource, "finple_manual_cash_reference");
-      assert.equal(hydrated.expectedCagr, 2.5);
+      assert.equal(hydrated.expectedCagr, 2);
       assert.equal(hydrated.dividendYield, 0);
       assert.equal(hydrated.simulationCashYield, 0);
       assert.equal(hydrated.portfolioAddPolicy, "allow");

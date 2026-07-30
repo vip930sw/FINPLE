@@ -75,6 +75,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     fetchAllAssetData,
     resolveTickerCandidate,
     addAsset,
+    addCashAsset,
     removeAsset,
     cleanEmptyAssetRows,
     selectPortfolio,
@@ -293,6 +294,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             resolveTickerCandidate={resolveTickerCandidate}
             removeAsset={removeAsset}
             addAsset={addAsset}
+            addCashAsset={addCashAsset}
             cleanEmptyAssetRows={cleanEmptyAssetRows}
             resetActivePortfolioAssets={resetActivePortfolioAssets}
             resetGlobalSettings={resetGlobalSettings}

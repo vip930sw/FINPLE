@@ -325,7 +325,6 @@ export default function AssetInputTable({
             const displayedValue = value > 0 ? value : savedPlannedValue || plannedValue;
             const rowClassName = [isNewlyAdded ? "newAssetRow" : "", lookupRequired ? "lookupRequiredRow" : "", quantityMissing ? "quantityMissingRow" : ""].filter(Boolean).join(" ");
             const valueCellClassName = lookupRequired && displayedValue > 0 ? "numberCell tableNumberCell plannedValueCell" : "numberCell tableNumberCell";
-            const cagrDisplayValue = isCashAsset(asset) ? 0 : asset.cagr;
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
@@ -335,7 +334,7 @@ export default function AssetInputTable({
                 <td className="numberCell tableNumberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
                 <td className={valueCellClassName}>{formatEvaluationAmount(displayedValue)}</td>
                 <td className="targetWeightCell">{renderTargetWeight(asset, index, emptyRow, targetWeightValue)}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={cagrDisplayValue} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue asset={asset} />}</td>

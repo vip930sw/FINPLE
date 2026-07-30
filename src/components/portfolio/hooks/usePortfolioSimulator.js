@@ -75,6 +75,7 @@ import {
 } from "../../../data/tickers/productionAppExportDataSource";
 import { isNonOrdinaryDistribution } from "../../../data/tickers/distributionPolicy";
 import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy.js";
+import { createManualCashAsset } from "../../../data/tickers/manualCashAsset";
 import {
   buildAppExportScenarioResult,
   resolveAppExportScenarioState,
@@ -712,6 +713,35 @@ export default function usePortfolioSimulator() {
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
   }
+  function addCashAsset() {
+    if (assets.some((asset) => normalizeTicker(asset?.ticker) === "CASH" && !isEmptyAssetRow(asset))) {
+      const message = "현금 자산은 포트폴리오에 한 번만 추가할 수 있습니다.";
+      setAssetLookupSummary(message);
+      window.alert(message);
+      return;
+    }
+    const assetLimit = getCurrentPlanConfig().limits.assetsPerPortfolio;
+    if (Number.isFinite(assetLimit) && countRealAssets(assets) >= assetLimit) {
+      showPlanLimitNotice("asset");
+      return;
+    }
+
+    const cashAsset = createManualCashAsset({ id: `cash-${Date.now()}` });
+    setAssets((previousAssets) => {
+      const emptyIndex = previousAssets.findIndex((asset) => isEmptyAssetRow(asset));
+      if (emptyIndex < 0) {
+        return [...previousAssets, normalizeAsset(cashAsset, previousAssets.length)];
+      }
+      return previousAssets.map((asset, index) =>
+        index === emptyIndex ? normalizeAsset(cashAsset, index) : asset
+      );
+    });
+    setRecentlyAddedAssetId(cashAsset.id);
+    window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
+    const message = "현금 자산을 추가했습니다.";
+    setAssetLookupSummary(message);
+    window.alert(message);
+  }
   function addAsset() { setAssets([...assets, normalizeAsset({ ...EMPTY_ASSETS[0], id: `asset-${Date.now()}` }, assets.length)]); }
   function removeAsset(index) { const targetAsset = assets[index]; const targetKey = getAssetDraftKey(targetAsset, index); setTargetWeightDrafts((previousDrafts) => { const nextDrafts = { ...previousDrafts }; delete nextDrafts[targetKey]; return nextDrafts; }); setAssets(assets.filter((_, assetIndex) => assetIndex !== index)); }
   function cleanEmptyAssetRows() { const nextAssets = assets.filter((asset) => !isEmptyAssetRow(asset)); setAssets(nextAssets.length > 0 ? nextAssets : cloneAssets(DEFAULT_ASSETS)); setTargetWeightDrafts({}); }
@@ -815,5 +845,5 @@ export default function usePortfolioSimulator() {
   function reportPdfFileName() { return `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.pdf`; }
   function copyReportSummary() { navigator.clipboard?.writeText(createReportSummaryText({ activePortfolio, detailReport, settings, result, assets })); }
 
-  return { portfolioList, activePortfolioId, activePortfolio, settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupStatus, isBulkAssetLookupLoading, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: previewScenarioState.result, previewScenarioStatus: previewScenarioState.status, previewScenarioError: previewScenarioState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, fetchAssetData, fetchAllAssetData, resolveTickerCandidate, addAsset, addAssetFromTickerCandidate, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isAutoPriceAsset, isAutoMetricAsset, isEmptyAssetRow };
+  return { portfolioList, activePortfolioId, activePortfolio, settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupStatus, isBulkAssetLookupLoading, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: previewScenarioState.result, previewScenarioStatus: previewScenarioState.status, previewScenarioError: previewScenarioState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, fetchAssetData, fetchAllAssetData, resolveTickerCandidate, addAsset, addCashAsset, addAssetFromTickerCandidate, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isAutoPriceAsset, isAutoMetricAsset, isEmptyAssetRow };
 }

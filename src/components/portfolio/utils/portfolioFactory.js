@@ -7,6 +7,10 @@ import {
   GLOBAL_SETTINGS_STORAGE_KEY,
 } from "../constants";
 import { createAssetMarketMetadata, normalizeTickerForMarket } from "../config/marketConfig";
+import {
+  hydratePersistedManualCashAsset,
+  isManualCashAsset,
+} from "../../../data/tickers/manualCashAsset";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence";
 import { readScopedPortfolioStorageItem } from "./portfolioStorageScope";
 
@@ -19,15 +23,34 @@ export function createAssetId(index = 0) {
       .slice(2)}`;
   }
 export function normalizeAsset(asset, index = 0) {
-    const marketMetadata = createAssetMarketMetadata(asset);
-    const ticker = normalizeTickerForMarket(asset.ticker || marketMetadata.providerSymbol, marketMetadata.market);
+    const source = hydratePersistedManualCashAsset(asset);
+    const manualCash = isManualCashAsset(source);
+    const marketMetadata = manualCash
+      ? {
+          market: "CASH",
+          exchange: source.exchange || "MANUAL",
+          currency: source.currency || "KRW",
+          rawCurrency: source.rawCurrency || source.quoteCurrency || "KRW",
+          quoteCurrency: source.quoteCurrency || source.rawCurrency || "KRW",
+          displayCurrency: source.displayCurrency || source.currency || "KRW",
+          providerSymbol: source.providerSymbol || "CASH",
+          assetType: "CASH",
+        }
+      : createAssetMarketMetadata(source);
+    const ticker = manualCash
+      ? "CASH"
+      : normalizeTickerForMarket(
+          source.ticker || marketMetadata.providerSymbol,
+          marketMetadata.market,
+        );
 
     return {
-      id: asset.id || createAssetId(index),
+      ...(manualCash ? source : {}),
+      id: source.id || createAssetId(index),
       ticker,
-      displayTicker: asset.displayTicker || ticker,
+      displayTicker: source.displayTicker || ticker,
       providerSymbol: marketMetadata.providerSymbol || ticker,
-      name: asset.name || "",
+      name: source.name || "",
 
       market: marketMetadata.market,
       exchange: marketMetadata.exchange,
@@ -36,24 +59,24 @@ export function normalizeAsset(asset, index = 0) {
       displayCurrency: marketMetadata.displayCurrency,
       assetType: marketMetadata.assetType,
 
-      quantity: Number(asset.quantity || 0),
-      price: Number(asset.price || 0),
-      ...normalizePersistedMetricFields(asset),
+      quantity: Number(source.quantity || 0),
+      price: Number(source.price || 0),
+      ...normalizePersistedMetricFields(source),
 
-      priceMode: asset.priceMode || "manual",
-      metricMode: asset.metricMode || "manual",
-      dataSource: asset.dataSource || "manual",
-      cacheMode: asset.cacheMode || null,
+      priceMode: source.priceMode || "manual",
+      metricMode: source.metricMode || "manual",
+      dataSource: source.dataSource || "manual",
+      cacheMode: source.cacheMode || null,
       rawPrice:
-        asset.rawPrice === null || asset.rawPrice === undefined
+        source.rawPrice === null || source.rawPrice === undefined
           ? null
-          : Number(asset.rawPrice),
+          : Number(source.rawPrice),
       rawCurrency: marketMetadata.rawCurrency || null,
       exchangeRate:
-        asset.exchangeRate === null || asset.exchangeRate === undefined
+        source.exchangeRate === null || source.exchangeRate === undefined
           ? null
-          : Number(asset.exchangeRate),
-      lastUpdatedAt: asset.lastUpdatedAt || null,
+          : Number(source.exchangeRate),
+      lastUpdatedAt: source.lastUpdatedAt || null,
     };
   }
 export function cloneAssets(assets) {

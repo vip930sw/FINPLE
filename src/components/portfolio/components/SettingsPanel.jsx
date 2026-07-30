@@ -39,6 +39,7 @@ export default function SettingsPanel({
   resolveTickerCandidate,
   removeAsset,
   addAsset,
+  addCashAsset,
   cleanEmptyAssetRows,
   resetActivePortfolioAssets,
 }) {
@@ -246,6 +247,13 @@ export default function SettingsPanel({
       <div className="tableActionRow simulatorTableActionRow">
         <div className="tableActionLeftGroup">
           <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
+          <button
+            className="resetPortfolioButton secondary"
+            onClick={addCashAsset}
+            disabled={isBulkAssetLookupLoading}
+          >
+            현금 추가
+          </button>
           <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
           <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows}>빈 행 정리</button>
           <button className="resetPortfolioButton danger" onClick={resetActivePortfolioAssets}>포트폴리오 초기화</button>
