@@ -7,7 +7,7 @@ import {
   isManualCashAsset,
 } from "./manualCashAsset.js";
 
-test("manual CASH recognition requires the exact identity and an allowed internal source", () => {
+test("manual CASH requires ticker and an internal source; market or legacy assetType identifies CASH", () => {
   for (const dataSource of [
     "preset-cash",
     "investment-mbti-cash",
