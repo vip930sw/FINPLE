@@ -219,27 +219,7 @@ export default function AssetInputTable({
     if (!ticker) return;
     event.preventDefault();
 
-    const currentAsset = assets[index];
-    if (currentAsset) {
-      currentAsset.ticker = ticker;
-      currentAsset.name = "";
-      currentAsset.price = 0;
-      currentAsset.targetEvaluationAmount = null;
-      currentAsset.cagr = 0;
-      currentAsset.beta = 0;
-      currentAsset.mdd = 0;
-      currentAsset.dividendYield = null;
-      currentAsset.priceMode = "manual";
-      currentAsset.metricMode = "manual";
-      currentAsset.dataSource = "manual";
-      currentAsset.cacheMode = null;
-      currentAsset.rawPrice = null;
-      currentAsset.rawCurrency = null;
-      currentAsset.exchangeRate = null;
-      currentAsset.lastUpdatedAt = null;
-    }
-
-    updateAsset(index, "ticker", ticker);
+    if (updateAsset(index, "ticker", ticker) === false) return;
     event.currentTarget.blur();
     window.setTimeout(() => fetchAssetData(index), 160);
   };

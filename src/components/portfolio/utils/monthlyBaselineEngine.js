@@ -7,6 +7,7 @@ import {
   hydrateManualCashAsset,
   isManualCashAsset,
 } from "../../../data/tickers/manualCashAsset.js";
+import { isEmptyAssetRow } from "./portfolioFormatters.js";
 
 export const MONTHLY_BASELINE_ENGINE_VERSION = "monthly-baseline-v1-step114-2e";
 export const LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION = "legacy-may-app-ready-compat-v1-step114-2e";
@@ -776,7 +777,14 @@ export function buildMonthlyBaselineProjection({
   forcedBlockReasons = [],
 } = {}) {
   const rawSettings = normalizeRawSettings(settings);
-  const assetList = Array.isArray(assets) ? sortAssetsForDeterminism(assets) : [];
+  const assetList = Array.isArray(assets)
+    ? sortAssetsForDeterminism(assets.filter((asset) =>
+        !asset ||
+        typeof asset !== "object" ||
+        Array.isArray(asset) ||
+        !isEmptyAssetRow(asset)
+      ))
+    : [];
   const totalAssetValue = assetList.reduce((sum, asset) => sum + getAssetWeightValue(asset || {}), 0);
   const simulationStartValue = rawSettings.rawStartValue > 0 ? rawSettings.rawStartValue : totalAssetValue;
   const weightBaseValue = totalAssetValue > 0 ? totalAssetValue : simulationStartValue;
