@@ -593,7 +593,7 @@ test("non-ordinary AIPI and QYLG use trailing cash distributions for both settin
   }
 });
 
-test("exact VNQ and CASH user fixture stays blocked without approval or a cash baseline contract", () => {
+test("unknown-source CASH stays blocked without a manual cash baseline contract", () => {
   const assets = [
     productionAppExportAsset({ ticker: "QQQ", targetWeight: 20 }),
     productionAppExportAsset({ ticker: "SCHD", targetWeight: 15 }),
@@ -608,6 +608,7 @@ test("exact VNQ and CASH user fixture stays blocked without approval or a cash b
     asset({
       ticker: "CASH",
       market: "CASH",
+      dataSource: "user-input",
       targetWeight: 10,
       cagr: null,
       selectedCagr: null,
@@ -651,6 +652,31 @@ test("exact VNQ and CASH user fixture stays blocked without approval or a cash b
   assert.equal(assets[4].reviewFlag, "review_required");
   assert.equal(assets[6].market, "CASH");
   assert.equal(assets[6].selectedCagr, null);
+});
+
+test("manual CASH uses one 2.5% total-return path without provenance gates or double counting", () => {
+  const result = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: true },
+    assets: [asset({
+      ticker: "CASH",
+      market: "CASH",
+      assetType: "CASH",
+      dataSource: "manual-cash",
+      cagr: 2.5,
+      dividendYield: 2,
+    })],
+  });
+
+  assert.equal(result.status, "ready", result.blockReasons.join("|"));
+  assert.equal(result.assets[0].annualPriceCagr, 2.5);
+  assert.equal(result.assets[0].annualDividendYield, 0);
+  assert.equal(result.assets[0].monthlyDividendRate, 0);
+  assert.equal(result.expectedCagr, 2.5);
+  assert.equal(result.expectedDividendYield, 0);
+  assert.doesNotMatch(
+    result.blockReasons.join("|"),
+    /missing_metric_lineage|unsupported_calculation_policy_version|unsupported_pipeline_version|metric_source_not_publish_approved/,
+  );
 });
 
 test("explicit internal app-preview review source calculates while publish gates remain false", () => {

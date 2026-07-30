@@ -10,6 +10,7 @@ import {
   findScreenerCandidateByTicker,
   loadScreenerAppPreview,
 } from "../../../data/tickers/screenerCandidateLoader";
+import { createManualCashAssetPatch } from "../../../data/tickers/manualCashAsset";
 
 const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL =
@@ -98,6 +99,7 @@ function isCashTicker(ticker = "") {
 function createCashAssetData() {
   const now = new Date().toISOString();
   return {
+    ...createManualCashAssetPatch(),
     ticker: "CASH",
     displayTicker: "CASH",
     providerSymbol: "CASH",
@@ -107,20 +109,10 @@ function createCashAssetData() {
     currency: "KRW",
     quoteCurrency: "KRW",
     displayCurrency: "KRW",
-    assetType: "CASH",
     price: CASH_REFERENCE_PRICE,
-    cagr: 2.5,
-    beta: 0,
-    mdd: 0,
-    dividendYield: 2.0,
-    displayDividendYield: "2.00%",
-    dividendPolicy: "cash_reference",
-    dividendSource: "manual",
     reviewTag: "",
     reviewReason: "",
     priceMode: "manual",
-    metricMode: "manual",
-    dataSource: "manual-cash",
     cacheMode: "cash-reference",
     rawPrice: CASH_REFERENCE_PRICE,
     rawCurrency: "KRW",

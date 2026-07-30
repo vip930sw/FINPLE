@@ -12,6 +12,7 @@ import {
   resolveDistributionYieldFields,
 } from "./distributionPolicy";
 import { reconcileIdentityScopedAssetMetadata } from "./portfolioAssetIdentityMetadata";
+import { hydrateManualCashAsset } from "./manualCashAsset";
 
 const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
 const toNumber = (value) => {
@@ -773,6 +774,8 @@ export function hydratePortfolioAssetFromActiveCatalog(
   asset = {},
   options = {},
 ) {
+  const manualCashAsset = hydrateManualCashAsset(asset);
+  if (manualCashAsset !== asset) return manualCashAsset;
   const candidate = options.candidate ||
     findScreenerCandidateByTicker(asset?.ticker, asset?.market);
   if (!candidate) return asset;

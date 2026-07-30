@@ -3,6 +3,10 @@ import {
   resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy.js";
 import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy.js";
+import {
+  hydrateManualCashAsset,
+  isManualCashAsset,
+} from "../../../data/tickers/manualCashAsset.js";
 
 export const MONTHLY_BASELINE_ENGINE_VERSION = "monthly-baseline-v1-step114-2e";
 export const LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION = "legacy-may-app-ready-compat-v1-step114-2e";
@@ -417,7 +421,8 @@ function normalizeTargetShares(assets, weightBaseValue) {
 
 function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
   const reasons = [];
-  const metadata = adaptMetricMetadata(rawAsset || {});
+  const metadata = hydrateManualCashAsset(adaptMetricMetadata(rawAsset || {}));
+  const manualCash = isManualCashAsset(metadata);
   const ticker = normalizeTicker(metadata.ticker) || `asset_${index}`;
   const addDecision = getPortfolioAddDecision(metadata);
 
@@ -462,16 +467,37 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
       "app_ready",
       "ready",
       "canonical_v2_ready",
+      "manual_cash_ready",
       "internal_preview_review_only",
       PRODUCTION_APP_EXPORT_OVERLAY_STATUS,
     ]),
     reasons,
     ticker,
   );
-  if (!isCanonicalV2MetricSource(metadata)) {
+  if (!isCanonicalV2MetricSource(metadata) && !manualCash) {
     validateProductionAppExportApproval(metadata, reasons, ticker);
     validatePublishApproval(metadata, reasons, ticker);
     validateRequiredLineage(metadata, reasons, ticker);
+  }
+
+  if (manualCash) {
+    if (
+      normalizeTicker(metadata.ticker) !== "CASH" ||
+      normalizeMarket(metadata.market) !== "CASH" ||
+      normalizeStatus(metadata.assetType) !== "cash"
+    ) {
+      addBlockReason(reasons, "asset_baseline_contract_missing", `${ticker}.identity`);
+    }
+    if (toFiniteNumber(metadata.beta) !== 0 || toFiniteNumber(metadata.mdd) !== 0) {
+      addBlockReason(reasons, "asset_baseline_contract_missing", `${ticker}.risk`);
+    }
+    if (
+      metadata.active !== true ||
+      metadata.includeInSimulator !== true ||
+      normalizeStatus(metadata.portfolioAddPolicy) !== "allow"
+    ) {
+      addBlockReason(reasons, "asset_baseline_contract_missing", `${ticker}.eligibility`);
+    }
   }
 
   if (getAnnualCagr(metadata) === null) {

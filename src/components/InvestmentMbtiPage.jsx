@@ -390,7 +390,7 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       quoteCurrency: "KRW",
       priceMode: "manual",
       metricMode: isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "canonical_v2_price_return" : "manual"),
-      dataSource: isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti"),
+      dataSource: isCash ? "investment-mbti-cash" : (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti")),
     });
     const price = isCash ? Number(template.price || 10000) : Number(baseAsset.price || template.price || 1);
     const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
@@ -401,8 +401,8 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       price,
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
       priceMode: "manual",
-      metricMode: isCash ? "manual" : (baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "canonical_v2_price_return" : "manual"))),
-      dataSource: isCash ? "investment-mbti-cash" : (baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti"))),
+      metricMode: baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "canonical_v2_price_return" : "manual")),
+      dataSource: baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti")),
       lookupDisabled: isCash,
       shouldAutoLookup: !isCash,
     };
