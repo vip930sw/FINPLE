@@ -216,6 +216,14 @@ test("Step 1 separates the primary asset action from the lower-hierarchy CASH ac
     new URL("../src/components/portfolio/components/SettingsPanel.jsx", import.meta.url),
     "utf8",
   );
+  const simulatorSource = fs.readFileSync(
+    new URL("../src/components/PortfolioSimulator.jsx", import.meta.url),
+    "utf8",
+  );
+  const hookSource = fs.readFileSync(
+    new URL("../src/components/portfolio/hooks/usePortfolioSimulator.js", import.meta.url),
+    "utf8",
+  );
   const assetTableSource = fs.readFileSync(
     new URL("../src/components/portfolio/components/AssetInputTable.jsx", import.meta.url),
     "utf8",
@@ -226,9 +234,14 @@ test("Step 1 separates the primary asset action from the lower-hierarchy CASH ac
   );
   assert.match(
     settingsPanelSource,
-    /className="resetPortfolioButton secondary"[^>]*>현금 추가<\/button>/,
+    /className="resetPortfolioButton secondary"[^>]*>\s*현금 추가\s*<\/button>/,
   );
-  assert.match(settingsPanelSource, /createManualCashAsset/);
+  assert.doesNotMatch(settingsPanelSource, /assets\.(?:push|splice)\s*\(/);
+  assert.doesNotMatch(settingsPanelSource, /assets\s*\[[^\]]+\]\s*=/);
+  assert.match(simulatorSource, /addCashAsset=\{addCashAsset\}/);
+  assert.match(hookSource, /function addCashAsset\(\)/);
+  assert.match(hookSource, /setAssets\(\(previousAssets\)\s*=>/);
+  assert.match(hookSource, /createManualCashAsset/);
   assert.doesNotMatch(assetTableSource, /isCashAsset\(asset\)\s*\?\s*0/);
   assert.match(assetTableSource, /MetricTextValue value=\{asset\.cagr\}/);
 });

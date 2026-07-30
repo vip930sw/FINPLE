@@ -654,7 +654,7 @@ test("unknown-source CASH stays blocked without a manual cash baseline contract"
   assert.equal(assets[6].selectedCagr, null);
 });
 
-test("manual CASH uses one 2.5% total-return path without provenance gates or double counting", () => {
+test("manual CASH uses one fixed 2.0% total-return path without provenance gates or double counting", () => {
   const result = buildMonthlyBaselineProjection({
     settings: { ...BASE_SETTINGS, dividendReinvest: true },
     assets: [asset({
@@ -668,10 +668,10 @@ test("manual CASH uses one 2.5% total-return path without provenance gates or do
   });
 
   assert.equal(result.status, "ready", result.blockReasons.join("|"));
-  assert.equal(result.assets[0].annualPriceCagr, 2.5);
+  assert.equal(result.assets[0].annualPriceCagr, 2);
   assert.equal(result.assets[0].annualDividendYield, 0);
   assert.equal(result.assets[0].monthlyDividendRate, 0);
-  assert.equal(result.expectedCagr, 2.5);
+  assert.equal(result.expectedCagr, 2);
   assert.equal(result.expectedDividendYield, 0);
   assert.doesNotMatch(
     result.blockReasons.join("|"),

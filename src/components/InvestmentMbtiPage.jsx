@@ -49,7 +49,7 @@ const US_ASSET_TEMPLATES = {
   reit: { ticker: "VNQ", name: "Vanguard Real Estate ETF", price: 120000, market: "US" },
   gold: { ticker: "GLD", name: "SPDR Gold Shares ETF", price: 300000, market: "US" },
   crypto: { ticker: "BLOK", name: "Amplify Transformational Data Sharing ETF", price: 45000, market: "US", cagr: 9.0, beta: 1.4, mdd: -65, dividendYield: 1.0 },
-  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.0, beta: 0, mdd: 0, dividendYield: 0 },
 };
 
 const KR_ASSET_TEMPLATES = {
@@ -60,7 +60,7 @@ const KR_ASSET_TEMPLATES = {
   reit: { ticker: "329200", name: "TIGER 리츠부동산인프라", price: 5000, market: "KR" },
   gold: { ticker: "132030", name: "KODEX 골드선물(H)", price: 15000, market: "KR" },
   crypto: { ticker: "305720", name: "KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },
-  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.0, beta: 0, mdd: 0, dividendYield: 0 },
 };
 
 const MBTI_DISPLAY_NAMES = {
