@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import process from "node:process";
 import test, { after, before } from "node:test";
 
@@ -209,6 +210,28 @@ for (const [name, path] of Object.entries(persistencePaths)) {
     assertReady(name, assets);
   });
 }
+
+test("Step 1 separates the primary asset action from the lower-hierarchy CASH action", () => {
+  const settingsPanelSource = fs.readFileSync(
+    new URL("../src/components/portfolio/components/SettingsPanel.jsx", import.meta.url),
+    "utf8",
+  );
+  const assetTableSource = fs.readFileSync(
+    new URL("../src/components/portfolio/components/AssetInputTable.jsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    settingsPanelSource,
+    /className="addButton"[^>]*>자산 추가<\/button>/,
+  );
+  assert.match(
+    settingsPanelSource,
+    /className="resetPortfolioButton secondary"[^>]*>현금 추가<\/button>/,
+  );
+  assert.match(settingsPanelSource, /createManualCashAsset/);
+  assert.doesNotMatch(assetTableSource, /isCashAsset\(asset\)\s*\?\s*0/);
+  assert.match(assetTableSource, /MetricTextValue value=\{asset\.cagr\}/);
+});
 
 test("CASH stays outside the canonical and Screener catalogs", () => {
   assert.equal(
