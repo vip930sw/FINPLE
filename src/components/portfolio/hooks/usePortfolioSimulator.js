@@ -716,7 +716,7 @@ export default function usePortfolioSimulator() {
       return [...previousAssets, normalizeAsset(nextAsset, previousAssets.length)];
     });
     setRecentlyAddedAssetId(nextAsset.id);
-    window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
+    window.setTimeout(() => setRecentlyAddedAssetId(null), 1500);
     const message = `${ticker} 후보 자산을 현재 포트폴리오에 추가했습니다.`;
     setAssetLookupSummary(message);
     return { status: "success", ticker, asset: nextAsset, message };
@@ -831,7 +831,7 @@ export default function usePortfolioSimulator() {
       );
     });
     setRecentlyAddedAssetId(cashAsset.id);
-    window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
+    window.setTimeout(() => setRecentlyAddedAssetId(null), 1500);
     const message = "현금 자산을 추가했습니다.";
     setAssetLookupSummary(message);
   }
