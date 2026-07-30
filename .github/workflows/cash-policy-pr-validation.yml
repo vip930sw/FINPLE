@@ -1,9 +1,13 @@
 name: CASH Policy PR Validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - codex/cash-policy-2pct-and-add-button
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
