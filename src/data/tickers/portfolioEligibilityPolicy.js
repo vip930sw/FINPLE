@@ -309,4 +309,16 @@ export function getPortfolioAddDecision(asset = {}) {
   };
 }
 
+export function getAssetFinderCardActionState({
+  isAdded = false,
+  policy = "allow",
+  canAdd = true,
+} = {}) {
+  if (isAdded) return { label: "제외", disabled: false };
+  if (!canAdd || policy === "deny") {
+    return { label: "추가 불가", disabled: true };
+  }
+  return { label: "추가", disabled: false };
+}
+
 export { isLeveragedOrInverse };

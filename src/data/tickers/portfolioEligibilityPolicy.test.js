@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getAssetFinderCardActionState,
   getPortfolioAddDecision,
   isLeveragedOrInverse,
   resolveLeverageRiskProfile,
@@ -24,6 +25,25 @@ const readyAsset = {
   reviewFlag: "none",
   overlayStatus: "ready",
 };
+
+test("Asset Finder card actions prioritize removal, then deny, then add", () => {
+  assert.deepEqual(
+    getAssetFinderCardActionState({ isAdded: true, policy: "deny", canAdd: false }),
+    { label: "제외", disabled: false },
+  );
+  assert.deepEqual(
+    getAssetFinderCardActionState({ policy: "deny" }),
+    { label: "추가 불가", disabled: true },
+  );
+  assert.deepEqual(
+    getAssetFinderCardActionState({ policy: "confirm" }),
+    { label: "추가", disabled: false },
+  );
+  assert.deepEqual(
+    getAssetFinderCardActionState(),
+    { label: "추가", disabled: false },
+  );
+});
 
 test("price and rolling history produce accurate deny reasons at the configured minimum", () => {
   for (const [asset, reasonCode, message] of [

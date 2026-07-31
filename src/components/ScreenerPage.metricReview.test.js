@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
+
+const screenerSource = fs.readFileSync(
+  new URL("./ScreenerPage.jsx", import.meta.url),
+  "utf8",
+);
 
 test("Screener cards render dividend and metric review status as separate facts", async () => {
   const vite = await createServer({
@@ -30,7 +36,7 @@ test("Screener cards render dividend and metric review status as separate facts"
     const fixtures = [
       {
         ticker: "TQQQ",
-        expectedDividend: "배당 0.47%",
+        expectedDividend: "배당률 0.47%",
         item: {
           dividendYield: 0.47,
           dividendStatus: "confirmed_value",
@@ -41,7 +47,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "SOXL",
-        expectedDividend: "배당 확인 중",
+        expectedDividend: "배당률 확인 중",
         item: {
           dividendYield: 0,
           dividendStatus: "confirmed_value",
@@ -52,7 +58,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "069500",
-        expectedDividend: "배당 0.46%",
+        expectedDividend: "배당률 0.46%",
         item: {
           market: "KR",
           dividendYield: 0.46,
@@ -64,7 +70,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "GLD",
-        expectedDividend: "배당 0.00%",
+        expectedDividend: "배당률 0.00%",
         expectedMetricReview: "지표 검토 완료",
         item: {
           dividendYield: 0,
@@ -76,7 +82,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "SCHD",
-        expectedDividend: "배당 3.30%",
+        expectedDividend: "배당률 3.30%",
         expectedMetricReview: "지표 검토 완료",
         item: {
           dividendYield: 3.30,
@@ -88,7 +94,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "AIPI",
-        expectedDistribution: "최근 12개월 분배율 34.98%",
+        expectedDistribution: "현금분배율 34.98%",
         expectedMetricReview: "지표 검토 완료",
         item: {
           exposureType: "single_stock_option_income",
@@ -104,7 +110,7 @@ test("Screener cards render dividend and metric review status as separate facts"
       },
       {
         ticker: "QYLG",
-        expectedDistribution: "최근 12개월 분배율 16.26%",
+        expectedDistribution: "현금분배율 16.26%",
         expectedMetricReview: "지표 검토 완료",
         item: {
           exposureType: "index_covered_call_growth",
@@ -148,8 +154,12 @@ test("Screener cards render dividend and metric review status as separate facts"
         assert.match(html, new RegExp(fixture.expectedDividend), fixture.ticker);
       } else {
         assert.match(html, new RegExp(fixture.expectedDistribution), fixture.ticker);
-        assert.doesNotMatch(html, /<span>배당 /, fixture.ticker);
+        assert.match(html, /옵션 분배/, fixture.ticker);
+        assert.match(html, /분배 주기: (주간|월간)/, fixture.ticker);
+        assert.doesNotMatch(html, /최근 12개월 분배율/, fixture.ticker);
+        assert.doesNotMatch(html, /<span>배당률 /, fixture.ticker);
       }
+      assert.doesNotMatch(html, /review-only/, fixture.ticker);
       assert.doesNotMatch(html, /분석 가능/, fixture.ticker);
       assert.match(
         html,
@@ -184,9 +194,33 @@ test("Screener cards render dividend and metric review status as separate facts"
     );
     assert.match(shortHistoryHtml, /disabled=""/);
     assert.match(shortHistoryHtml, /aria-disabled="true"/);
+    assert.match(shortHistoryHtml, /<button[^>]*>추가 불가<\/button>/);
     assert.match(shortHistoryHtml, /가격 이력 1\.9년/);
     assert.match(shortHistoryHtml, /포트폴리오 이용 불가/);
     assert.match(shortHistoryHtml, /2027-09-01 이후/);
+
+    const priceUnavailableHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "NOPRICE",
+          koreanName: "NOPRICE",
+          market: "US",
+          type: "ETF",
+          exposureType: "ordinary_etf",
+          distributionType: "ordinary_cash_dividend",
+          active: true,
+          listingStatus: "active",
+          priceUnavailable: true,
+          goals: [],
+          tags: [],
+        },
+        isAdded: false,
+        canAdd: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(priceUnavailableHtml, /가격 정보 없음/);
+    assert.doesNotMatch(priceUnavailableHtml, /review-only/);
 
     const leveragedHtml = renderToStaticMarkup(
       React.createElement(ScreenerCandidateCard, {
@@ -213,13 +247,36 @@ test("Screener cards render dividend and metric review status as separate facts"
       }),
     );
     assert.doesNotMatch(leveragedHtml, /disabled=""/);
-    assert.match(leveragedHtml, /확인 후 추가/);
+    assert.match(leveragedHtml, />추가</);
     assert.match(leveragedHtml, /레버리지·인버스 위험 확인/);
     assert.match(leveragedHtml, /일일 -3X/);
     assert.match(leveragedHtml, /인버스/);
     assert.match(leveragedHtml, /장기보유 주의/);
     assert.match(leveragedHtml, /극단 변동성/);
     assert.match(leveragedHtml, /leverageRiskNotice--high/);
+
+    const addedDeniedHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "OLD",
+          koreanName: "OLD",
+          market: "US",
+          type: "ETF",
+          active: false,
+          listingStatus: "inactive",
+          portfolioEligible: false,
+          portfolioAddPolicy: "deny",
+          goals: [],
+          tags: [],
+        },
+        isAdded: true,
+        canAdd: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(addedDeniedHtml, /<button[^>]*>제외<\/button>/);
+    assert.doesNotMatch(addedDeniedHtml, /<button[^>]*disabled=""/);
+    assert.match(addedDeniedHtml, /aria-label="OLD를 현재 포트폴리오에서 제외"/);
     assert.match(leveragedHtml, /위험강도 높음/);
 
     const finderTierHtml = renderToStaticMarkup(
@@ -250,6 +307,29 @@ test("Screener cards render dividend and metric review status as separate facts"
     assert.match(finderTierHtml, /일일 \+3X/);
     assert.match(finderTierHtml, /leverageRiskNotice--high/);
     assert.match(finderTierHtml, /data-warning-severity="high"/);
+
+    const finderDistributionHtml = renderToStaticMarkup(
+      React.createElement(TickerResultCard, {
+        item: {
+          ticker: "QYLG",
+          market: "US",
+          type: "ETF",
+          exposureType: "index_covered_call_growth",
+          distributionType: "mixed_distribution",
+          distributionFrequency: "monthly",
+          trailingDistributionYield: 16.26,
+          portfolioEligible: true,
+          portfolioAddPolicy: "allow",
+          tags: [],
+        },
+        isAdded: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(finderDistributionHtml, /옵션 분배/);
+    assert.match(finderDistributionHtml, /현금분배율 16\.26%/);
+    assert.match(finderDistributionHtml, /분배 주기: 월간/);
+    assert.doesNotMatch(finderDistributionHtml, /review-only/);
 
     const compareTierHtml = renderToStaticMarkup(
       React.createElement(ComparePanel, {
@@ -395,4 +475,15 @@ test("Screener cards render dividend and metric review status as separate facts"
   } finally {
     await vite.close();
   }
+});
+
+test("Asset Finder removes an existing active-portfolio asset before add policy", () => {
+  const start = screenerSource.indexOf("function handleAdd(item)");
+  const end = screenerSource.indexOf("  return (", start);
+  const source = screenerSource.slice(start, end);
+
+  assert.ok(start >= 0 && end > start);
+  assert.ok(source.indexOf("findDuplicateAssetIndex") < source.indexOf("addAssetFromTickerCandidate"));
+  assert.match(source, /removeAsset\(existingIndex\)/);
+  assert.doesNotMatch(source, /window\.(alert|confirm)/);
 });
