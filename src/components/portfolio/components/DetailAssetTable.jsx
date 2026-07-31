@@ -1,6 +1,10 @@
 import {
   resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
+import {
+  getAssetEvaluationValue,
+  getAssetEvaluationWeight,
+} from "../utils/portfolioFormatters";
 
 function toSafeNumber(value) {
   const numberValue = Number(value);
@@ -25,10 +29,6 @@ function formatQuantity(value) {
 function formatRoundedThousand(value) {
   const roundedValue = Math.round(toSafeNumber(value) / 1000) * 1000;
   return formatDashWhenZero(roundedValue, (numberValue) => Math.max(0, Math.floor(toSafeNumber(numberValue))).toLocaleString());
-}
-
-function isCashAsset(asset) {
-  return String(asset?.ticker || "").trim().toUpperCase() === "CASH";
 }
 
 function formatMetric(value, formatter) {
@@ -69,9 +69,9 @@ export default function DetailAssetTable({
 
         <tbody>
           {assets.map((asset, index) => {
-            const assetValue = Number(asset.quantity || 0) * Number(asset.price || 0);
-            const weight = totalAssetValue > 0 ? (assetValue / totalAssetValue) * 100 : 0;
-            const cagrValue = isCashAsset(asset) ? 0 : asset.cagr;
+            const assetValue = getAssetEvaluationValue(asset);
+            const weight = getAssetEvaluationWeight(asset, totalAssetValue);
+            const cagrValue = asset.cagr;
             const distributionDisplay = resolveDistributionDisplayPolicy(asset);
             const cashYield = distributionDisplay.kind === "ordinary"
               ? asset.dividendYield

@@ -923,7 +923,7 @@ test("user-facing baseline block reasons are deduplicated while audit reasons re
   const labels = formatUserFacingBaselineBlockReasons(auditReasons);
 
   assert.deepEqual(labels, [
-    "지표 계산 계약을 확인할 수 없습니다.",
+    "QQQ: 계산에 필요한 자산 정보가 완성되지 않았습니다. 다시 조회하거나 행을 정리해 주세요.",
     "승인된 지표 상태를 확인할 수 없습니다.",
     "지표 출처 정보가 부족합니다.",
   ]);

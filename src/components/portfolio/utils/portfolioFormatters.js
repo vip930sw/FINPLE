@@ -41,12 +41,17 @@ export function isEmptyAssetRow(asset) {
     Number(asset.dividendYield || 0) === 0
   );
 }
-export function getAssetValue(asset) {
-  return Number(asset.quantity || 0) * Number(asset.price || 0);
+export function getAssetEvaluationValue(asset = {}) {
+  const actualValue = Number(asset.quantity || 0) * Number(asset.price || 0);
+  if (Number.isFinite(actualValue) && actualValue > 0) return actualValue;
+  const plannedValue = Number(asset.targetEvaluationAmount || 0);
+  return Number.isFinite(plannedValue) && plannedValue > 0 ? plannedValue : 0;
 }
-export function getAssetWeight(asset, totalAssetValue) {
-  const assetValue = getAssetValue(asset);
-  return totalAssetValue > 0 ? (assetValue / totalAssetValue) * 100 : 0;
+export function getAssetEvaluationWeight(asset, totalAssetValue) {
+  const assetValue = getAssetEvaluationValue(asset);
+  return Number.isFinite(Number(totalAssetValue)) && Number(totalAssetValue) > 0
+    ? (assetValue / Number(totalAssetValue)) * 100
+    : 0;
 }
 export function createSafeFileName(name, fallback = "portfolio") {
   return (name || fallback).replace(/[\\/:*?"<>|]/g, "-").trim();

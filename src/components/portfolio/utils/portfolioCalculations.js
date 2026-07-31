@@ -135,14 +135,16 @@ export function getPortfolioInsight(portfolio, allPortfolios) {
   if (!isReadyPortfolio(portfolio)) {
     return {
       type: "기준 계산 보류",
-      text: "지표 출처 확인이 끝나야 이 포트폴리오를 순위와 차트에 포함할 수 있습니다.",
+      text: "아래 계산 보류 사유를 확인한 뒤 자산 구성을 정리해 주세요.",
     };
   }
 
   const cagr = toMetricNumber(result.expectedCagr);
   const mdd = toMetricNumber(result.simpleMdd);
   const cashFlowYield = toMetricNumber(result.expectedSimulationCashYield ?? result.expectedDividendYield);
-  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(portfolio.assets);
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(
+    result.assets?.length ? result.assets : portfolio.assets,
+  );
   const realValue = toMetricNumber(result.inflationAdjustedFutureValue) ?? 0;
   const readyPortfolios = allPortfolios.filter(isReadyPortfolio);
   const realValues = readyPortfolios
