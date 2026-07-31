@@ -2,16 +2,11 @@ import {
   isNonOrdinaryDistribution,
   resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy.js";
-import { isEmptyAssetRow } from "./portfolioFormatters.js";
-
-function getAssetValue(asset) {
-  return Number(asset?.quantity || 0) * Number(asset?.price || 0);
-}
-
-function getAssetWeight(asset, totalAssetValue) {
-  const value = getAssetValue(asset);
-  return totalAssetValue > 0 ? (value / totalAssetValue) * 100 : 0;
-}
+import {
+  getAssetEvaluationValue,
+  getAssetEvaluationWeight,
+  isEmptyAssetRow,
+} from "./portfolioFormatters.js";
 
 function classifyAssetRole(asset = {}) {
   const ticker = String(asset.ticker || "").toUpperCase();
@@ -32,19 +27,24 @@ function classifyAssetRole(asset = {}) {
 
 export function analyzePortfolioProfile({ assets = [], result = {} }) {
   const totalAssetValue = Number(result.totalAssetValue || 0);
-  const activeAssets = assets.filter((asset) => String(asset?.ticker || "").trim() && getAssetValue(asset) > 0);
+  const activeAssets = assets.filter((asset) =>
+    String(asset?.ticker || "").trim() && getAssetEvaluationValue(asset) > 0
+  );
   const roleMap = new Map();
 
   activeAssets.forEach((asset) => {
     const role = classifyAssetRole(asset);
-    const weight = getAssetWeight(asset, totalAssetValue);
+    const weight = getAssetEvaluationWeight(asset, totalAssetValue);
     const previous = roleMap.get(role.key) || { ...role, weight: 0 };
     roleMap.set(role.key, { ...previous, weight: previous.weight + weight });
   });
 
   const roleBreakdown = Array.from(roleMap.values()).sort((a, b) => b.weight - a.weight);
   const topAssets = [...activeAssets]
-    .map((asset) => ({ ticker: asset.ticker || "-", weight: getAssetWeight(asset, totalAssetValue) }))
+    .map((asset) => ({
+      ticker: asset.ticker || "-",
+      weight: getAssetEvaluationWeight(asset, totalAssetValue),
+    }))
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 3);
 

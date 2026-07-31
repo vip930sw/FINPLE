@@ -2,8 +2,8 @@ import { analyzePortfolioProfile } from "./portfolioAnalysis.js";
 import {
   formatNumber,
   formatPercent,
-  getAssetValue,
-  getAssetWeight,
+  getAssetEvaluationValue,
+  getAssetEvaluationWeight,
   isEmptyAssetRow,
 } from "./portfolioFormatters.js";
 import {
@@ -45,8 +45,8 @@ function createReportAnalysis(assets, result, blocked) {
   return {
     profileSummary: "기준 계산 보류",
     allocationSummary: "-",
-    riskPoints: ["승인된 계산 계약을 충족하지 않아 기준 계산을 보류했습니다."],
-    suggestions: ["차단 사유와 자산별 분배 정책을 검토한 뒤 다시 계산하세요."],
+    riskPoints: ["계산 보류 사유를 확인해 주세요."],
+    suggestions: ["미완성·중복·이용 불가 자산을 정리한 뒤 다시 계산하세요."],
   };
 }
 
@@ -172,8 +172,8 @@ export function createPortfolioReportText({
     ``,
     `자산 구성`,
     ...safeAssets.map((asset) => {
-      const assetValue = getAssetValue(asset);
-      const weight = getAssetWeight(asset, result.totalAssetValue);
+      const assetValue = getAssetEvaluationValue(asset);
+      const weight = getAssetEvaluationWeight(asset, result.totalAssetValue);
       const cagr = blocked ? "-" : `${Number(asset.cagr || 0).toFixed(1)}%`;
       const beta = blocked ? "-" : Number(asset.beta || 0).toFixed(2);
       const mdd = blocked ? "-" : `${Number(asset.mdd || 0).toFixed(1)}%`;

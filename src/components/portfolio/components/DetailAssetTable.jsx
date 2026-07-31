@@ -1,6 +1,10 @@
 import {
   resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
+import {
+  getAssetEvaluationValue,
+  getAssetEvaluationWeight,
+} from "../utils/portfolioFormatters";
 
 function toSafeNumber(value) {
   const numberValue = Number(value);
@@ -65,8 +69,8 @@ export default function DetailAssetTable({
 
         <tbody>
           {assets.map((asset, index) => {
-            const assetValue = Number(asset.quantity || 0) * Number(asset.price || 0);
-            const weight = totalAssetValue > 0 ? (assetValue / totalAssetValue) * 100 : 0;
+            const assetValue = getAssetEvaluationValue(asset);
+            const weight = getAssetEvaluationWeight(asset, totalAssetValue);
             const cagrValue = asset.cagr;
             const distributionDisplay = resolveDistributionDisplayPolicy(asset);
             const cashYield = distributionDisplay.kind === "ordinary"

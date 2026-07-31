@@ -11,7 +11,7 @@ import {
   formatPortfolioEligibilityBlocks,
   formatUserFacingBaselineBlockReasons,
 } from "../utils/baselineBlockReasonLabels";
-import { isEmptyAssetRow } from "../utils/portfolioFormatters";
+import { getAssetEvaluationValue, isEmptyAssetRow } from "../utils/portfolioFormatters";
 import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 function MetricTooltip({ label, children }) {
@@ -70,12 +70,7 @@ function getSafeReportFileName(reportPdfFileName, activePortfolio) {
 }
 
 function getAssetsTotalValue(assets = []) {
-  return safeArray(assets).reduce((sum, asset) => {
-    const actualValue = safeNumber(asset?.quantity) * safeNumber(asset?.price);
-    const plannedValue = safeNumber(asset?.targetEvaluationAmount);
-    const value = actualValue > 0 ? actualValue : plannedValue;
-    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
-  }, 0);
+  return safeArray(assets).reduce((sum, asset) => sum + getAssetEvaluationValue(asset), 0);
 }
 
 export default function DetailPanel({
@@ -181,7 +176,7 @@ export default function DetailPanel({
           <div>
             <p className="sectionLabel">Step 3. Detail</p>
             <h3>기준 계산 보류</h3>
-            <p>지표 출처 확인이 끝나야 이 포트폴리오의 상세 분석을 표시할 수 있습니다.</p>
+            <p>아래 계산 보류 사유를 확인한 뒤 자산 구성을 정리하고 다시 계산해 주세요.</p>
           </div>
         </div>
         <div className="detailInfoSection">

@@ -29,6 +29,8 @@ import {
   formatDecimal,
   formatNumber,
   formatPercent,
+  getAssetEvaluationValue,
+  getAssetEvaluationWeight,
 } from "../src/components/portfolio/utils/portfolioFormatters.js";
 
 const RESULT_FIELDS = [
@@ -52,6 +54,8 @@ const RESULT_FIELDS = [
 const INTERNAL_RESULT_TEXT =
   /missing_metric_lineage|invalid_production_metric_approval|metric_source_not_publish_approved|unsupported_calculation_policy_version|unsupported_pipeline_version/;
 const INVALID_USER_VALUE = /NaN|Infinity|undefined|review-only/;
+const MISLEADING_BLOCKED_COPY =
+  /지표 출처 확인|승인된 계산 계약|차단 사유와 자산별 분배 정책/;
 
 let vite;
 let ComparePanel;
@@ -159,6 +163,24 @@ function createSpecialFixtures() {
       assets: [
         qqq,
         createCatalogAsset("SCHD", "US", 0),
+      ],
+    },
+    {
+      id: "special-target-value-only",
+      name: "현재가 없는 목표 평가금액 전용",
+      path: "special",
+      expectedStatus: "ready",
+      assets: [
+        createCatalogAsset("QQQ", "US", 60, {
+          quantity: 0,
+          price: 0,
+          targetEvaluationAmount: 30_000_000,
+        }),
+        createCatalogAsset("SCHD", "US", 40, {
+          quantity: 0,
+          price: 0,
+          targetEvaluationAmount: 20_000_000,
+        }),
       ],
     },
     {
@@ -315,12 +337,12 @@ after(async () => {
   await vite?.close();
 });
 
-test("40 portfolio paths keep Step 2 and Step 3 results aligned", () => {
+test("41 portfolio paths keep Step 2 and Step 3 results aligned", () => {
   assert.equal(matrix.filter((item) => item.path === "official_preset").length, 10);
   assert.equal(matrix.filter((item) => item.path === "investment_mbti").length, 16);
   assert.equal(matrix.filter((item) => item.path === "persistence").length, 5);
-  assert.equal(matrix.filter((item) => item.path === "special").length, 9);
-  assert.equal(matrix.length, 40);
+  assert.equal(matrix.filter((item) => item.path === "special").length, 10);
+  assert.equal(matrix.length, 41);
 
   for (const fixture of matrix) {
     const step2 = getPortfolio(fixture.id).result;
@@ -334,9 +356,9 @@ test("40 portfolio paths keep Step 2 and Step 3 results aligned", () => {
 
   const step2Ready = insightPortfolios.filter((item) => item.result.ready).length;
   const step3Ready = [...step3Results.values()].filter((result) => result.ready).length;
-  assert.equal(step2Ready, 37);
-  assert.equal(step3Ready, 37);
-  console.log("[P2 QA] paths=40 Step2=37 ready/3 blocked Step3=37 ready/3 blocked fields=16");
+  assert.equal(step2Ready, 38);
+  assert.equal(step3Ready, 38);
+  console.log("[P2 QA] paths=41 Step2=38 ready/3 blocked Step3=38 ready/3 blocked fields=16");
 });
 
 test("Step 2 ranks, cards, chart eligibility, ties, and legends stay deterministic", () => {
@@ -418,6 +440,7 @@ test("Step 2 ranks, cards, chart eligibility, ties, and legends stay determinist
     const blockedHtml = renderCompare([getPortfolio(id)]);
     assert.match(blockedHtml, /<strong>-<\/strong>/);
     assert.doesNotMatch(blockedHtml, /<polyline/);
+    assert.doesNotMatch(blockedHtml, MISLEADING_BLOCKED_COPY);
   }
   assert.match(renderCompare([getPortfolio("special-denied")]), /제거하거나 이용 가능한 자산으로 교체/);
   assert.match(renderCompare([getPortfolio("special-partial-row")]), /PARTIAL.*완성되지 않았/);
@@ -531,6 +554,31 @@ test("Step 3 detail, reports, and print-PDF input share user-facing values", () 
   ));
   assert.match(zeroHtml, /SCHD/);
 
+  const targetValueFixture = matrix.find((item) => item.id === "special-target-value-only");
+  const targetValueResult = getStep3(targetValueFixture.id);
+  const targetValueHtml = renderToStaticMarkup(React.createElement(
+    DetailPanel,
+    detailProps(targetValueFixture, getPortfolio(targetValueFixture.id), targetValueResult),
+  ));
+  assert.match(targetValueHtml, /<tr><td>QQQ<\/td>[\s\S]*?<td>30,000,000<\/td><td>60\.00%<\/td>/);
+  assert.match(targetValueHtml, /<tr><td>SCHD<\/td>[\s\S]*?<td>20,000,000<\/td><td>40\.00%<\/td>/);
+  const targetWeights = targetValueFixture.assets.map((asset) =>
+    getAssetEvaluationWeight(asset, targetValueResult.totalAssetValue)
+  );
+  assert.equal(targetWeights.reduce((sum, weight) => sum + weight, 0), 100);
+  assert.equal(getAssetEvaluationValue({ quantity: 2, price: 100, targetEvaluationAmount: 999 }), 200);
+  assert.equal(getAssetEvaluationValue({ quantity: 0, price: 0, targetEvaluationAmount: 999 }), 999);
+  assert.equal(getAssetEvaluationValue({ quantity: 0, price: 0, targetEvaluationAmount: Infinity }), 0);
+  const targetValueReport = createPortfolioReportText(
+    reportInput(targetValueFixture, getPortfolio(targetValueFixture.id), targetValueResult),
+  );
+  assert.match(targetValueReport, /QQQ \/ [^\n]+ \/ 평가금액 30,000,000원 \/ 비중 60\.00%/);
+  assert.match(targetValueReport, /SCHD \/ [^\n]+ \/ 평가금액 20,000,000원 \/ 비중 40\.00%/);
+  for (const text of [targetValueHtml, targetValueReport]) {
+    assert.doesNotMatch(text, /30,000,000원?[^\n<]*(?:NaN|undefined)/);
+    assert.doesNotMatch(text, /20,000,000원?[^\n<]*(?:NaN|undefined)/);
+  }
+
   for (const fixture of [
     ordinaryFixture,
     mixedFixture,
@@ -623,6 +671,11 @@ test("all-empty, partial, duplicate, and deny states stay distinct and fail clos
     "special-partial-row": /PARTIAL.*완성되지 않았/,
     "special-duplicate": /US:QQQ.*중복/,
   };
+  const blockedTickers = {
+    "special-denied": /0000D0/,
+    "special-partial-row": /PARTIAL/,
+    "special-duplicate": /US:QQQ/,
+  };
   for (const [id, expected] of Object.entries(blockedExpectations)) {
     const fixture = matrix.find((item) => item.id === id);
     const result = getStep3(id);
@@ -630,5 +683,11 @@ test("all-empty, partial, duplicate, and deny states stay distinct and fail clos
       React.createElement(DetailPanel, detailProps(fixture, getPortfolio(id), result)),
     );
     assert.match(html, expected, id);
+    assert.doesNotMatch(html, MISLEADING_BLOCKED_COPY, id);
+    const report = createPortfolioReportText(
+      reportInput(fixture, getPortfolio(id), result),
+    );
+    assert.doesNotMatch(report, MISLEADING_BLOCKED_COPY, id);
+    assert.match(report, blockedTickers[id], id);
   }
 });
