@@ -1,3 +1,5 @@
+import { getStep4ScenarioAssets } from "./portfolioFormatters.js";
+
 export const PROBABILITY_UI_VERSION = "probability-ui-shell-v1-step114-2g";
 export const SUPPORTED_SCENARIO_VERSION = "probabilistic-scenario-v1-step114-2f";
 export const SUPPORTED_METHOD = "joint_block_bootstrap";
@@ -123,7 +125,7 @@ export function getProbabilityPortfolioFingerprint({ portfolioId, settings, asse
       inflationRate: settings?.inflationRate ?? null,
       dividendReinvest: Boolean(settings?.dividendReinvest),
     },
-    assets: safeArray(assets)
+    assets: getStep4ScenarioAssets(assets)
       .map((asset) => ({
         market: normalizeMarket(asset),
         ticker: normalizeTicker(asset),
@@ -458,8 +460,8 @@ function normalizeBaselineReference({ baselineResult, result, fingerprint }) {
 function createStatusViewModel({ status, reasons = [], selectedPortfolioName, fixtureContext = null }) {
   const copy = {
     idle: {
-      title: "확률분석 대기",
-      message: "검증된 precomputed 확률분석 결과가 연결되면 여기에 표시됩니다.",
+      title: "월간 데이터 연결 필요",
+      message: "검증된 월간 수익률 데이터가 연결되지 않았습니다.",
     },
     insufficient_data: {
       title: "데이터 기간 부족",

@@ -33,6 +33,12 @@ export function formatUserFacingBaselineBlockReason(reason = "") {
   if (code === "missing_ticker") {
     return "티커가 없는 미완성 자산 행이 있습니다. 행을 완성하거나 정리해 주세요.";
   }
+  if (["missing_initial_investment", "invalid_start_value"].includes(code)) {
+    return "시작 평가금액을 0원보다 크게 입력해 주세요.";
+  }
+  if (code === "invalid_target_weights") {
+    return "목표비중 합계를 100%로 맞춰 주세요.";
+  }
   if (["missing_metric_status", "missing_selected_cagr"].includes(code)) {
     return `${ticker}: 계산에 필요한 자산 정보가 완성되지 않았습니다. 다시 조회하거나 행을 정리해 주세요.`;
   }

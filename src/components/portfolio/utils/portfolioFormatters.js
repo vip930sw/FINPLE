@@ -56,6 +56,13 @@ export function isEmptyAssetRow(asset) {
     Number(asset.dividendYield || 0) === 0
   );
 }
+export function getStep4ScenarioAssets(assets = []) {
+  return (Array.isArray(assets) ? assets : []).filter((asset) => {
+    if (!asset || typeof asset !== "object" || Array.isArray(asset) || isEmptyAssetRow(asset)) return false;
+    const targetWeight = Number(asset.targetWeight);
+    return Number.isFinite(targetWeight) && targetWeight > 0;
+  });
+}
 export function getAssetEvaluationValue(asset = {}, simulationStartValue = null) {
   const startValue = Number(simulationStartValue);
   const targetWeight = Number(asset.targetWeight);

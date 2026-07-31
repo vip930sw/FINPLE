@@ -322,7 +322,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             assets={assets}
             result={result}
             settings={settings}
-            isEmptyAssetRow={isEmptyAssetRow}
             scenarioResult={previewScenarioResult}
             scenarioLoadStatus={previewScenarioStatus}
             scenarioLoadError={previewScenarioError}

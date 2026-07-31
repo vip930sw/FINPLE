@@ -44,10 +44,15 @@ import {
   formatDecimal,
   formatNumber,
   formatPercent,
+  getStep4ScenarioAssets,
   isAutoAsset,
   isEmptyAssetRow,
   toNumber,
 } from "../utils/portfolioFormatters";
+import {
+  formatPortfolioEligibilityBlocks,
+  formatUserFacingBaselineBlockReasons,
+} from "../utils/baselineBlockReasonLabels.js";
 import {
   DUPLICATE_ASSET_ALERT_MESSAGE,
   findDuplicateAssetIndex,
@@ -72,7 +77,7 @@ import {
   loadProductionMonthlyReturnsForIdentities,
 } from "../../../data/tickers/productionAppExportDataSource";
 import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy.js";
-import { createManualCashAsset } from "../../../data/tickers/manualCashAsset";
+import { createManualCashAsset, isManualCashAsset } from "../../../data/tickers/manualCashAsset";
 import {
   buildAppExportScenarioResult,
   resolveAppExportScenarioState,
@@ -223,6 +228,14 @@ export default function usePortfolioSimulator() {
       }
     : calculatePortfolioResult(settings, assets);
   const { yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue } = result;
+  const step4BaselineBlockMessage = result.status !== "ready"
+    ? [
+        ...formatUserFacingBaselineBlockReasons(result.blockReasons),
+        ...formatPortfolioEligibilityBlocks(result.portfolioEligibilityBlocks),
+      ].filter(Boolean).join(" ")
+    : toNumber(settings.startValue) > 0
+      ? ""
+      : "시작 평가금액을 0원보다 크게 입력해 주세요.";
   const comparisonPortfolios = isCanonicalCatalogUnavailable
     ? []
     : createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings);
@@ -247,20 +260,44 @@ export default function usePortfolioSimulator() {
       setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null });
       return undefined;
     }
+    if (step4BaselineBlockMessage) {
+      setMonthlyScenarioArtifactState({
+        status: "blocked",
+        result: null,
+        error: step4BaselineBlockMessage,
+      });
+      return undefined;
+    }
+    const scenarioAssets = getStep4ScenarioAssets(assets);
+    const unknownCash = scenarioAssets.find(
+      (asset) => normalizeTicker(asset?.ticker) === "CASH" && !isManualCashAsset(asset),
+    );
+    if (unknownCash) {
+      setMonthlyScenarioArtifactState({
+        status: "blocked",
+        result: null,
+        error: "CASH: 포트폴리오에 사용할 수 없는 자산입니다.",
+      });
+      return undefined;
+    }
+    if (scenarioAssets.length > 0 && scenarioAssets.every(isManualCashAsset)) {
+      setMonthlyScenarioArtifactState({ status: "cash_only", result: null, error: null });
+      return undefined;
+    }
     const internalPreviewMode =
       screenerCandidateSnapshot.preview.status === "internal_preview_review_only";
     const productionMode = isProductionMonthlyScenarioArtifactConfigured();
     if (!internalPreviewMode && !productionMode) {
       setMonthlyScenarioArtifactState({
-        status: "unavailable",
+        status: "unconfigured",
         result: null,
         error: "검증된 월간 수익률 데이터가 연결되지 않았습니다.",
       });
       return undefined;
     }
     const identities = [...new Set(
-      assets
-        .filter((asset) => !isEmptyAssetRow(asset) && normalizeTicker(asset?.ticker) !== "CASH")
+      scenarioAssets
+        .filter((asset) => normalizeTicker(asset?.ticker) !== "CASH")
         .map((asset) => `${String(asset.market || "").toUpperCase()}:${normalizeTicker(asset.ticker)}`)
         .filter((identity) => !identity.startsWith(":"))
     )];
@@ -286,7 +323,7 @@ export default function usePortfolioSimulator() {
       isCancelled: () => cancelled,
       buildScenario: (monthlyReturns) => buildAppExportScenarioResult({
           activePortfolio,
-          assets,
+          assets: scenarioAssets,
           settings,
           rowsByIdentity: monthlyReturns.rowsByIdentity,
           manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
@@ -324,6 +361,7 @@ export default function usePortfolioSimulator() {
     assets,
     screenerCandidateSnapshot.preview.status,
     settings,
+    step4BaselineBlockMessage,
   ]);
 
   function getAssetDraftKey(asset, index) { return asset?.id || `${normalizeTicker(asset?.ticker) || "asset"}-${index}`; }

@@ -4,13 +4,33 @@ import {
   buildProbabilityScenarioViewModel,
   isProbabilityViewModelReady,
 } from "../utils/probabilityScenarioAdapter";
+import { getStep4ScenarioAssets } from "../utils/portfolioFormatters.js";
 import ProbabilityBandChart from "./ProbabilityBandChart";
 
-function getActiveAssets(assets = [], isEmptyAssetRow) {
-  return assets.filter((asset) => {
-    if (typeof isEmptyAssetRow === "function" && isEmptyAssetRow(asset)) return false;
-    return Boolean(String(asset?.ticker || "").trim());
-  });
+function getScenarioLoadView(status, error) {
+  if (status === "loading") {
+    return { status: "월간 데이터 확인 중", message: "선택 자산에 필요한 월간 데이터만 확인합니다." };
+  }
+  if (status === "ready") {
+    return { status: "분석 준비 완료", badge: "검증된 월간 데이터" };
+  }
+  if (status === "cash_only") {
+    return {
+      status: "현금성 자산 단독 포트폴리오입니다.",
+      message: "연 2.0% 내부 기준수익률이 적용되는 확정 경로이므로",
+      detail: "확률 밴드 대신 Step 3 기준전망을 확인해 주세요.",
+    };
+  }
+  if (status === "blocked") {
+    return { status: "계산 보류", message: error || "계산 보류 사유를 확인해 주세요." };
+  }
+  if (["unavailable", "error"].includes(status)) {
+    return { status: "월간 데이터 부족", message: error || "필요한 월간 수익률 데이터가 부족합니다." };
+  }
+  return {
+    status: "월간 데이터 연결 필요",
+    message: "검증된 월간 수익률 데이터가 연결되지 않았습니다.",
+  };
 }
 
 function formatAssetList(assets = []) {
@@ -96,7 +116,6 @@ export default function ProbabilityAnalysisPanel({
   assets,
   settings,
   result,
-  isEmptyAssetRow,
   scenarioResult = null,
   expectedInputHash = null,
   expectedOutputHash = null,
@@ -107,7 +126,7 @@ export default function ProbabilityAnalysisPanel({
   scenarioLoadStatus = "idle",
   scenarioLoadError = "",
 }) {
-  const activeAssets = getActiveAssets(assets, isEmptyAssetRow);
+  const activeAssets = getStep4ScenarioAssets(assets);
   const viewModel = buildProbabilityScenarioViewModel({
     result: scenarioResult,
     activePortfolio,
@@ -121,6 +140,8 @@ export default function ProbabilityAnalysisPanel({
     enableProductionAppExport,
   });
   const isReady = isProbabilityViewModelReady(viewModel);
+  const loadView = getScenarioLoadView(scenarioLoadStatus, scenarioLoadError);
+  const showLoadStatus = scenarioLoadStatus !== "ready";
 
   return (
     <div className="simulatorTabPanel probabilityAnalysisPanel">
@@ -129,23 +150,22 @@ export default function ProbabilityAnalysisPanel({
           <p className="sectionLabel">Step 4. Probability</p>
           <h3>확률분석</h3>
           <p>
-            검증된 precomputed 결과가 준비된 경우에만 과거 월간 수익률 재표본화 기반 확률 밴드를 표시합니다.
+            검증된 월간 수익률 결과가 준비된 경우에만 과거 월간 수익률 재표본화 기반 확률 밴드를 표시합니다.
           </p>
         </div>
         <div className="probabilityFixtureBadge">
-          <span>{enableProductionAppExport ? "production data" : enableInternalPreviewReview ? "internal preview" : enableFixtureReview ? "fixture review" : "idle"}</span>
-          <strong>{enableProductionAppExport ? "verified 6,029 app export" : enableInternalPreviewReview ? "review-only data" : enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
+          <span>{loadView.status}</span>
+          <strong>{loadView.badge || loadView.status}</strong>
         </div>
       </div>
 
-      {scenarioLoadStatus === "loading" ? (
-        <section className="probabilityStatusPanel" aria-live="polite">
-          <div><strong>월별 수익률을 불러오는 중입니다.</strong><p>선택 자산에 필요한 shard만 로드합니다.</p></div>
-        </section>
-      ) : null}
-      {["error", "unavailable"].includes(scenarioLoadStatus) ? (
-        <section className="probabilityStatusPanel probabilityStatus-error" aria-live="polite">
-          <div><strong>확률분석을 사용할 수 없습니다.</strong><p>{scenarioLoadError || "월별 수익률 입력을 확인해주세요."}</p></div>
+      {showLoadStatus ? (
+        <section className={`probabilityStatusPanel probabilityStatus-${scenarioLoadStatus}`} aria-live="polite">
+          <div>
+            <strong>{loadView.status}</strong>
+            <p>{loadView.message}</p>
+            {loadView.detail ? <p>{loadView.detail}</p> : null}
+          </div>
         </section>
       ) : null}
 
@@ -175,18 +195,18 @@ export default function ProbabilityAnalysisPanel({
         )}
         <div>
           <span>상태</span>
-          <strong>{viewModel.status}</strong>
+          <strong>{loadView.status}</strong>
         </div>
       </section>
 
-      {!isReady ? <ProbabilityStatusPanel viewModel={viewModel} /> : null}
+      {scenarioLoadStatus === "ready" && !isReady ? <ProbabilityStatusPanel viewModel={viewModel} /> : null}
 
       {isReady ? (
         <>
           <section className="probabilityReadyNotice" aria-label="확률분석 검증 상태">
             <BarChart3 size={20} aria-hidden="true" />
             <div>
-              <strong>{enableProductionAppExport ? "Production monthly-return 확률 밴드" : enableInternalPreviewReview ? "Internal Preview review-only 월수익률 확률 밴드" : "검증된 fixture-safe 확률 밴드"}</strong>
+              <strong>검증된 월간 데이터 확률 밴드</strong>
               <p>
                 P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은
                 동일 analysis identity가 확인된 경우에만 함께 표시됩니다.

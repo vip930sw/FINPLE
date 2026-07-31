@@ -3,6 +3,7 @@ import {
   isManualCashAsset,
   MANUAL_CASH_TOTAL_RETURN_PERCENT,
 } from "../../../data/tickers/manualCashAsset.js";
+import { getStep4ScenarioAssets } from "./portfolioFormatters.js";
 
 const MANUAL_CASH_MONTHLY_RETURN =
   (1 + MANUAL_CASH_TOTAL_RETURN_PERCENT / 100) ** (1 / 12) - 1;
@@ -304,8 +305,7 @@ export function buildAppExportScenarioResult({
   randomSeed = 1142,
 } = {}) {
   const isProduction = runtimeMode === "production_app_export_ready" && Boolean(release);
-  const activeAssets = (Array.isArray(assets) ? assets : [])
-    .filter((asset) => identityForAsset(asset));
+  const activeAssets = getStep4ScenarioAssets(assets).filter((asset) => identityForAsset(asset));
   const unknownCash = activeAssets.find(
     (asset) => normalizeTicker(asset.ticker) === "CASH" && !isManualCashAsset(asset),
   );
@@ -402,6 +402,10 @@ export function buildAppExportScenarioResult({
   });
   return {
     ...result,
+    scenarioAssetWeights: activeAssets.map((asset, index) => ({
+      identity: identityForAsset(asset),
+      targetWeight: weights[index],
+    })),
     ...(isProduction ? {} : { internalPreviewContext: {
       reviewOnly: true,
       portfolioId: activePortfolio.id || "",
