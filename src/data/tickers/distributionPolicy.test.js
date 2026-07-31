@@ -418,8 +418,8 @@ test("saved portfolio reload and report text preserve non-ordinary distribution 
 
   const pdfLine = describeAssetDistribution(reloaded);
   assert.match(pdfLine, /옵션분배/);
-  assert.match(pdfLine, /최근 12개월 분배율 34\.98%/);
-  assert.match(pdfLine, /주간 분배/);
+  assert.match(pdfLine, /현금분배율 34\.98%/);
+  assert.match(pdfLine, /분배 주기: 주간/);
   assert.match(pdfLine, /ROC\(원금환급\) 포함 가능/);
   assert.match(pdfLine, /분배율 변동 가능/);
   assert.doesNotMatch(pdfLine, /일반 배당률 34\.98%/);

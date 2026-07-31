@@ -32,6 +32,10 @@ function formatRank(value) {
   return value === "-" || value === null || value === undefined ? "-" : `${value}위`;
 }
 
+function getPortfolioDisplayAssets(portfolio) {
+  return portfolio.result?.assets?.length ? portfolio.result.assets : portfolio.assets;
+}
+
 export default function ComparePanel({ insightComparisonPortfolios, chartComparisonPortfolios }) {
   return (
     <div className="simulatorTabPanel comparePanel">
@@ -85,7 +89,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 </div>
 
                 <div>
-                  <p>{resolvePortfolioCashFlowDisplayPolicy(portfolio.assets).focusLabel}</p>
+                  <p>{resolvePortfolioCashFlowDisplayPolicy(getPortfolioDisplayAssets(portfolio)).focusLabel}</p>
                   <strong>{formatRank(portfolio.cashFlowRank ?? portfolio.dividendRank)}</strong>
                 </div>
               </div>
@@ -109,7 +113,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 </div>
 
                 <div>
-                  <dt>{resolvePortfolioCashFlowDisplayPolicy(portfolio.assets).yieldLabel}</dt>
+                  <dt>{resolvePortfolioCashFlowDisplayPolicy(getPortfolioDisplayAssets(portfolio)).yieldLabel}</dt>
                   <dd>{formatMaybeFixed(portfolio.result.expectedSimulationCashYield ?? portfolio.result.expectedDividendYield)}</dd>
                 </div>
               </dl>

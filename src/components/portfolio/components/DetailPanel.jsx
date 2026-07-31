@@ -11,6 +11,7 @@ import {
   formatPortfolioEligibilityBlocks,
   formatUserFacingBaselineBlockReasons,
 } from "../utils/baselineBlockReasonLabels";
+import { isEmptyAssetRow } from "../utils/portfolioFormatters";
 import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 function MetricTooltip({ label, children }) {
@@ -106,7 +107,9 @@ export default function DetailPanel({
 }) {
   const safeSettings = settings || {};
   const safeResult = result || {};
-  const safeAssets = safeArray(assets);
+  const safeAssets = safeArray(assets).filter((asset) =>
+    asset && typeof asset === "object" && !Array.isArray(asset) && !isEmptyAssetRow(asset)
+  );
   const distributionAssets = safeAssets.filter(isNonOrdinaryDistribution);
   const leverageRiskAssets = safeAssets
     .map((asset) => ({ asset, profile: resolveLeverageRiskProfile(asset) }))

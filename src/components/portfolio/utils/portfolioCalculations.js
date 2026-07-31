@@ -142,7 +142,9 @@ export function getPortfolioInsight(portfolio, allPortfolios) {
   const cagr = toMetricNumber(result.expectedCagr);
   const mdd = toMetricNumber(result.simpleMdd);
   const cashFlowYield = toMetricNumber(result.expectedSimulationCashYield ?? result.expectedDividendYield);
-  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(portfolio.assets);
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(
+    result.assets?.length ? result.assets : portfolio.assets,
+  );
   const realValue = toMetricNumber(result.inflationAdjustedFutureValue) ?? 0;
   const readyPortfolios = allPortfolios.filter(isReadyPortfolio);
   const realValues = readyPortfolios

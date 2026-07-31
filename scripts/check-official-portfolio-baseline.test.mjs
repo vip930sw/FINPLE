@@ -7,7 +7,7 @@ import { createServer } from "vite";
 
 import { buildMonthlyBaselineProjection } from "../src/components/portfolio/utils/monthlyBaselineEngine.js";
 
-const SETTINGS = Object.freeze({
+export const OFFICIAL_BASELINE_SETTINGS = Object.freeze({
   startValue: 50_000_000,
   monthlyCashFlow: 1_000_000,
   years: 10,
@@ -57,24 +57,30 @@ let loader;
 let persistence;
 let serverPersistence;
 let portfolioFactory;
+let moduleLoadPromise;
 
-before(async () => {
-  vite = await createServer({
-    root: process.cwd(),
-    appType: "custom",
-    logLevel: "silent",
-    server: { middlewareMode: true },
-  });
-  [constants, mbti, loader, persistence, serverPersistence, portfolioFactory] =
-    await Promise.all([
-      vite.ssrLoadModule("/src/components/portfolio/constants.js"),
-      vite.ssrLoadModule("/src/components/portfolio/utils/mbtiProfileStorage.js"),
-      vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"),
-      vite.ssrLoadModule("/src/components/portfolio/utils/portfolioPersistenceContract.js"),
-      vite.ssrLoadModule("/server/src/services/portfolioPersistenceModel.js"),
-      vite.ssrLoadModule("/src/components/portfolio/utils/portfolioFactory.js"),
-    ]);
-});
+async function ensureOfficialModules() {
+  moduleLoadPromise ||= (async () => {
+    vite = await createServer({
+      root: process.cwd(),
+      appType: "custom",
+      logLevel: "silent",
+      server: { middlewareMode: true },
+    });
+    [constants, mbti, loader, persistence, serverPersistence, portfolioFactory] =
+      await Promise.all([
+        vite.ssrLoadModule("/src/components/portfolio/constants.js"),
+        vite.ssrLoadModule("/src/components/portfolio/utils/mbtiProfileStorage.js"),
+        vite.ssrLoadModule("/src/data/tickers/screenerCandidateLoader.js"),
+        vite.ssrLoadModule("/src/components/portfolio/utils/portfolioPersistenceContract.js"),
+        vite.ssrLoadModule("/server/src/services/portfolioPersistenceModel.js"),
+        vite.ssrLoadModule("/src/components/portfolio/utils/portfolioFactory.js"),
+      ]);
+  })();
+  await moduleLoadPromise;
+}
+
+before(ensureOfficialModules);
 
 after(async () => {
   await vite?.close();
@@ -102,7 +108,10 @@ function assertCashContract(asset, label) {
 function assertReady(label, assets) {
   const cash = assets.find((asset) => asset.ticker === "CASH");
   if (cash) assertCashContract(cash, label);
-  const result = buildMonthlyBaselineProjection({ settings: SETTINGS, assets });
+  const result = buildMonthlyBaselineProjection({
+    settings: OFFICIAL_BASELINE_SETTINGS,
+    assets,
+  });
   assert.equal(result.status, "ready", `${label}:${result.blockReasons.join("|")}`);
   assert.doesNotMatch(result.blockReasons.join("|"), GENERIC_BLOCK_REASONS, label);
 }
@@ -113,29 +122,32 @@ for (const name of PRESET_NAMES) {
   });
 }
 
+function createMbtiAssets(name, preset) {
+  return Object.entries(preset)
+    .filter(([, weight]) => Number(weight) > 0)
+    .map(([key, weight]) => {
+      const ticker = MBTI_TICKERS[key];
+      assert.ok(ticker, `${name}:${key}`);
+      return ticker === "CASH"
+        ? loader.hydrateAssetFromScreenerCandidate({
+            ticker,
+            market: "CASH",
+            assetType: "CASH",
+            dataSource: "investment-mbti-cash",
+            targetWeight: weight,
+          })
+        : {
+            ...loader.findScreenerCandidateByTicker(ticker, "US"),
+            targetWeight: weight,
+          };
+    });
+}
+
 test("Investment MBTI: 16/16 presets", () => {
   const entries = Object.entries(mbti.MBTI_PRESET_MAP);
   assert.equal(entries.length, 16);
   for (const [name, preset] of entries) {
-    const assets = Object.entries(preset)
-      .filter(([, weight]) => Number(weight) > 0)
-      .map(([key, weight]) => {
-        const ticker = MBTI_TICKERS[key];
-        assert.ok(ticker, `${name}:${key}`);
-        return ticker === "CASH"
-          ? loader.hydrateAssetFromScreenerCandidate({
-              ticker,
-              market: "CASH",
-              assetType: "CASH",
-              dataSource: "investment-mbti-cash",
-              targetWeight: weight,
-            })
-          : {
-              ...loader.findScreenerCandidateByTicker(ticker, "US"),
-              targetWeight: weight,
-            };
-      });
-    assertReady(name, assets);
+    assertReady(name, createMbtiAssets(name, preset));
   }
 });
 
@@ -199,15 +211,43 @@ const persistencePaths = {
   },
 };
 
+function createPersistenceAssets(name, path) {
+  const original = path.fixture();
+  const assets = portfolioFactory.cloneAssets(path.restore(original));
+  const cash = assets[0];
+  for (const field of PRESERVED_FIELDS) {
+    assert.equal(cash[field], original[field], `${name}:${field}`);
+  }
+  return assets;
+}
+
+export async function getOfficialPortfolioFixtures() {
+  await ensureOfficialModules();
+  return [
+    ...PRESET_NAMES.map((name) => ({
+      id: `official-preset-${name.toLowerCase()}`,
+      name,
+      path: "official_preset",
+      assets: portfolioFactory.cloneAssets(constants[name]),
+    })),
+    ...Object.entries(mbti.MBTI_PRESET_MAP).map(([name, preset]) => ({
+      id: `investment-mbti-${name.toLowerCase()}`,
+      name,
+      path: "investment_mbti",
+      assets: portfolioFactory.cloneAssets(createMbtiAssets(name, preset)),
+    })),
+    ...Object.entries(persistencePaths).map(([name, path]) => ({
+      id: `persistence-${name.replace(/\s+/g, "-").toLowerCase()}`,
+      name,
+      path: "persistence",
+      assets: createPersistenceAssets(name, path),
+    })),
+  ];
+}
+
 for (const [name, path] of Object.entries(persistencePaths)) {
   test(`persistence: ${name}`, () => {
-    const original = path.fixture();
-    const assets = portfolioFactory.cloneAssets(path.restore(original));
-    const cash = assets[0];
-    for (const field of PRESERVED_FIELDS) {
-      assert.equal(cash[field], original[field], `${name}:${field}`);
-    }
-    assertReady(name, assets);
+    assertReady(name, createPersistenceAssets(name, path));
   });
 }
 
@@ -259,7 +299,7 @@ test("CASH stays outside the canonical and Screener catalogs", () => {
 
 test("unknown-source CASH remains blocked", () => {
   const result = buildMonthlyBaselineProjection({
-    settings: SETTINGS,
+    settings: OFFICIAL_BASELINE_SETTINGS,
     assets: [{
       ...savedCash(),
       market: "CASH",
@@ -278,7 +318,7 @@ test("an actual portfolioAddPolicy=deny asset remains blocked", () => {
   const denied = loader.findScreenerCandidateByTicker("0000D0", "KR");
   assert.equal(denied.portfolioAddPolicy, "deny");
   const result = buildMonthlyBaselineProjection({
-    settings: SETTINGS,
+    settings: OFFICIAL_BASELINE_SETTINGS,
     assets: [{ ...denied, targetWeight: 100 }],
   });
   assert.equal(result.status, "blocked");

@@ -1,5 +1,11 @@
 import { analyzePortfolioProfile } from "./portfolioAnalysis.js";
-import { formatNumber, formatPercent, getAssetValue, getAssetWeight } from "./portfolioFormatters.js";
+import {
+  formatNumber,
+  formatPercent,
+  getAssetValue,
+  getAssetWeight,
+  isEmptyAssetRow,
+} from "./portfolioFormatters.js";
 import {
   getDistributionFrequencyLabel,
   isNonOrdinaryDistribution,
@@ -92,8 +98,8 @@ export function describeAssetDistribution(asset = {}) {
     display.title,
     ...(display.kind === "provider_error"
       ? []
-      : [`최근 12개월 분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`]),
-    `${getDistributionFrequencyLabel(asset.distributionFrequency)} 분배`,
+      : [`현금분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`]),
+    `분배 주기: ${getDistributionFrequencyLabel(asset.distributionFrequency)}`,
     ...display.notices,
   ].join(" / ");
 }
@@ -105,7 +111,11 @@ export function createPortfolioReportText({
   assets = [],
   detailPortfolio,
 } = {}) {
-  const safeAssets = Array.isArray(assets) ? assets : [];
+  const safeAssets = Array.isArray(assets)
+    ? assets.filter((asset) =>
+        asset && typeof asset === "object" && !Array.isArray(asset) && !isEmptyAssetRow(asset)
+      )
+    : [];
   const blocked = isBlockedResult(result);
   const portfolioAnalysis = createReportAnalysis(safeAssets, result, blocked);
   const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);
@@ -196,7 +206,11 @@ export function createReportSummaryText({
   result = {},
   assets = [],
 } = {}) {
-  const safeAssets = Array.isArray(assets) ? assets : [];
+  const safeAssets = Array.isArray(assets)
+    ? assets.filter((asset) =>
+        asset && typeof asset === "object" && !Array.isArray(asset) && !isEmptyAssetRow(asset)
+      )
+    : [];
   const blocked = isBlockedResult(result);
   const portfolioAnalysis = createReportAnalysis(safeAssets, result, blocked);
   const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(safeAssets);

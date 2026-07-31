@@ -2,6 +2,7 @@ import {
   isNonOrdinaryDistribution,
   resolvePortfolioCashFlowDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy.js";
+import { isEmptyAssetRow } from "./portfolioFormatters.js";
 
 function getAssetValue(asset) {
   return Number(asset?.quantity || 0) * Number(asset?.price || 0);
@@ -83,8 +84,11 @@ export function getPortfolioDetailReport(portfolio) {
   if (!portfolio) return null;
 
   const result = portfolio.result || {};
-  const analysis = analyzePortfolioProfile({ assets: portfolio.assets || [], result });
-  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(portfolio.assets || []);
+  const assets = (portfolio.assets || []).filter((asset) =>
+    asset && typeof asset === "object" && !Array.isArray(asset) && !isEmptyAssetRow(asset)
+  );
+  const analysis = analyzePortfolioProfile({ assets, result });
+  const cashFlowDisplay = resolvePortfolioCashFlowDisplayPolicy(assets);
   const cagr = Number(result.expectedCagr || 0);
   const mdd = Number(result.simpleMdd || 0);
   const cashYield = Number(result.expectedSimulationCashYield ?? result.expectedDividendYield ?? 0);

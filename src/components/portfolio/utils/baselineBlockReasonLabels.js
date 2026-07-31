@@ -27,6 +27,18 @@ export function getBaselineBlockReasonCode(reason = "") {
 export function formatUserFacingBaselineBlockReason(reason = "") {
   const code = getBaselineBlockReasonCode(reason);
   const ticker = getReasonTicker(reason);
+  if (code === "missing_assets") {
+    return "계산할 자산을 추가해 주세요.";
+  }
+  if (code === "missing_ticker") {
+    return "티커가 없는 미완성 자산 행이 있습니다. 행을 완성하거나 정리해 주세요.";
+  }
+  if (["missing_metric_status", "missing_selected_cagr"].includes(code)) {
+    return `${ticker}: 계산에 필요한 자산 정보가 완성되지 않았습니다. 다시 조회하거나 행을 정리해 주세요.`;
+  }
+  if (code === "duplicate_asset_identity") {
+    return `${ticker}: 같은 자산이 중복되어 있습니다. 중복 행을 제거해 주세요.`;
+  }
   if (code === "asset_review_policy_pending") {
     const detail = getReasonDetail(reason);
     if (detail.includes("leveraged-inverse-review-policy")) {
