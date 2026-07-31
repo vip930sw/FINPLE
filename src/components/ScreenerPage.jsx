@@ -14,7 +14,11 @@ import {
   resolveDistributionDisplayPolicy,
 } from "../data/tickers/distributionPolicy";
 import { resolveMetricReviewDisplay } from "../data/tickers/metricReviewPolicy";
-import { getPortfolioAddDecision } from "../data/tickers/portfolioEligibilityPolicy";
+import {
+  getAssetFinderCardActionState,
+  getPortfolioAddDecision,
+} from "../data/tickers/portfolioEligibilityPolicy";
+import { findDuplicateAssetIndex } from "./portfolio/utils/portfolioAssetDuplicatePolicy";
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
@@ -267,6 +271,11 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const addDecision = getPortfolioAddDecision(item);
   const leverageRiskProfile = addDecision.riskProfile;
   const addDenied = !canAdd || addDecision.policy === "deny";
+  const actionState = getAssetFinderCardActionState({
+    isAdded,
+    policy: addDecision.policy,
+    canAdd,
+  });
   const addReason = addDenied
     ? addDecision.message || "현재 포트폴리오에 추가할 수 없습니다."
     : addDecision.message;
@@ -287,12 +296,12 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
             type="button"
             className={isAdded ? "tickerResultAction added" : "tickerResultAction"}
             onClick={() => onAdd(item)}
-            disabled={isAdded || addDenied}
-            aria-disabled={isAdded || addDenied}
-            aria-label={addReason || `${item.ticker} 포트폴리오에 추가`}
-            aria-describedby={addDenied ? addReasonId : undefined}
+            disabled={actionState.disabled}
+            aria-disabled={actionState.disabled}
+            aria-label={isAdded ? `${item.ticker}를 현재 포트폴리오에서 제외` : addReason || `${item.ticker} 포트폴리오에 추가`}
+            aria-describedby={!isAdded && addDenied ? addReasonId : undefined}
           >
-            {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
+            {actionState.label}
           </button>
         </span>
       </div>
@@ -303,13 +312,14 @@ export function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
       {isNonOrdinaryDistribution(item) ? (
         <div className="tickerResultDistributionNotice">
-          <strong>{distributionDisplay.title}{distributionDisplay.kind === "provider_error" ? "" : ` · 최근 12개월 분배율 ${formatPercentValue(item.trailingDistributionYield, "확인 중")}`}</strong>
-          <span>{getDistributionFrequencyLabel(item.distributionFrequency)} 분배</span>
+          <strong>{distributionDisplay.kind === "mixed" ? "옵션 분배" : distributionDisplay.title}</strong>
+          {distributionDisplay.kind === "provider_error" ? null : <span>현금분배율 {formatPercentValue(item.trailingDistributionYield, "확인 중")}</span>}
+          <span>분배 주기: {getDistributionFrequencyLabel(item.distributionFrequency)}</span>
           {distributionDisplay.notices.map((notice) => <span key={notice}>{notice}</span>)}
         </div>
       ) : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 {getDistributionFrequencyLabel(item.distributionFrequency)} · review-only</span> : <span>배당 {formatDividendYieldValue(item)}</span>}<span className={`tickerResultMetricReviewStatus ${metricReview.kind}`}>{metricReview.text}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isNonOrdinaryDistribution(item) ? <span>분배 검토 review-only</span> : <span>배당률 {formatDividendYieldValue(item)}</span>}<span className={`tickerResultMetricReviewStatus ${metricReview.kind}`}>{metricReview.text}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
@@ -321,6 +331,7 @@ function CandidateScreenerPanel({
   candidates,
   assets,
   addAssetFromTickerCandidate,
+  removeAsset,
   initialQuery = "",
   isLoading = false,
 }) {
@@ -331,7 +342,6 @@ function CandidateScreenerPanel({
   const [exposureType, setExposureType] = useState("all");
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
   const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type, exposureType }), [candidates, query, styleFilter, riskLevel, type, exposureType]);
   const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -343,8 +353,15 @@ function CandidateScreenerPanel({
 
   function handleAdd(item) {
     if (isLoading) return;
-    const ticker = normalizeTicker(item?.ticker);
-    if (addedTickerSet.has(ticker)) return;
+    const existingIndex = findDuplicateAssetIndex({
+      assets,
+      ticker: item?.ticker,
+      market: item?.market,
+    });
+    if (existingIndex >= 0) {
+      removeAsset(existingIndex);
+      return;
+    }
     addAssetFromTickerCandidate(item);
   }
 
@@ -374,7 +391,7 @@ function CandidateScreenerPanel({
               <p>검증이 완료되면 전체 자산 목록과 지표가 한 번에 표시됩니다.</p>
             </div>
           </div>
-        ) : pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd={item.active !== false && item.listingStatus === "active" && !item.priceUnavailable} />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}
+        ) : pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={findDuplicateAssetIndex({ assets, ticker: item.ticker, market: item.market }) >= 0} onAdd={handleAdd} canAdd={item.active !== false && item.listingStatus === "active" && !item.priceUnavailable} />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}
       </div>
       {!isLoading && results.length > pageSize ? <nav className="screenerPagination" aria-label="자산 파인더 페이지 이동"><button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button><button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button><div className="screenerPageNumbers">{pageNumbers.map((page, index) => { const previousPage = pageNumbers[index - 1]; const showEllipsis = previousPage && page - previousPage > 1; return <span key={page} className="pageNumberWrap">{showEllipsis ? <i>...</i> : null}<button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button></span>; })}</div><button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button><button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button></nav> : null}
     </section>
@@ -382,7 +399,7 @@ function CandidateScreenerPanel({
 }
 
 function ScreenerPage({ onBack }) {
-  const { portfolioList, activePortfolioId, activePortfolio, assets, screenerCandidateSnapshot, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails } = usePortfolioSimulator();
+  const { portfolioList, activePortfolioId, activePortfolio, assets, screenerCandidateSnapshot, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, removeAsset, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails } = usePortfolioSimulator();
   const [activeMarket, setActiveMarket] = useState("ALL");
   const usCandidates = screenerCandidateSnapshot?.usCandidates || US_SCREENER_CANDIDATES;
   const krCandidates = screenerCandidateSnapshot?.krCandidates || KR_SCREENER_CANDIDATES;
@@ -421,7 +438,7 @@ function ScreenerPage({ onBack }) {
             최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
           </div>
         ) : (
-          <CandidateScreenerPanel key={`${activeMarket}-${initialQuery}`} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} initialQuery={initialQuery} isLoading={false} />
+          <CandidateScreenerPanel key={`${activeMarket}-${initialQuery}`} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} removeAsset={removeAsset} initialQuery={initialQuery} isLoading={false} />
         )}
       </section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />

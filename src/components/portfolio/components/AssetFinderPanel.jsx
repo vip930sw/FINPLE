@@ -10,7 +10,11 @@ import {
   isNonOrdinaryDistribution,
   resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
-import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibilityPolicy";
+import {
+  getAssetFinderCardActionState,
+  getPortfolioAddDecision,
+} from "../../../data/tickers/portfolioEligibilityPolicy";
+import { findDuplicateAssetIndex } from "../utils/portfolioAssetDuplicatePolicy";
 
 const GOAL_OPTIONS = [
   { value: "all", label: "전체" },
@@ -115,6 +119,10 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
   const addDecision = getPortfolioAddDecision(item);
   const leverageRiskProfile = addDecision.riskProfile;
   const addDenied = addDecision.policy === "deny";
+  const actionState = getAssetFinderCardActionState({
+    isAdded,
+    policy: addDecision.policy,
+  });
   const addReasonId = `portfolio-add-reason-${item.market}-${item.ticker}`.replace(/[^a-zA-Z0-9_-]/g, "-");
 
   return (
@@ -128,12 +136,12 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
           type="button"
           className={isAdded ? "tickerResultAction added" : "tickerResultAction"}
           onClick={() => onAdd(item)}
-          disabled={isAdded || addDenied}
-          aria-disabled={isAdded || addDenied}
-          aria-label={addDecision.message || `${item.ticker} 포트폴리오에 추가`}
-          aria-describedby={addDenied ? addReasonId : undefined}
+          disabled={actionState.disabled}
+          aria-disabled={actionState.disabled}
+          aria-label={isAdded ? `${item.ticker}를 현재 포트폴리오에서 제외` : addDecision.message || `${item.ticker} 포트폴리오에 추가`}
+          aria-describedby={!isAdded && addDenied ? addReasonId : undefined}
         >
-          {isAdded ? "추가됨" : addDenied ? "추가 불가" : addDecision.policy === "confirm" ? "확인 후 추가" : "추가"}
+          {actionState.label}
         </button>
       </div>
 
@@ -152,9 +160,9 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
 
       {nonOrdinaryDistribution ? (
         <p className="tickerResultRiskNotice">
-          {distributionDisplay.title}
-          {distributionDisplay.kind === "provider_error" ? "" : ` · 최근 12개월 분배율 ${formatPercentValue(item.trailingDistributionYield)}`}
-          {" · "}{getDistributionFrequencyLabel(item.distributionFrequency)} 분배
+          {distributionDisplay.kind === "mixed" ? "옵션 분배" : distributionDisplay.title}
+          {distributionDisplay.kind === "provider_error" ? "" : ` · 현금분배율 ${formatPercentValue(item.trailingDistributionYield)}`}
+          {" · 분배 주기: "}{getDistributionFrequencyLabel(item.distributionFrequency)}
           {distributionDisplay.notices.map((notice) => ` · ${notice}`)}
         </p>
       ) : null}
@@ -167,7 +175,7 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
         {nonOrdinaryDistribution ? (
           <span>분배 review-only</span>
         ) : (
-          <span>배당 {formatPercentValue(item.dividendYield)}</span>
+          <span>배당률 {formatPercentValue(item.dividendYield)}</span>
         )}
         <span>MDD {formatPercentValue(item.mdd)}</span>
       </div>
@@ -184,6 +192,7 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
 export default function AssetFinderPanel({
   assets = [],
   addAssetFromTickerCandidate,
+  removeAsset,
   isBulkAssetLookupLoading,
 }) {
   const [activeMode, setActiveMode] = useState("screener");
@@ -200,14 +209,6 @@ export default function AssetFinderPanel({
   const [isLoading, setIsLoading] = useState(false);
 
   const hasQuery = query.trim().length > 0;
-
-  const addedTickerSet = useMemo(() => {
-    return new Set(
-      (assets || [])
-        .map((asset) => normalizeTicker(asset?.ticker))
-        .filter(Boolean)
-    );
-  }, [assets]);
 
   const visibleResults = useMemo(
     () => results.slice(0, visibleCount),
@@ -351,9 +352,14 @@ export default function AssetFinderPanel({
 
   function handleAdd(item) {
     const ticker = normalizeTicker(item?.ticker);
-
-    if (addedTickerSet.has(ticker)) {
-      setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`);
+    const existingIndex = findDuplicateAssetIndex({
+      assets,
+      ticker,
+      market: item?.market,
+    });
+    if (existingIndex >= 0) {
+      removeAsset(existingIndex);
+      setStatusText(`${ticker}를 현재 포트폴리오에서 제외했습니다.`);
       return;
     }
 
@@ -472,7 +478,7 @@ export default function AssetFinderPanel({
             : "후보 자산 없음"}
         </span>
         <small>
-          이미 담긴 티커는 <b>추가됨</b>으로 표시되어 중복 추가되지 않습니다.
+          이미 담긴 자산은 <b>제외</b>로 표시되어 현재 포트폴리오에서 뺄 수 있습니다.
         </small>
       </div>
 
@@ -484,7 +490,7 @@ export default function AssetFinderPanel({
               <TickerResultCard
                 key={item.ticker}
                 item={item}
-                isAdded={addedTickerSet.has(ticker)}
+                isAdded={findDuplicateAssetIndex({ assets, ticker, market: item.market }) >= 0}
                 onAdd={handleAdd}
               />
             );
