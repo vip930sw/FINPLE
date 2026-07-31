@@ -49,7 +49,7 @@ export default function DetailAssetTable({
             <th>CAGR (%)</th>
             <th>BETA</th>
             <th>MDD (%)</th>
-            <th>배당/현금분배율 (%)</th>
+            <th>배당률/분배율 (%)</th>
           </tr>
         </thead>
 
