@@ -45,7 +45,7 @@ export function normalizeAsset(asset, index = 0) {
         );
 
     return {
-      ...(manualCash ? source : {}),
+      ...source,
       id: source.id || createAssetId(index),
       ticker,
       displayTicker: source.displayTicker || ticker,
@@ -79,6 +79,47 @@ export function normalizeAsset(asset, index = 0) {
       lastUpdatedAt: source.lastUpdatedAt || null,
     };
   }
+
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== "";
+}
+
+export function migrateLegacyPortfolioValuation(portfolio = {}, globalSettings = {}) {
+  const assets = Array.isArray(portfolio.assets) ? portfolio.assets : [];
+  const legacyAssets = assets.filter((asset) => String(asset?.ticker || "").trim());
+  if (
+    legacyAssets.length === 0 ||
+    legacyAssets.some((asset) => hasValue(asset.targetWeight) || hasValue(asset.targetEvaluationAmount))
+  ) return portfolio;
+
+  const legacyValues = legacyAssets.map((asset) => Number(asset.quantity) * Number(asset.price));
+  if (legacyValues.some((value) => !Number.isFinite(value) || value <= 0)) return portfolio;
+
+  const totalValue = legacyValues.reduce((sum, value) => sum + value, 0);
+  const portfolioStartValue = Number(portfolio.settings?.startValue ?? portfolio.startValue);
+  const globalStartValue = Number(globalSettings.startValue);
+  const startValue = portfolioStartValue > 0 ? portfolioStartValue : globalStartValue > 0 ? globalStartValue : 0;
+  const migratedByAsset = new Map();
+  let assignedWeight = 0;
+  legacyAssets.forEach((asset, index) => {
+    const targetWeight = index === legacyAssets.length - 1
+      ? Number((100 - assignedWeight).toFixed(6))
+      : Number((legacyValues[index] / totalValue * 100).toFixed(6));
+    assignedWeight += targetWeight;
+    migratedByAsset.set(asset, {
+      ...asset,
+      targetWeight,
+      ...(startValue > 0
+        ? { targetEvaluationAmount: Number((startValue * targetWeight / 100).toFixed(0)) }
+        : {}),
+    });
+  });
+
+  return {
+    ...portfolio,
+    assets: assets.map((asset) => migratedByAsset.get(asset) || asset),
+  };
+}
 export function cloneAssets(assets) {
     return assets.map((asset, index) => normalizeAsset(asset, index));
   }
@@ -103,6 +144,7 @@ export function createPortfolio({
 }
 export function normalizePortfolio(portfolio, index = 0) {
     return {
+      ...portfolio,
       id: portfolio.id || createId(),
       name: portfolio.name || `포트폴리오 ${index + 1}`,
       description: portfolio.description || "",
@@ -198,15 +240,18 @@ export function loadPortfolioState(snapshot = null) {
       const parsedList = JSON.parse(savedList);
 
       if (Array.isArray(parsedList)) {
-        const normalizedList = normalizePortfolioList(parsedList);
+        const globalSettings = hasSnapshot
+          ? normalizeGlobalSettings(snapshot.globalSettings || {})
+          : loadGlobalSettings();
+        const normalizedList = normalizePortfolioList(
+          parsedList.map((portfolio) => migrateLegacyPortfolioValuation(portfolio, globalSettings)),
+        );
         if (normalizedList.length === 0) {
           return {
             portfolioList: [],
             activePortfolioId: null,
             activePortfolio: null,
-            globalSettings: hasSnapshot
-              ? normalizeGlobalSettings(snapshot.globalSettings || {})
-              : loadGlobalSettings(),
+            globalSettings,
           };
         }
 
@@ -218,9 +263,7 @@ export function loadPortfolioState(snapshot = null) {
             portfolioList: normalizedList,
             activePortfolioId: activePortfolio.id,
             activePortfolio,
-            globalSettings: hasSnapshot
-              ? normalizeGlobalSettings(snapshot.globalSettings || {})
-              : loadGlobalSettings(),
+            globalSettings,
           };
       }
     }
@@ -231,11 +274,16 @@ export function loadPortfolioState(snapshot = null) {
 
     if (legacySavedData) {
       const parsedLegacyData = JSON.parse(legacySavedData);
+      const legacySettings = normalizeGlobalSettings(parsedLegacyData.settings || {});
+      const legacyPortfolio = migrateLegacyPortfolioValuation({
+        settings: legacySettings,
+        assets: parsedLegacyData.assets || DEFAULT_ASSETS,
+      }, legacySettings);
 
       const migratedPortfolio = createPortfolio({
         name: "포트폴리오 1",
-        settings: parsedLegacyData.settings || DEFAULT_SETTINGS,
-        assets: parsedLegacyData.assets || DEFAULT_ASSETS,
+        settings: legacySettings,
+        assets: legacyPortfolio.assets,
       });
 
       const normalizedPortfolioList = ensureMinimumPortfolios([migratedPortfolio]);
@@ -244,7 +292,7 @@ export function loadPortfolioState(snapshot = null) {
         portfolioList: normalizedPortfolioList,
         activePortfolioId: migratedPortfolio.id,
         activePortfolio: migratedPortfolio,
-        globalSettings: normalizeGlobalSettings(parsedLegacyData.settings || {}),
+        globalSettings: legacySettings,
         };
     }
   } catch (error) {

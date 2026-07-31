@@ -11,7 +11,11 @@ import {
   formatPortfolioEligibilityBlocks,
   formatUserFacingBaselineBlockReasons,
 } from "../utils/baselineBlockReasonLabels";
-import { getAssetEvaluationValue, isEmptyAssetRow } from "../utils/portfolioFormatters";
+import {
+  formatReadOnlyMetric,
+  getAssetEvaluationValue,
+  isEmptyAssetRow,
+} from "../utils/portfolioFormatters";
 import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
 
 function MetricTooltip({ label, children }) {
@@ -34,15 +38,20 @@ function safeFixed(value, digits = 2) {
 }
 
 function safeMetricFixed(value, digits = 2) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(digits) : "-";
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => numberValue.toFixed(digits),
+  });
+}
+
+function safeMetricPercent(value, digits = 2) {
+  const text = safeMetricFixed(value, digits);
+  return text === "-" || text === "확인 필요" ? text : `${text}%`;
 }
 
 function formatMoneyMetric(value, formatter) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? `${formatter(numberValue)}원` : "-";
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => `${formatter(numberValue)}원`,
+  });
 }
 
 function safeArray(value) {
@@ -53,7 +62,7 @@ function getSafeReportFileName(reportPdfFileName, activePortfolio) {
   if (typeof reportPdfFileName === "function") {
     try {
       return reportPdfFileName();
-    } catch (error) {
+    } catch {
       return "FINPLE-report.pdf";
     }
   }
@@ -63,7 +72,7 @@ function getSafeReportFileName(reportPdfFileName, activePortfolio) {
   }
 
   const portfolioName = String(activePortfolio?.name || "FINPLE-report")
-    .replace(/[\/:*?"<>|]/g, "-")
+    .replace(/[/:*?"<>|]/g, "-")
     .trim();
 
   return `${portfolioName || "FINPLE-report"}.pdf`;
@@ -94,7 +103,6 @@ export default function DetailPanel({
   formatNumber,
   formatPercent,
   formatDecimal,
-  downloadReportText,
   saveReportPdf,
   printReport,
   reportPdfFileName,
@@ -118,6 +126,7 @@ export default function DetailPanel({
   const safeFormatPercent = typeof formatPercent === "function" ? formatPercent : (value) => `${safeFixed(value)}%`;
   const safeFormatDecimal = typeof formatDecimal === "function" ? formatDecimal : (value, digits = 2) => safeFixed(value, digits);
   const safeFormatWholeNumber = (value) => Math.max(0, Math.floor(safeNumber(value))).toLocaleString();
+  const safeFormatMoneyMetric = (value) => formatMoneyMetric(value, safeFormatNumber);
   const safeReportFileName = getSafeReportFileName(reportPdfFileName, activePortfolio);
   const safeTotalAssetValue = safeNumber(totalAssetValue, safeNumber(safeResult.totalAssetValue, getAssetsTotalValue(safeAssets, simulationStartValue)));
 
@@ -148,24 +157,24 @@ export default function DetailPanel({
   const cumulativeProfit = Math.max(0, safeNumber(futureValue) - cumulativeContribution);
 
   const performanceMetrics = [
-    { label: "시작 평가금액", value: `${Math.floor(safeNumber(simulationStartValue)).toLocaleString()}원`, note: "시뮬레이션 기준 금액" },
-    { label: `${investmentYears}년 후 예상 자산`, value: `${safeFormatNumber(futureValue)}원`, note: "물가 반영 전 예상값" },
-    { label: "물가 반영 실질가치", value: `${safeFormatNumber(inflationAdjustedFutureValue)}원`, note: "구매력 기준 예상값" },
-    { label: "예상 CAGR", value: safeMetricFixed(expectedCagr) === "-" ? "-" : `${safeMetricFixed(expectedCagr)}%`, note: "자산별 선택 CAGR 정책의 비중 가중 평균" },
-    { label: "누적 투자금", value: `${Math.floor(cumulativeContribution).toLocaleString()}원`, note: "시작금액 + 월 투자금" },
-    { label: "누적 수익금", value: `${Math.floor(cumulativeProfit).toLocaleString()}원`, note: "예상 자산 - 누적 투자금" },
+    { label: "시작 평가금액", value: safeFormatMoneyMetric(simulationStartValue), note: "시뮬레이션 기준 금액" },
+    { label: `${investmentYears}년 후 예상 자산`, value: safeFormatMoneyMetric(futureValue), note: "물가 반영 전 예상값" },
+    { label: "물가 반영 실질가치", value: safeFormatMoneyMetric(inflationAdjustedFutureValue), note: "구매력 기준 예상값" },
+    { label: "예상 CAGR", value: safeMetricPercent(expectedCagr), note: "자산별 선택 CAGR 정책의 비중 가중 평균" },
+    { label: "누적 투자금", value: safeFormatMoneyMetric(cumulativeContribution), note: "시작금액 + 월 투자금" },
+    { label: "누적 수익금", value: safeFormatMoneyMetric(cumulativeProfit), note: "예상 자산 - 누적 투자금" },
   ];
 
   const riskMetrics = [
     { label: "예상 BETA", value: safeMetricFixed(expectedBeta), note: "정렬된 월수익률 Beta의 비중 가중값" },
-    { label: "예상 MDD", value: safeMetricFixed(simpleMdd) === "-" ? "-" : `${safeMetricFixed(simpleMdd)}%`, note: "full-period 실제 MDD의 비중 가중 참고값" },
+    { label: "예상 MDD", value: safeMetricPercent(simpleMdd), note: "full-period 실제 MDD의 비중 가중 참고값" },
     { label: "예상 Calmar", value: safeMetricFixed(expectedCalmar), note: "CAGR 대비 MDD 효율" },
   ];
 
   const dividendMetrics = [
     { label: cashFlowDisplay.annualLabel, value: formatMoneyMetric(expectedAnnualCash, (value) => Math.floor(value).toLocaleString()), note: "현재 평가금액 기준" },
     { label: `월 예상 ${cashFlowDisplay.focusLabel} 지급액`, value: formatMoneyMetric(monthlyCash, safeFormatNumber), note: "연간 금액의 월 환산" },
-    { label: cashFlowDisplay.yieldLabel, value: safeMetricFixed(expectedCashYield) === "-" ? "-" : `${safeMetricFixed(expectedCashYield)}%`, note: "포트폴리오 가중 평균" },
+    { label: cashFlowDisplay.yieldLabel, value: safeMetricPercent(expectedCashYield), note: "포트폴리오 가중 평균" },
     { label: `${cashFlowDisplay.focusLabel} 재투자`, value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
   ];
 
@@ -209,8 +218,8 @@ export default function DetailPanel({
                 <li key={`${asset.market || ""}:${asset.ticker || asset.id || ""}`}>
                   <strong>{asset.ticker || "-"}</strong>
                   {" · "}{resolveDistributionDisplayPolicy(asset).title}
-                  {resolveDistributionDisplayPolicy(asset).kind === "provider_error" ? "" : " · 최근 12개월 분배율 "}
-                  {resolveDistributionDisplayPolicy(asset).kind === "provider_error" ? "" : safeMetricFixed(asset.trailingDistributionYield) === "-"
+                  {" · 최근 12개월 분배율 "}
+                  {resolveDistributionDisplayPolicy(asset).kind === "provider_error" ? "확인 필요" : safeMetricFixed(asset.trailingDistributionYield) === "-"
                     ? "확인 필요"
                     : `${safeMetricFixed(asset.trailingDistributionYield)}%`}
                   {" · "}
@@ -286,25 +295,25 @@ export default function DetailPanel({
         <div className="portfolioIntegratedReportGrid portfolioIntegratedFocusGrid">
           <article className="portfolioIntegratedFocusCard primaryMetricCard">
             <span>{investmentYears}년 후 예상 자산</span>
-            <strong>{safeFormatNumber(futureValue)}원</strong>
-            <p>물가 반영 전 예상값입니다. 실질가치는 {safeFormatNumber(inflationAdjustedFutureValue)}원으로 추정됩니다.</p>
+            <strong>{safeFormatMoneyMetric(futureValue)}</strong>
+            <p>물가 반영 전 예상값입니다. 실질가치는 {safeFormatMoneyMetric(inflationAdjustedFutureValue)}으로 추정됩니다.</p>
           </article>
 
           <article className="portfolioIntegratedFocusCard">
             <span>성장성</span>
-            <strong>예상 CAGR {safeFixed(expectedCagr)}%</strong>
+            <strong>예상 CAGR {safeMetricPercent(expectedCagr)}</strong>
             <p>{safeReport?.growthText || "성장 기대치를 확인합니다."}</p>
           </article>
 
           <article className="portfolioIntegratedFocusCard dangerMetricCard">
             <span>위험도</span>
-            <strong>예상 MDD {safeFixed(simpleMdd)}%</strong>
+            <strong>예상 MDD {safeMetricPercent(simpleMdd)}</strong>
             <p>{safeReport?.riskText || "하락 위험을 확인합니다."}</p>
           </article>
 
           <article className="portfolioIntegratedFocusCard">
             <span>{cashFlowDisplay.focusLabel}</span>
-            <strong>{cashFlowDisplay.yieldLabel} {safeFixed(expectedCashYield)}%</strong>
+            <strong>{cashFlowDisplay.yieldLabel} {safeMetricPercent(expectedCashYield)}</strong>
             <p>{safeReport?.dividendText || `${cashFlowDisplay.focusLabel}을 확인합니다.`}</p>
           </article>
         </div>
@@ -364,7 +373,7 @@ export default function DetailPanel({
         </div>
 
         <div className="detailConditionGrid">
-          <div><span>월 투자금</span><strong>{safeFormatNumber(safeSettings.monthlyCashFlow)}원</strong></div>
+          <div><span>월 투자금</span><strong>{safeFormatMoneyMetric(safeSettings.monthlyCashFlow)}</strong></div>
           <div><span>투자기간</span><strong>{investmentYears}년</strong></div>
           <div><span>물가상승률</span><strong>{safeNumber(safeSettings.inflationRate)}%</strong></div>
           <div><span>배당재투자</span><strong>{safeSettings.dividendReinvest ? "적용" : "미적용"}</strong></div>

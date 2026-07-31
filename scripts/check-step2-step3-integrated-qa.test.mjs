@@ -29,6 +29,7 @@ import {
   formatDecimal,
   formatNumber,
   formatPercent,
+  formatReadOnlyMetric,
   getAssetEvaluationValue,
   getAssetEvaluationWeight,
 } from "../src/components/portfolio/utils/portfolioFormatters.js";
@@ -445,6 +446,7 @@ test("Step 2 ranks, cards, chart eligibility, ties, and legends stay determinist
   assert.match(renderCompare([getPortfolio("special-denied")]), /제거하거나 이용 가능한 자산으로 교체/);
   assert.match(renderCompare([getPortfolio("special-partial-row")]), /PARTIAL.*완성되지 않았/);
   assert.match(renderCompare([getPortfolio("special-duplicate")]), /US:QQQ.*중복/);
+  assert.doesNotMatch(renderCompare([getPortfolio("special-cash-only")]), /0\.00%/);
 });
 
 test("Step 2 overrides only the active portfolio with current edited assets", () => {
@@ -499,9 +501,13 @@ test("Step 3 detail, reports, and print-PDF input share user-facing values", () 
     if (result.ready) {
       assert.match(html, /선택 포트폴리오 상세 분석/, fixture.id);
       assert.ok(html.includes(fixture.name), fixture.id);
-      assert.ok(html.includes(`${Number(result.expectedCagr).toFixed(2)}%`), fixture.id);
-      assert.ok(html.includes(Number(result.expectedBeta).toFixed(2)), fixture.id);
-      assert.ok(html.includes(`${Number(result.simpleMdd).toFixed(2)}%`), fixture.id);
+      assert.ok(html.includes(formatReadOnlyMetric(result.expectedCagr, {
+        formatter: (value) => `${value.toFixed(2)}%`,
+      })), fixture.id);
+      assert.ok(html.includes(formatReadOnlyMetric(result.expectedBeta)), fixture.id);
+      assert.ok(html.includes(formatReadOnlyMetric(result.simpleMdd, {
+        formatter: (value) => `${value.toFixed(2)}%`,
+      })), fixture.id);
       assert.match(html, /연차별 예상 성과/, fixture.id);
     } else {
       assert.match(html, /기준 계산 보류/, fixture.id);
@@ -516,7 +522,7 @@ test("Step 3 detail, reports, and print-PDF input share user-facing values", () 
   ));
   assert.match(
     cashHtml,
-    /<tr><td>CASH<\/td>[\s\S]*?<td>2\.00<\/td>[\s\S]*?<td title="일반 배당">0\.00<\/td><\/tr>/,
+    /<tr><td>CASH<\/td>[\s\S]*?<td>2\.00<\/td><td>-<\/td><td>-<\/td><td title="일반 배당">-<\/td><\/tr>/,
   );
 
   const ordinaryFixture = matrix.find((item) => item.id === "special-ordinary-dividend");

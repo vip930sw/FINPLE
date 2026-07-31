@@ -2,6 +2,7 @@ import {
   resolveDistributionDisplayPolicy,
   resolveDividendYieldDisplay,
 } from "../../../data/tickers/distributionPolicy";
+import { formatReadOnlyMetric } from "../utils/portfolioFormatters";
 
 const CANONICAL_ETF_NAME_MAP = {
   QQQ: "Invesco QQQ Trust ETF",
@@ -118,15 +119,10 @@ function RowMoveIconButton({ children, disabled, onClick, label }) {
   );
 }
 
-function isZeroOrEmptyMetric(value) {
-  if (value === null || value === undefined || value === "") return true;
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) && numberValue === 0;
-}
-
 function MetricTextValue({ value, formatDecimal }) {
-  if (isZeroOrEmptyMetric(value)) return <span className="assetTextValue numberTextValue">-</span>;
-  return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
+  return <span className="assetTextValue numberTextValue">{formatReadOnlyMetric(value, {
+    formatter: (numberValue) => formatDecimal(numberValue, 2),
+  })}</span>;
 }
 
 function DividendYieldTextValue({ asset, formatDecimal }) {
@@ -135,7 +131,10 @@ function DividendYieldTextValue({ asset, formatDecimal }) {
     const cashYield = asset.cashDistributionYieldTtm ?? asset.trailingDistributionYield;
     return (
       <span className="assetTextValue numberTextValue" title={distribution.title}>
-        {isZeroOrEmptyMetric(cashYield) ? "-" : `${formatDecimal(cashYield, 2)}%`}
+        {formatReadOnlyMetric(cashYield, {
+          status: distribution.kind,
+          formatter: (numberValue) => `${formatDecimal(numberValue, 2)}%`,
+        })}
       </span>
     );
   }
@@ -145,7 +144,10 @@ function DividendYieldTextValue({ asset, formatDecimal }) {
     : "";
   return (
     <span className={`assetTextValue numberTextValue${pendingClass}`}>
-      {display.text}
+      {formatReadOnlyMetric(asset.dividendYield, {
+        missingText: display.text,
+        formatter: (numberValue) => `${formatDecimal(numberValue, 2)}%`,
+      })}
     </span>
   );
 }

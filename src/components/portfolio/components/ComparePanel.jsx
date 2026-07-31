@@ -5,6 +5,7 @@ import {
 } from "../utils/baselineBlockReasonLabels";
 import { resolvePortfolioCashFlowDisplayPolicy } from "../../../data/tickers/distributionPolicy";
 import { resolveLeverageRiskProfile } from "../../../data/tickers/portfolioEligibilityPolicy";
+import { formatReadOnlyMetric } from "../utils/portfolioFormatters";
 
 function getCompactPortfolioName(name) {
   return String(name || "포트폴리오")
@@ -13,19 +14,17 @@ function getCompactPortfolioName(name) {
     .trim() || "포트폴리오";
 }
 
-function hasMetricValue(value) {
-  if (value === null || value === undefined || value === "") return false;
-  return Number.isFinite(Number(value));
-}
-
 function formatMaybeNumber(value) {
-  if (!hasMetricValue(value)) return "미확인";
-  return `${Math.floor(Number(value)).toLocaleString()}원`;
+  return formatReadOnlyMetric(value, {
+    missingText: "미확인",
+    formatter: (numberValue) => `${Math.floor(numberValue).toLocaleString()}원`,
+  });
 }
 
 function formatMaybeFixed(value, digits = 2) {
-  if (!hasMetricValue(value)) return "-";
-  return `${Number(value).toFixed(digits)}%`;
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => `${numberValue.toFixed(digits)}%`,
+  });
 }
 
 function formatRank(value) {

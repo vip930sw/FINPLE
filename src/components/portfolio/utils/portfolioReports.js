@@ -2,6 +2,7 @@ import { analyzePortfolioProfile } from "./portfolioAnalysis.js";
 import {
   formatNumber,
   formatPercent,
+  formatReadOnlyMetric,
   getAssetEvaluationValue,
   getAssetEvaluationWeight,
   isEmptyAssetRow,
@@ -19,21 +20,21 @@ import {
 } from "./baselineBlockReasonLabels.js";
 
 function formatNullablePercent(value, digits = 2) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? `${numberValue.toFixed(digits)}%` : "-";
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => `${numberValue.toFixed(digits)}%`,
+  });
 }
 
 function formatNullableDecimal(value, digits = 2) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue.toFixed(digits) : "-";
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => numberValue.toFixed(digits),
+  });
 }
 
 function formatNullableCurrency(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? `${formatNumber(numberValue)}원` : "-";
+  return formatReadOnlyMetric(value, {
+    formatter: (numberValue) => `${formatNumber(numberValue)}원`,
+  });
 }
 
 function isBlockedResult(result = {}) {
@@ -96,9 +97,10 @@ export function describeAssetDistribution(asset = {}) {
   }
   return [
     display.title,
-    ...(display.kind === "provider_error"
-      ? []
-      : [`현금분배율 ${formatNullablePercent(asset.trailingDistributionYield)}`]),
+    `현금분배율 ${formatReadOnlyMetric(asset.trailingDistributionYield, {
+      status: display.kind,
+      formatter: (numberValue) => `${numberValue.toFixed(2)}%`,
+    })}`,
     `분배 주기: ${getDistributionFrequencyLabel(asset.distributionFrequency)}`,
     ...display.notices,
   ].join(" / ");
@@ -174,9 +176,9 @@ export function createPortfolioReportText({
     ...safeAssets.map((asset) => {
       const assetValue = getAssetEvaluationValue(asset, result.simulationStartValue);
       const weight = getAssetEvaluationWeight(asset, result.totalAssetValue, result.simulationStartValue);
-      const cagr = blocked ? "-" : `${Number(asset.cagr || 0).toFixed(1)}%`;
-      const beta = blocked ? "-" : Number(asset.beta || 0).toFixed(2);
-      const mdd = blocked ? "-" : `${Number(asset.mdd || 0).toFixed(1)}%`;
+      const cagr = blocked ? "-" : formatNullablePercent(asset.cagr, 1);
+      const beta = blocked ? "-" : formatNullableDecimal(asset.beta);
+      const mdd = blocked ? "-" : formatNullablePercent(asset.mdd, 1);
 
       return `${asset.ticker || "-"} / ${asset.name || "-"} / 평가금액 ${formatNumber(
         assetValue

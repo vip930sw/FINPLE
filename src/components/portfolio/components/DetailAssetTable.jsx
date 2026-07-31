@@ -2,6 +2,7 @@ import {
   resolveDistributionDisplayPolicy,
 } from "../../../data/tickers/distributionPolicy";
 import {
+  formatReadOnlyMetric,
   getAssetEvaluationValue,
   getAssetEvaluationWeight,
 } from "../utils/portfolioFormatters";
@@ -22,12 +23,6 @@ function formatDashWhenZero(value, formatter) {
 function formatRoundedThousand(value) {
   const roundedValue = Math.round(toSafeNumber(value) / 1000) * 1000;
   return formatDashWhenZero(roundedValue, (numberValue) => Math.max(0, Math.floor(toSafeNumber(numberValue))).toLocaleString());
-}
-
-function formatMetric(value, formatter) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? formatter(numberValue) : "-";
 }
 
 export default function DetailAssetTable({
@@ -76,10 +71,13 @@ export default function DetailAssetTable({
                 <td>{asset.name || "-"}</td>
                 <td>{formatAssetValue(assetValue)}</td>
                 <td>{formatDashWhenZero(weight, formatPercent)}</td>
-                <td>{formatMetric(cagrValue, (value) => formatDecimal(value, 2))}</td>
-                <td>{formatMetric(asset.beta, (value) => formatDecimal(value, 2))}</td>
-                <td>{formatMetric(asset.mdd, (value) => formatDecimal(value, 2))}</td>
-                <td title={distributionDisplay.title}>{formatMetric(cashYield, (value) => formatDecimal(value, 2))}</td>
+                <td>{formatReadOnlyMetric(cagrValue, { formatter: (value) => formatDecimal(value, 2) })}</td>
+                <td>{formatReadOnlyMetric(asset.beta, { formatter: (value) => formatDecimal(value, 2) })}</td>
+                <td>{formatReadOnlyMetric(asset.mdd, { formatter: (value) => formatDecimal(value, 2) })}</td>
+                <td title={distributionDisplay.title}>{formatReadOnlyMetric(cashYield, {
+                  status: distributionDisplay.kind,
+                  formatter: (value) => formatDecimal(value, 2),
+                })}</td>
               </tr>
             );
           })}

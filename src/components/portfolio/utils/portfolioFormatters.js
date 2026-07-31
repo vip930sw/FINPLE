@@ -14,6 +14,21 @@ export function formatDecimal(value, digits = 2) {
 export function formatPercent(value) {
   return `${formatDecimal(value, 2)}%`;
 }
+export const READ_ONLY_PROVIDER_ERROR_TEXT = "확인 필요";
+export function formatReadOnlyMetric(value, {
+  status = "",
+  missingText = "-",
+  formatter = (numberValue) => numberValue.toFixed(2),
+} = {}) {
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+  if (["provider_error", "provider_event_error"].includes(normalizedStatus)) {
+    return READ_ONLY_PROVIDER_ERROR_TEXT;
+  }
+  if (value === null || value === undefined || value === "") return missingText;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return missingText;
+  return Math.abs(numberValue) < 0.0000001 ? "-" : formatter(numberValue);
+}
 export function isFetchedAsset(asset) {
   return Boolean(asset?.dataSource && asset.dataSource !== "manual");
 }
