@@ -8,7 +8,7 @@ import {
 import {
   createAssetPatchFromScreenerCandidate,
   findScreenerCandidateByTicker,
-  loadScreenerAppPreview,
+  loadScreenerCandidateRuntime,
 } from "../../../data/tickers/screenerCandidateLoader";
 import { createManualCashAssetPatch } from "../../../data/tickers/manualCashAsset";
 
@@ -822,10 +822,8 @@ function previewCandidateMatchesNumber(value, minimum = "", maximum = "") {
 }
 
 async function getPreviewCandidateList() {
-  const snapshot = await loadScreenerAppPreview();
-  return snapshot.preview.enabled && snapshot.preview.status === "internal_preview_review_only"
-    ? snapshot.candidates
-    : null;
+  const snapshot = await loadScreenerCandidateRuntime();
+  return snapshot.candidates;
 }
 
 function buildPreviewCandidatePayload(results, candidates) {
@@ -856,9 +854,8 @@ export async function searchTickerCandidates({
   limit = 20,
 } = {}) {
   const previewCandidates = await getPreviewCandidateList();
-  if (previewCandidates) {
-    const normalizedQuery = String(query || "").trim().toUpperCase();
-    const results = previewCandidates
+  const normalizedQuery = String(query || "").trim().toUpperCase();
+  const results = previewCandidates
       .filter((candidate) => previewCandidateMatchesMarket(candidate, market))
       .filter((candidate) => previewCandidateMatchesType(candidate, type))
       .filter((candidate) => riskLevel === "all" || candidate.riskLevel === riskLevel)
@@ -882,28 +879,7 @@ export async function searchTickerCandidates({
           left.ticker.localeCompare(right.ticker);
       })
       .slice(0, Math.max(1, Number(limit) || 20));
-    return buildPreviewCandidatePayload(results, previewCandidates);
-  }
-  const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
-  const url = new URL(`${config.apiBaseUrl}/tickers/search`);
-  url.searchParams.set("q", query);
-  url.searchParams.set("market", market === "all" ? "all" : getMarketQueryValue(market));
-  url.searchParams.set("type", type);
-  url.searchParams.set("category", category);
-  url.searchParams.set("riskLevel", riskLevel);
-  url.searchParams.set("beginnerFit", String(beginnerFit));
-  url.searchParams.set("limit", String(limit));
-
-  const response = await fetchWithTimeout(url.toString(), {
-    timeoutMs: config.backendTimeoutMs,
-  });
-
-  if (!response.ok) {
-    const errorPayload = await readJsonSafely(response);
-    throw new Error(errorPayload?.message || "티커 검색 결과를 불러오지 못했습니다.");
-  }
-
-  return response.json();
+  return buildPreviewCandidatePayload(results, previewCandidates);
 }
 
 export async function screenTickerCandidates({
@@ -919,8 +895,7 @@ export async function screenTickerCandidates({
   limit = 30,
 } = {}) {
   const previewCandidates = await getPreviewCandidateList();
-  if (previewCandidates) {
-    const results = previewCandidates
+  const results = previewCandidates
       .filter((candidate) => previewCandidateMatchesMarket(candidate, market))
       .filter((candidate) => previewCandidateMatchesType(candidate, type))
       .filter((candidate) => goal === "all" || candidate.strategy === goal || candidate.goals?.includes(goal))
@@ -934,30 +909,5 @@ export async function screenTickerCandidates({
         left.market.localeCompare(right.market) || left.ticker.localeCompare(right.ticker)
       )
       .slice(0, Math.max(1, Number(limit) || 30));
-    return buildPreviewCandidatePayload(results, previewCandidates);
-  }
-  const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
-  const url = new URL(`${config.apiBaseUrl}/tickers/screener`);
-  url.searchParams.set("goal", goal);
-  url.searchParams.set("riskLevel", riskLevel);
-  url.searchParams.set("type", type);
-  url.searchParams.set("market", market === "all" ? "all" : getMarketQueryValue(market));
-  url.searchParams.set("beginnerOnly", String(beginnerOnly));
-  url.searchParams.set("limit", String(limit));
-
-  if (minDividendYield !== "") url.searchParams.set("minDividendYield", String(minDividendYield));
-  if (maxBeta !== "") url.searchParams.set("maxBeta", String(maxBeta));
-  if (minCagr !== "") url.searchParams.set("minCagr", String(minCagr));
-  if (maxMdd !== "") url.searchParams.set("maxMdd", String(maxMdd));
-
-  const response = await fetchWithTimeout(url.toString(), {
-    timeoutMs: config.backendTimeoutMs,
-  });
-
-  if (!response.ok) {
-    const errorPayload = await readJsonSafely(response);
-    throw new Error(errorPayload?.message || "스크리너 결과를 불러오지 못했습니다.");
-  }
-
-  return response.json();
+  return buildPreviewCandidatePayload(results, previewCandidates);
 }

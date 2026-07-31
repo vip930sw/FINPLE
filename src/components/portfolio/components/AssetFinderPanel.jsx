@@ -372,7 +372,7 @@ export default function AssetFinderPanel({
       return;
     }
 
-    setStatusText(`${ticker} 후보 자산을 포트폴리오에 추가했습니다. STEP 2에서 수량을 입력한 뒤 조회하세요.`);
+    setStatusText(`${ticker} 후보 자산을 포트폴리오에 추가했습니다. STEP 1에서 목표비중을 입력해 주세요.`);
   }
 
   function showMoreResults() {

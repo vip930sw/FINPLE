@@ -41,14 +41,18 @@ export function isEmptyAssetRow(asset) {
     Number(asset.dividendYield || 0) === 0
   );
 }
-export function getAssetEvaluationValue(asset = {}) {
-  const actualValue = Number(asset.quantity || 0) * Number(asset.price || 0);
-  if (Number.isFinite(actualValue) && actualValue > 0) return actualValue;
+export function getAssetEvaluationValue(asset = {}, simulationStartValue = null) {
+  const startValue = Number(simulationStartValue);
+  const targetWeight = Number(asset.targetWeight);
+  const hasTargetWeight = asset.targetWeight !== null && asset.targetWeight !== undefined && asset.targetWeight !== "";
+  if (hasTargetWeight && Number.isFinite(startValue) && startValue > 0 && Number.isFinite(targetWeight) && targetWeight >= 0) {
+    return startValue * targetWeight / 100;
+  }
   const plannedValue = Number(asset.targetEvaluationAmount || 0);
   return Number.isFinite(plannedValue) && plannedValue > 0 ? plannedValue : 0;
 }
-export function getAssetEvaluationWeight(asset, totalAssetValue) {
-  const assetValue = getAssetEvaluationValue(asset);
+export function getAssetEvaluationWeight(asset, totalAssetValue, simulationStartValue = null) {
+  const assetValue = getAssetEvaluationValue(asset, simulationStartValue);
   return Number.isFinite(Number(totalAssetValue)) && Number(totalAssetValue) > 0
     ? (assetValue / Number(totalAssetValue)) * 100
     : 0;

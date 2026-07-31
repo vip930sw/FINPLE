@@ -39,14 +39,10 @@ export function longestContiguousMonthSegment(months = []) {
 function getAssetValue(asset = {}) {
   const planned = Number(asset.targetEvaluationAmount);
   if (Number.isFinite(planned) && planned > 0) return planned;
-  const actual = Number(asset.quantity) * Number(asset.price);
-  return Number.isFinite(actual) && actual > 0 ? actual : 0;
+  return 0;
 }
 
 function normalizeWeights(assets) {
-  const values = assets.map(getAssetValue);
-  const total = values.reduce((sum, value) => sum + value, 0);
-  if (total > 0) return values.map((value) => value / total);
   const explicit = assets.map((asset) => Number(asset.targetWeight));
   const explicitTotal = explicit.reduce(
     (sum, value) => sum + (Number.isFinite(value) && value > 0 ? value : 0),
@@ -55,6 +51,9 @@ function normalizeWeights(assets) {
   if (explicitTotal > 0) {
     return explicit.map((value) => (Number.isFinite(value) && value > 0 ? value / explicitTotal : 0));
   }
+  const values = assets.map(getAssetValue);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total > 0) return values.map((value) => value / total);
   return assets.map(() => 1 / assets.length);
 }
 

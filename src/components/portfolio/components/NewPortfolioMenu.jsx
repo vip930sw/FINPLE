@@ -19,7 +19,7 @@ const TEMPLATE_OPTIONS = Object.freeze([
   ["growthFocus", "성장주 집중형으로 시작", "나스닥 100 비중을 극대화"],
   ["allWeather", "올웨더형으로 시작", "주식·채권·금·현금 균형 배분"],
   ["highConviction", "하이컨빅션형으로 시작", "성장주와 블록체인 테마 집중"],
-  ["empty", "빈 포트폴리오로 시작", "티커와 수량을 직접 입력"],
+  ["empty", "빈 포트폴리오로 시작", "티커와 목표비중을 직접 입력"],
 ]);
 
 function getCurrentPlanPortfolioLimit() {

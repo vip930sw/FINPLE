@@ -69,8 +69,8 @@ function getSafeReportFileName(reportPdfFileName, activePortfolio) {
   return `${portfolioName || "FINPLE-report"}.pdf`;
 }
 
-function getAssetsTotalValue(assets = []) {
-  return safeArray(assets).reduce((sum, asset) => sum + getAssetEvaluationValue(asset), 0);
+function getAssetsTotalValue(assets = [], simulationStartValue = null) {
+  return safeArray(assets).reduce((sum, asset) => sum + getAssetEvaluationValue(asset, simulationStartValue), 0);
 }
 
 export default function DetailPanel({
@@ -119,7 +119,7 @@ export default function DetailPanel({
   const safeFormatDecimal = typeof formatDecimal === "function" ? formatDecimal : (value, digits = 2) => safeFixed(value, digits);
   const safeFormatWholeNumber = (value) => Math.max(0, Math.floor(safeNumber(value))).toLocaleString();
   const safeReportFileName = getSafeReportFileName(reportPdfFileName, activePortfolio);
-  const safeTotalAssetValue = safeNumber(totalAssetValue, safeNumber(safeResult.totalAssetValue, getAssetsTotalValue(safeAssets)));
+  const safeTotalAssetValue = safeNumber(totalAssetValue, safeNumber(safeResult.totalAssetValue, getAssetsTotalValue(safeAssets, simulationStartValue)));
 
   const rawPortfolioAnalysis = analyzePortfolioProfile({ assets: safeAssets, result: safeResult }) || {};
   const portfolioAnalysis = {
@@ -423,7 +423,7 @@ export default function DetailPanel({
           <h4>자산 구성</h4>
           <span>현재 선택 포트폴리오를 구성하는 자산별 평가금액, 비중, 기대지표입니다.</span>
         </div>
-        <DetailAssetTable assets={safeAssets} totalAssetValue={safeTotalAssetValue} formatNumber={safeFormatNumber} formatPercent={safeFormatPercent} formatDecimal={safeFormatDecimal} formatWholeNumber={safeFormatWholeNumber} />
+        <DetailAssetTable assets={safeAssets} totalAssetValue={safeTotalAssetValue} simulationStartValue={simulationStartValue} formatPercent={safeFormatPercent} formatDecimal={safeFormatDecimal} formatWholeNumber={safeFormatWholeNumber} />
       </div>
 
       {safePerformanceRows.length > 0 ? <PerformanceChart rows={safePerformanceRows} /> : null}

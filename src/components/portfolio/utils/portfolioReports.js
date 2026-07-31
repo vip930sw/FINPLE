@@ -172,8 +172,8 @@ export function createPortfolioReportText({
     ``,
     `자산 구성`,
     ...safeAssets.map((asset) => {
-      const assetValue = getAssetEvaluationValue(asset);
-      const weight = getAssetEvaluationWeight(asset, result.totalAssetValue);
+      const assetValue = getAssetEvaluationValue(asset, result.simulationStartValue);
+      const weight = getAssetEvaluationWeight(asset, result.totalAssetValue, result.simulationStartValue);
       const cagr = blocked ? "-" : `${Number(asset.cagr || 0).toFixed(1)}%`;
       const beta = blocked ? "-" : Number(asset.beta || 0).toFixed(2);
       const mdd = blocked ? "-" : `${Number(asset.mdd || 0).toFixed(1)}%`;

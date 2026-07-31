@@ -29,9 +29,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     assets,
     targetWeightDrafts,
     targetWeightSummary,
-    assetLookupStatus,
-    isBulkAssetLookupLoading,
-    assetLookupSummary,
     recentlyAddedAssetId,
     portfolioAddDialog,
     confirmPortfolioAssetAdd,
@@ -51,7 +48,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     backupFileInputRef,
     result,
     yearlyContribution,
-    totalAssetValue,
     simulationStartValue,
     expectedCagr,
     expectedDividendYield,
@@ -69,13 +65,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     updateAsset,
     updateTargetWeightDraft,
     applyTargetWeights,
-    resetTargetWeights,
-    equalizeTargetWeights,
-    fetchAssetData,
-    fetchAllAssetData,
     resolveTickerCandidate,
     addAsset,
     addCashAsset,
+    moveAsset,
     removeAsset,
     cleanEmptyAssetRows,
     selectPortfolio,
@@ -101,8 +94,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     formatPercent,
     toNumber,
     isAutoAsset,
-    isAutoPriceAsset,
-    isAutoMetricAsset,
     isEmptyAssetRow
   } = usePortfolioSimulator();
 
@@ -266,7 +257,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             duplicateActivePortfolio={duplicateActivePortfolio}
             portfolioCreationEvent={portfolioCreationEvent}
             settings={settings}
-            totalAssetValue={totalAssetValue}
             simulationStartValue={simulationStartValue}
             assets={assets}
             targetWeightDrafts={targetWeightDrafts}
@@ -279,19 +269,11 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             updateAsset={updateAsset}
             updateTargetWeightDraft={updateTargetWeightDraft}
             applyTargetWeights={applyTargetWeights}
-            resetTargetWeights={resetTargetWeights}
-            equalizeTargetWeights={equalizeTargetWeights}
             isEmptyAssetRow={isEmptyAssetRow}
             isAutoAsset={isAutoAsset}
-            isAutoPriceAsset={isAutoPriceAsset}
-            isAutoMetricAsset={isAutoMetricAsset}
-            assetLookupStatus={assetLookupStatus}
-            isBulkAssetLookupLoading={isBulkAssetLookupLoading}
-            assetLookupSummary={assetLookupSummary}
             recentlyAddedAssetId={recentlyAddedAssetId}
-            fetchAssetData={fetchAssetData}
-            fetchAllAssetData={fetchAllAssetData}
             resolveTickerCandidate={resolveTickerCandidate}
+            moveAsset={moveAsset}
             removeAsset={removeAsset}
             addAsset={addAsset}
             addCashAsset={addCashAsset}

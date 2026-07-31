@@ -4,20 +4,13 @@ import {
 } from "./monthlyBaselineEngine.js";
 import { resolvePortfolioCashFlowDisplayPolicy } from "../../../data/tickers/distributionPolicy.js";
 
-function getAssetActualValue(asset = {}) {
-  const quantity = Number(asset.quantity || 0);
-  const price = Number(asset.price || 0);
-  const value = quantity * price;
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
 function getAssetPlannedValue(asset = {}) {
   const plannedValue = Number(asset.targetEvaluationAmount || 0);
   return Number.isFinite(plannedValue) && plannedValue > 0 ? plannedValue : 0;
 }
 
 function getAssetWeightValue(asset = {}) {
-  return getAssetPlannedValue(asset) || getAssetActualValue(asset);
+  return getAssetPlannedValue(asset);
 }
 
 function isReadyPortfolio(portfolio = {}) {

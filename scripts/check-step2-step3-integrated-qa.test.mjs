@@ -563,12 +563,13 @@ test("Step 3 detail, reports, and print-PDF input share user-facing values", () 
   assert.match(targetValueHtml, /<tr><td>QQQ<\/td>[\s\S]*?<td>30,000,000<\/td><td>60\.00%<\/td>/);
   assert.match(targetValueHtml, /<tr><td>SCHD<\/td>[\s\S]*?<td>20,000,000<\/td><td>40\.00%<\/td>/);
   const targetWeights = targetValueFixture.assets.map((asset) =>
-    getAssetEvaluationWeight(asset, targetValueResult.totalAssetValue)
+    getAssetEvaluationWeight(asset, targetValueResult.totalAssetValue, targetValueResult.simulationStartValue)
   );
   assert.equal(targetWeights.reduce((sum, weight) => sum + weight, 0), 100);
-  assert.equal(getAssetEvaluationValue({ quantity: 2, price: 100, targetEvaluationAmount: 999 }), 200);
+  assert.equal(getAssetEvaluationValue({ quantity: 2, price: 100, targetEvaluationAmount: 999 }), 999);
   assert.equal(getAssetEvaluationValue({ quantity: 0, price: 0, targetEvaluationAmount: 999 }), 999);
   assert.equal(getAssetEvaluationValue({ quantity: 0, price: 0, targetEvaluationAmount: Infinity }), 0);
+  assert.equal(getAssetEvaluationValue({ quantity: 2, price: 100, targetWeight: 60 }, 50_000_000), 30_000_000);
   const targetValueReport = createPortfolioReportText(
     reportInput(targetValueFixture, getPortfolio(targetValueFixture.id), targetValueResult),
   );
