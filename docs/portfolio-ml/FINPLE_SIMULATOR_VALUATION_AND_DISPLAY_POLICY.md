@@ -15,4 +15,6 @@
 - 사용자가 편집하는 목표비중 input의 0은 `0.00`으로 유지한다.
 - provider error는 `확인 필요`로 표시하고, missing 상태는 기존 안내 문구를 유지한다.
 - 일반 배당과 비일반 현금분배의 필드와 의미는 구분한다.
+- 자산표 공통 열 제목은 `배당률/분배율 (%)`로 축약한다.
+- 일반 자산은 `dividendYield`, 비일반 분배는 `cashDistributionYieldTtm` 또는 `trailingDistributionYield`를 사용하며, 축약한 열 제목이 데이터 계약을 합치지는 않는다.
 - Step 1, Step 2, Step 3, 텍스트 리포트와 인쇄/PDF는 같은 읽기 전용 metric resolver를 사용한다.

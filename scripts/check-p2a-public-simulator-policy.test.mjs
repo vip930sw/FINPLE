@@ -12,6 +12,10 @@ const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const hookSource = read("../src/components/portfolio/hooks/usePortfolioSimulator.js");
 const tableSource = read("../src/components/portfolio/components/AssetInputTable.jsx");
 const detailSource = read("../src/components/portfolio/components/DetailPanel.jsx");
+const detailTableSource = read("../src/components/portfolio/components/DetailAssetTable.jsx");
+const metricTooltipSource = read("../src/components/portfolio/components/MetricTooltip.jsx");
+const metricGuideSource = read("../src/components/portfolio/components/metricGuideConstants.js");
+const appCssSource = read("../src/App.css");
 const compareSource = read("../src/components/portfolio/components/ComparePanel.jsx");
 const reportSource = read("../src/components/portfolio/utils/portfolioReports.js");
 const presetSource = read("../src/components/portfolio/constants.js");
@@ -179,6 +183,31 @@ test("shared read-only formatter keeps zero, missing, provider error, and input 
   for (const source of [tableSource, detailSource, compareSource, reportSource]) {
     assert.match(source, /formatReadOnlyMetric/);
   }
+});
+
+test("asset tables share compact distribution copy, guide tooltips, and eight-column layout", () => {
+  const step1 = renderStep1([]);
+  const step3 = renderStep3([]);
+  assert.match(step1, /배당률\/분배율 \(%\)/);
+  assert.match(step3, /배당률\/분배율 \(%\)/);
+  assert.doesNotMatch(`${step1}${step3}`, /배당\/현금분배율 \(%\)/);
+
+  for (const label of ["CAGR", "BETA", "MDD"]) {
+    assert.match(step1, new RegExp(`aria-label="${label} 설명"`));
+    assert.match(metricGuideSource, new RegExp(`${label}:`));
+  }
+  assert.match(tableSource, /import MetricTooltip from "\.\/MetricTooltip"/);
+  assert.match(detailSource, /import MetricTooltip from "\.\/MetricTooltip"/);
+  assert.match(metricTooltipSource, /import \{ METRIC_GUIDE_TEXT \} from "\.\/metricGuideConstants"/);
+  assert.match(detailSource, /<MetricTooltip label="Calmar" \/>/);
+  assert.doesNotMatch(detailSource, /연평균 성장률입니다|시장 대비 민감도입니다|고점 대비 최대 하락률입니다/);
+
+  assert.match(appCssSource, /calculatorTable\.alignedAssetTable th,[\s\S]*vertical-align: middle !important/);
+  assert.match(appCssSource, /@media screen and \(min-width: 901px\)[\s\S]*table-layout: fixed !important/);
+  assert.match(appCssSource, /col\.assetNameColumn \{ width: 24% !important; \}/);
+  assert.match(appCssSource, /col\.valueColumn \{ width: 17% !important; \}/);
+  assert.match(appCssSource, /@media screen and \(max-width: 900px\)[\s\S]*min-width: 980px !important/);
+  assert.match(detailTableSource, /배당률\/분배율 \(%\)/);
 });
 
 test("BITO, QYLD, zero metrics, and provider errors match between Step 1 and Step 3", () => {

@@ -3,6 +3,7 @@ import {
   resolveDividendYieldDisplay,
 } from "../../../data/tickers/distributionPolicy";
 import { formatReadOnlyMetric } from "../utils/portfolioFormatters";
+import MetricTooltip from "./MetricTooltip";
 
 const CANONICAL_ETF_NAME_MAP = {
   QQQ: "Invesco QQQ Trust ETF",
@@ -220,18 +221,18 @@ export default function AssetInputTable({
 
   return (
     <div className="calculatorTableWrap">
-      <table className="calculatorTable alignedAssetTable" style={{ tableLayout: "fixed" }}>
+      <table className="calculatorTable alignedAssetTable">
         <colgroup>
-          <col className="tickerColumn" style={{ width: "96px" }} />
-          <col className="assetNameColumn" style={{ width: "245px" }} />
-          <col className="valueColumn" style={{ width: "142px" }} />
-          <col className="targetWeightColumn" style={{ width: "122px" }} />
-          <col className="metricColumn" style={{ width: "82px" }} />
-          <col className="metricColumn" style={{ width: "74px" }} />
-          <col className="metricColumn" style={{ width: "82px" }} />
-          <col className="metricColumn" style={{ width: "78px" }} />
+          <col className="tickerColumn" />
+          <col className="assetNameColumn" />
+          <col className="valueColumn" />
+          <col className="targetWeightColumn" />
+          <col className="metricColumn" />
+          <col className="metricColumn" />
+          <col className="metricColumn" />
+          <col className="distributionColumn" />
         </colgroup>
-        <thead><tr><th>티커</th><th style={{ paddingLeft: 22 }}>자산명</th><th className="numberHeader">평가금액 (원, KRW)</th><th className="numberHeader">목표비중 (%)</th><th className="numberHeader">CAGR (%)</th><th className="numberHeader">BETA</th><th className="numberHeader">MDD (%)</th><th className="numberHeader">배당/현금분배율 (%)</th></tr></thead>
+        <thead><tr><th>티커</th><th className="assetNameHeader">자산명</th><th className="numberHeader">평가금액 (원, KRW)</th><th className="numberHeader">목표비중 (%)</th><th className="numberHeader"><span className="tableMetricHeader">CAGR (%) <MetricTooltip label="CAGR" iconOnly /></span></th><th className="numberHeader"><span className="tableMetricHeader">BETA <MetricTooltip label="BETA" iconOnly /></span></th><th className="numberHeader"><span className="tableMetricHeader">MDD (%) <MetricTooltip label="MDD" iconOnly /></span></th><th className="numberHeader">배당률/분배율 (%)</th></tr></thead>
         <tbody>
           {assets.map((asset, index) => {
             const emptyRow = isEmptyAssetRow(asset);
@@ -243,7 +244,7 @@ export default function AssetInputTable({
             return (
               <tr key={asset.id || index} className={rowClassName}>
                 <td className="tickerCell">{renderTickerControl(asset, index)}</td>
-                <td className="assetNameCell" style={{ paddingLeft: 22 }}>{renderAssetName(asset, index, emptyRow)}</td>
+                <td className="assetNameCell">{renderAssetName(asset, index, emptyRow)}</td>
                 <td className="numberCell tableNumberCell">{formatEvaluationAmount(displayedValue)}</td>
                 <td className="targetWeightCell">{renderTargetWeight(asset, index, emptyRow, targetWeightValue)}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>

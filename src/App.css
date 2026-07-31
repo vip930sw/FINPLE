@@ -17611,3 +17611,147 @@ body,
     color: #ffffff;
   }
 }
+
+/* P2A follow-up: eight-column simulator asset tables */
+@media screen and (min-width: 901px) {
+  .settingsPanel .calculatorTableWrap,
+  .detailPanel .detailAssetTableWrap {
+    overflow: visible !important;
+  }
+
+  .settingsPanel .calculatorTable.alignedAssetTable,
+  .detailPanel .detailAssetTable {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable th,
+.settingsPanel .calculatorTable.alignedAssetTable td,
+.detailPanel .detailAssetTable th,
+.detailPanel .detailAssetTable td {
+  vertical-align: middle !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable col.tickerColumn { width: 9% !important; }
+.settingsPanel .calculatorTable.alignedAssetTable col.assetNameColumn { width: 24% !important; }
+.settingsPanel .calculatorTable.alignedAssetTable col.valueColumn { width: 17% !important; }
+.settingsPanel .calculatorTable.alignedAssetTable col.targetWeightColumn { width: 12% !important; }
+.settingsPanel .calculatorTable.alignedAssetTable col.metricColumn { width: 9% !important; }
+.settingsPanel .calculatorTable.alignedAssetTable col.distributionColumn { width: 11% !important; }
+
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(1),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(1) { width: 9% !important; min-width: 0 !important; max-width: none !important; }
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(2),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(2) { width: 24% !important; min-width: 0 !important; max-width: none !important; }
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(3),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(3) { width: 17% !important; min-width: 0 !important; max-width: none !important; }
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(4),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(4) { width: 12% !important; min-width: 0 !important; max-width: none !important; }
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(5),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(5),
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(6),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(6),
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(7),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(7) { width: 9% !important; min-width: 0 !important; max-width: none !important; }
+.settingsPanel .calculatorTable.alignedAssetTable th:nth-child(8),
+.settingsPanel .calculatorTable.alignedAssetTable td:nth-child(8) { width: 11% !important; min-width: 0 !important; max-width: none !important; }
+
+.settingsPanel .calculatorTable.alignedAssetTable .assetNameHeader,
+.settingsPanel .calculatorTable.alignedAssetTable .assetNameCell {
+  padding-left: 16px !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable .tickerCellStack,
+.settingsPanel .calculatorTable.alignedAssetTable .assetNameCell > *,
+.settingsPanel .calculatorTable.alignedAssetTable .tableNumberCell,
+.settingsPanel .calculatorTable.alignedAssetTable .targetWeightInputWrap {
+  min-height: 54px !important;
+  align-items: center !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable .tickerCellStack {
+  display: grid !important;
+  align-content: center !important;
+  justify-content: center !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable .assetNameCell > *,
+.settingsPanel .calculatorTable.alignedAssetTable .targetWeightInputWrap {
+  display: flex !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable .tableNumberCell {
+  line-height: 54px !important;
+}
+
+.settingsPanel .calculatorTable.alignedAssetTable .tableNumberCell > * {
+  min-height: 0 !important;
+  line-height: inherit !important;
+}
+
+.tableMetricHeader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+}
+
+.detailMetricHelpItem.tableMetricHelpItem {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.detailMetricHelpItem.tableMetricHelpItem em {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+
+.detailMetricHelpItem.tableMetricHelpItem strong {
+  white-space: normal !important;
+  text-align: left;
+}
+
+.detailPanel .detailAssetTable th:nth-child(1),
+.detailPanel .detailAssetTable td:nth-child(1) { width: 9% !important; }
+.detailPanel .detailAssetTable th:nth-child(2),
+.detailPanel .detailAssetTable td:nth-child(2) { width: 24% !important; }
+.detailPanel .detailAssetTable th:nth-child(3),
+.detailPanel .detailAssetTable td:nth-child(3) { width: 17% !important; }
+.detailPanel .detailAssetTable th:nth-child(4),
+.detailPanel .detailAssetTable td:nth-child(4) { width: 12% !important; }
+.detailPanel .detailAssetTable th:nth-child(5),
+.detailPanel .detailAssetTable td:nth-child(5),
+.detailPanel .detailAssetTable th:nth-child(6),
+.detailPanel .detailAssetTable td:nth-child(6),
+.detailPanel .detailAssetTable th:nth-child(7),
+.detailPanel .detailAssetTable td:nth-child(7) { width: 9% !important; }
+.detailPanel .detailAssetTable th:nth-child(8),
+.detailPanel .detailAssetTable td:nth-child(8) { width: 11% !important; }
+
+@media screen and (max-width: 900px) {
+  .settingsPanel .calculatorTable.alignedAssetTable td {
+    display: table-cell !important;
+  }
+
+  .settingsPanel .calculatorTable.alignedAssetTable,
+  .detailPanel .detailAssetTable {
+    width: 980px !important;
+    min-width: 980px !important;
+    table-layout: fixed !important;
+  }
+
+  .detailMetricHelpItem.tableMetricHelpItem strong {
+    position: fixed;
+    right: 12px;
+    bottom: 16px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    z-index: 1000;
+  }
+}
