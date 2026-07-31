@@ -221,10 +221,10 @@ test("a duplicate 0% asset remains fail-closed", () => {
   assert.match(result.blockReasons.join("|"), /duplicate_asset_identity:US:AAA/);
 });
 
-test("zero configured start value uses current portfolio value for simulator calculations", () => {
+test("zero configured start value uses planned portfolio value without quote data", () => {
   const result = calculatePortfolioResult(
     { ...BASE_SETTINGS, startValue: 0 },
-    [asset({ quantity: 10, price: 120, targetWeight: undefined })],
+    [asset({ quantity: 10, price: 120, targetWeight: 100, targetEvaluationAmount: 1200 })],
   );
   assert.equal(result.status, "ready");
   assert.equal(result.simulationStartValue, 1200);
@@ -233,11 +233,26 @@ test("zero configured start value uses current portfolio value for simulator cal
   const [comparison] = createComparisonPortfolios(
     [{ id: "current", name: "Current", assets: [] }],
     "current",
-    [asset({ quantity: 10, price: 120, targetWeight: undefined })],
+    [asset({ quantity: 10, price: 120, targetWeight: 100, targetEvaluationAmount: 1200 })],
     { ...BASE_SETTINGS, startValue: 0 },
   );
   assert.equal(comparison.result.status, "ready");
   assert.equal(comparison.result.simulationStartValue, 1200);
+});
+
+test("quantity and price do not change target-weight baseline valuation", () => {
+  const settings = { ...BASE_SETTINGS, startValue: 50_000_000 };
+  const targetAsset = asset({ targetWeight: 100, targetEvaluationAmount: 50_000_000 });
+  const first = calculatePortfolioResult(settings, [{ ...targetAsset, quantity: 0, price: 0 }]);
+  const second = calculatePortfolioResult(settings, [{ ...targetAsset, quantity: 999, price: 987_654 }]);
+
+  assert.equal(first.status, "ready");
+  assert.equal(second.status, "ready");
+  assert.equal(first.totalAssetValue, 50_000_000);
+  assert.equal(second.totalAssetValue, first.totalAssetValue);
+  assert.equal(second.expectedCagr, first.expectedCagr);
+  assert.equal(second.futureValue, first.futureValue);
+  assert.deepEqual(second.performanceRows, first.performanceRows);
 });
 
 test("zero and negative CAGR fixtures are handled deterministically", () => {

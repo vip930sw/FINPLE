@@ -12,7 +12,6 @@ export default function SettingsPanel({
   duplicateActivePortfolio,
   portfolioCreationEvent,
   settings,
-  totalAssetValue,
   simulationStartValue,
   assets,
   targetWeightDrafts,
@@ -24,19 +23,11 @@ export default function SettingsPanel({
   updateAsset,
   updateTargetWeightDraft,
   applyTargetWeights,
-  resetTargetWeights,
-  equalizeTargetWeights,
   isEmptyAssetRow,
   isAutoAsset,
-  isAutoPriceAsset,
-  isAutoMetricAsset,
-  assetLookupStatus,
-  isBulkAssetLookupLoading,
-  assetLookupSummary,
   recentlyAddedAssetId,
-  fetchAssetData,
-  fetchAllAssetData,
   resolveTickerCandidate,
+  moveAsset,
   removeAsset,
   addAsset,
   addCashAsset,
@@ -146,7 +137,7 @@ export default function SettingsPanel({
         <div className="summaryCard">
           <TooltipLabel
             label="시작 평가금액"
-            tooltip="목표비중을 적용할 기준 금액입니다. 현재가가 없는 자산도 이 금액과 목표비중을 기준으로 평가금액을 먼저 계산할 수 있습니다."
+            tooltip="목표비중을 적용할 기준 금액입니다. 자산별 평가금액은 이 금액과 목표비중으로 계산합니다."
           >
             시작 평가금액 (원)
           </TooltipLabel>
@@ -220,41 +211,34 @@ export default function SettingsPanel({
       </div>
 
       <div className="mobileDesktopNotice">
-        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 먼저 목표비중을 입력하면 시작 평가금액 기준 평가금액을 계산하고, 현재가는 필요할 때 선택적으로 조회합니다.
+        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 목표비중을 입력하면 시작 평가금액 기준으로 자산별 평가금액을 계산합니다.
       </div>
 
       <AssetInputTable
         assets={assets}
         targetWeightDrafts={targetWeightDrafts}
-        totalAssetValue={totalAssetValue}
         simulationStartValue={simulationStartValue}
         targetWeightSummary={targetWeightSummary}
         isEmptyAssetRow={isEmptyAssetRow}
         isAutoAsset={isAutoAsset}
-        isAutoPriceAsset={isAutoPriceAsset}
-        isAutoMetricAsset={isAutoMetricAsset}
         formatDecimal={formatDecimal}
         updateAsset={updateAsset}
         updateTargetWeightDraft={updateTargetWeightDraft}
-        assetLookupStatus={assetLookupStatus}
         recentlyAddedAssetId={recentlyAddedAssetId}
-        isBulkAssetLookupLoading={isBulkAssetLookupLoading}
-        fetchAssetData={fetchAssetData}
         resolveTickerCandidate={resolveTickerCandidate}
+        moveAsset={moveAsset}
         removeAsset={removeAsset}
       />
 
       <div className="tableActionRow simulatorTableActionRow">
         <div className="tableActionLeftGroup">
-          <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
+          <button className="addButton" onClick={addAsset}>자산 추가</button>
           <button
             className="resetPortfolioButton secondary"
             onClick={addCashAsset}
-            disabled={isBulkAssetLookupLoading}
           >
             현금 추가
           </button>
-          <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
           <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows}>빈 행 정리</button>
           <button className="resetPortfolioButton danger" onClick={resetActivePortfolioAssets}>포트폴리오 초기화</button>
         </div>

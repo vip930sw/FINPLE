@@ -13,6 +13,7 @@
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
     "check:official-portfolio-baseline": "node --test scripts/check-official-portfolio-baseline.test.mjs",
     "check:step2-step3-integrated-qa": "node --test scripts/check-step2-step3-integrated-qa.test.mjs",
+    "check:p2a-public-simulator-policy": "node --test scripts/check-p2a-public-simulator-policy.test.mjs",
     "check:portfolio-persistence-lifecycle": "node --test src/components/portfolio/utils/portfolioPersistenceContract.test.js src/components/portfolio/services/serverPortfolioService.persistence.test.js src/components/portfolio/utils/portfolioLifecycle.test.js server/src/routes/portfolioDbRoutes.persistence.test.js src/components/portfolio/utils/simulatorStep7SavedPortfolios.test.js",
     "check:step114-2zb-dynamic-universe-megacap-income": "node --test scripts/check-step114-2zb.test.mjs src/data/tickers/distributionPathIntegration.test.js",
     "check:step114-2zc-production-app-export-cutover": "node --test scripts/check-step114-2zc.test.mjs src/data/tickers/productionAppExportDataSource.test.js src/data/tickers/distributionPathIntegration.test.js src/components/portfolio/utils/appPreviewScenarioService.test.js src/components/portfolio/utils/monthlyBaselineEngine.test.js",

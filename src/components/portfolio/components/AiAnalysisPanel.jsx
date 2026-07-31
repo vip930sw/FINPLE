@@ -16,6 +16,7 @@ import {
   getProviderScenarioContext,
   summarizeScenarioContextState,
 } from "../utils/aiScenarioInterpretationContext";
+import { getAssetEvaluationValue } from "../utils/portfolioFormatters";
 
 function getActiveAssets(assets = [], isEmptyAssetRow) {
   return assets.filter((asset) => {
@@ -24,14 +25,12 @@ function getActiveAssets(assets = [], isEmptyAssetRow) {
   });
 }
 
-function getTopAssets(assets = []) {
+function getTopAssets(assets = [], simulationStartValue = null) {
   return [...assets]
     .map((asset) => {
-      const actualValue = Number(asset.quantity || 0) * Number(asset.price || 0);
-      const plannedValue = Number(asset.targetEvaluationAmount || 0);
       return {
         ...asset,
-        displayValue: plannedValue > 0 ? plannedValue : actualValue,
+        displayValue: getAssetEvaluationValue(asset, simulationStartValue),
       };
     })
     .sort((left, right) => Number(right.displayValue || 0) - Number(left.displayValue || 0))
@@ -224,8 +223,8 @@ function AiAnalysisLoadingState() {
   );
 }
 
-function StaleAnalysisState({ activeAssets, formatNumber }) {
-  const previewAssets = getTopAssets(activeAssets).slice(0, 6);
+function StaleAnalysisState({ activeAssets, simulationStartValue, formatNumber }) {
+  const previewAssets = getTopAssets(activeAssets, simulationStartValue).slice(0, 6);
 
   return (
     <section className="aiAnalysisStaleState" aria-live="polite">
@@ -392,7 +391,10 @@ export default function AiAnalysisPanel({
     () => getActiveAssets(assets, isEmptyAssetRow),
     [assets, isEmptyAssetRow]
   );
-  const topAssets = useMemo(() => getTopAssets(activeAssets), [activeAssets]);
+  const topAssets = useMemo(
+    () => getTopAssets(activeAssets, result?.simulationStartValue),
+    [activeAssets, result?.simulationStartValue],
+  );
   const inputSignature = useMemo(
     () => createAiAnalysisInputSignature({
       activePortfolio,
@@ -580,7 +582,7 @@ export default function AiAnalysisPanel({
       ) : null}
 
       {isAccessBlocked ? null : isStale ? (
-        <StaleAnalysisState activeAssets={activeAssets} formatNumber={formatNumber} />
+        <StaleAnalysisState activeAssets={activeAssets} simulationStartValue={result?.simulationStartValue} formatNumber={formatNumber} />
       ) : analysis ? (
         <AnalysisResult analysis={analysis} />
       ) : (

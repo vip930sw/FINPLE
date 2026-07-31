@@ -381,12 +381,16 @@ test("Screener, direct, MBTI, and preset paths use canonical hydration", () => {
   assert.match(simulator, /hydratePortfolioAssetFromActiveCatalog/);
   assert.match(
     simulator,
-    /fetchTickerCandidateByTicker\(ticker,\s*\{\s*market:/,
+    /findScreenerCandidateByTicker\(ticker, market\)/,
   );
+  assert.doesNotMatch(simulator, /fetchAssetDataByTicker|fetchAssetDataBatch/);
   assert.match(mbti, /hydrateAssetFromScreenerCandidate/);
+  assert.match(mbti, /targetWeight: Number\(weight \|\| 0\)/);
+  assert.doesNotMatch(mbti, /scheduleSimulatorAutoLookup|전체 조회/);
   assert.match(mbti, /dataSource: isCash \? "investment-mbti-cash"/);
   assert.match(mbti, /dataSource: baseAsset\.dataSource/);
   assert.match(presets, /hydrateAssetFromScreenerCandidate/);
+  assert.match(presets, /targetWeight: Number\(weight \|\| 0\)/);
 });
 
 test("canonical CSV replacement and universe change update runtime without code changes", async () => {

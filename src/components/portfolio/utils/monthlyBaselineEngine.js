@@ -339,20 +339,13 @@ export function annualPercentToMonthlyRate(annualPercent, label = "annualPercent
   return (1 + annualRate) ** (1 / 12) - 1;
 }
 
-function getAssetActualValue(asset = {}) {
-  const quantity = toFiniteNumber(asset.quantity, 0);
-  const price = toFiniteNumber(asset.price, 0);
-  const value = quantity * price;
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
 function getAssetPlannedValue(asset = {}) {
   const value = toFiniteNumber(asset.targetEvaluationAmount, 0);
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 function getAssetWeightValue(asset = {}) {
-  return getAssetPlannedValue(asset) || getAssetActualValue(asset);
+  return getAssetPlannedValue(asset);
 }
 
 function getAnnualCagr(asset = {}) {
@@ -785,9 +778,10 @@ export function buildMonthlyBaselineProjection({
         !isEmptyAssetRow(asset)
       ))
     : [];
-  const totalAssetValue = assetList.reduce((sum, asset) => sum + getAssetWeightValue(asset || {}), 0);
-  const simulationStartValue = rawSettings.rawStartValue > 0 ? rawSettings.rawStartValue : totalAssetValue;
-  const weightBaseValue = totalAssetValue > 0 ? totalAssetValue : simulationStartValue;
+  const plannedAssetValue = assetList.reduce((sum, asset) => sum + getAssetWeightValue(asset || {}), 0);
+  const simulationStartValue = rawSettings.rawStartValue > 0 ? rawSettings.rawStartValue : plannedAssetValue;
+  const totalAssetValue = simulationStartValue;
+  const weightBaseValue = plannedAssetValue;
   const investmentMonths = rawSettings.rawInvestmentMonths === null ? 0 : rawSettings.rawInvestmentMonths;
   const monthlyContribution = rawSettings.rawMonthlyContribution ?? 0;
 

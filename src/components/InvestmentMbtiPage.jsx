@@ -392,29 +392,18 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       metricMode: isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "canonical_v2_price_return" : "manual"),
       dataSource: isCash ? "investment-mbti-cash" : (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti")),
     });
-    const price = isCash ? Number(template.price || 10000) : Number(baseAsset.price || template.price || 1);
     const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
     return {
       ...baseAsset,
       id: `mbti-${marketMode.toLowerCase()}-asset-${assetKey}-${Date.now()}-${index}`,
-      quantity: Number((assetValue / price).toFixed(4)),
-      price,
+      quantity: 0,
+      targetWeight: Number(weight || 0),
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
       priceMode: "manual",
       metricMode: baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "canonical_v2_price_return" : "manual")),
       dataSource: baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+canonical-v2" : "investment-mbti")),
-      lookupDisabled: isCash,
-      shouldAutoLookup: !isCash,
     };
   });
-}
-
-function scheduleSimulatorAutoLookup() {
-  if (typeof window === "undefined") return;
-  window.setTimeout(() => {
-    const bulkLookupButton = Array.from(document.querySelectorAll("button")).find((button) => String(button.textContent || "").trim() === "전체 조회");
-    bulkLookupButton?.click?.();
-  }, 900);
 }
 
 function saveMbtiProfileToServer(profile) {
@@ -436,7 +425,7 @@ function saveResultToSimulator(result, marketMode = "US") {
   const now = new Date().toISOString();
   const id = `mbti-${marketMode.toLowerCase()}-${Date.now()}`;
   const type = result.type;
-  const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate };
+  const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate, startValue: 50000000 };
   const assets = buildAssetsFromPreset(type.preset, 50000000, marketMode);
   const portfolio = { id, name: type.nickname, settings, assets, updatedAt: now, source: marketMode === "KR" ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
   try {
@@ -482,7 +471,7 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
       window.history.replaceState({ page: "personal", path: "/mbti" }, "", "/mbti");
     }
   }
-  function applyToSimulator(marketMode = "US") { const saved = saveResultToSimulator(result, marketMode); onNavigate?.("personal"); if (saved) scheduleSimulatorAutoLookup(); }
+  function applyToSimulator(marketMode = "US") { saveResultToSimulator(result, marketMode); onNavigate?.("personal"); }
   if (showStoredResult && storedProfile) {
     return <main className="page investmentMbtiPage"><StoredMbtiResult profile={storedProfile} onReset={resetTest} /></main>;
   }

@@ -30,19 +30,16 @@ const PRESET_ASSET_CATALOG = {
 function createWeightedPresetAssets(weights = {}, initialAmount = 50000000) {
   return hydratePresetAssets(Object.entries(weights).map(([ticker, weight], index) => {
     const template = PRESET_ASSET_CATALOG[ticker] || PRESET_ASSET_CATALOG.CASH;
-    const price = Number(template.price || 1);
     const targetEvaluationAmount = Math.round(Number(initialAmount) * Number(weight || 0) / 100);
     return {
       ...template,
       id: `preset-${String(ticker).toLowerCase()}-${index}`,
-      quantity: price > 0 ? Number((targetEvaluationAmount / price).toFixed(6)) : 0,
-      price,
+      quantity: 0,
+      targetWeight: Number(weight || 0),
       targetEvaluationAmount,
       priceMode: template.ticker === "CASH" ? "manual" : "canonical_v2_price_close",
       metricMode: template.ticker === "CASH" ? "manual" : "manual",
       dataSource: template.ticker === "CASH" ? "preset-cash" : "preset-weighted",
-      lookupDisabled: template.ticker === "CASH",
-      shouldAutoLookup: template.ticker !== "CASH",
     };
   }));
 }

@@ -16,6 +16,10 @@ const tableSource = fs.readFileSync(
   new URL("../components/AssetInputTable.jsx", import.meta.url),
   "utf8",
 );
+const settingsSource = fs.readFileSync(
+  new URL("../components/SettingsPanel.jsx", import.meta.url),
+  "utf8",
+);
 
 function functionSource(name, nextName) {
   const start = hookSource.indexOf(`function ${name}`);
@@ -58,9 +62,9 @@ test("confirmed candidate add blocks duplicate identity", () => {
 });
 
 test("direct ticker blur blocks duplicates before candidate lookup", () => {
-  const source = functionSource("resolveTickerCandidate", "applyFetchedAssetData");
+  const source = functionSource("resolveTickerCandidate", "createAssetFromTickerCandidate");
   assert.match(tableSource, /onBlur=\{\(e\) => resolveTickerCandidate/);
-  assert.ok(source.indexOf("findDuplicateAssetIndex") < source.indexOf("fetchTickerCandidateByTicker"));
+  assert.ok(source.indexOf("findDuplicateAssetIndex") < source.indexOf("findScreenerCandidateByTicker"));
 });
 
 test("direct ticker Enter stops when the immutable update rejects a duplicate", () => {
@@ -71,9 +75,18 @@ test("direct ticker Enter stops when the immutable update rejects a duplicate", 
   assert.doesNotMatch(tableSource, /currentAsset\.ticker\s*=/);
 });
 
-test("individual lookup detects duplicates before provider lookup", () => {
-  const source = functionSource("fetchAssetData", "fetchAllAssetData");
-  assert.ok(source.indexOf("findDuplicateAssetIndex") < source.indexOf("fetchAssetDataByTicker"));
+test("direct ticker hydration never calls a quote provider", () => {
+  const source = functionSource("resolveTickerCandidate", "createAssetFromTickerCandidate");
+  assert.match(source, /findScreenerCandidateByTicker/);
+  assert.doesNotMatch(hookSource, /fetchAssetDataByTicker|fetchAssetDataBatch|fetchAllAssetData/);
+});
+
+test("public Step 1 keeps canonical hydration and removes quote controls", () => {
+  assert.doesNotMatch(hookSource, /pendingTemplateAutoLookupRef|consumeFreeApiLookup|getAssetDataProviderLabel/);
+  assert.doesNotMatch(tableSource, />수량<|>현재가 \(원, KRW\)<|>조회</);
+  assert.doesNotMatch(settingsSource, />전체 조회</);
+  assert.match(tableSource, /getPlannedEvaluationAmount\(simulationStartValue, targetWeightValue\)/);
+  assert.match(hookSource, /targetEvaluationAmount: Number\(\(startValue \* targetWeight \/ 100\)\.toFixed\(0\)\)/);
 });
 
 test("CASH duplicate is blocked and first CASH add has no success alert", () => {

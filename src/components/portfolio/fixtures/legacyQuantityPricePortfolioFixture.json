@@ -1,0 +1,46 @@
+{
+  "activePortfolioId": "legacy-quantity-price-portfolio",
+  "globalSettings": {
+    "startValue": 50000000,
+    "monthlyCashFlow": 1000000,
+    "years": 10,
+    "inflationRate": 2.5,
+    "dividendReinvest": true
+  },
+  "portfolioList": [
+    {
+      "id": "legacy-quantity-price-portfolio",
+      "name": "Legacy quantity price portfolio",
+      "sortOrder": 7,
+      "createdAt": "2026-01-02T03:04:05.000Z",
+      "updatedAt": "2026-06-07T08:09:10.000Z",
+      "customPortfolioField": "keep-portfolio-field",
+      "assets": [
+        {
+          "id": "legacy-qqq",
+          "market": "US",
+          "ticker": "QQQ",
+          "name": "User QQQ name",
+          "quantity": 10,
+          "price": 2000000,
+          "sortOrder": 3,
+          "createdAt": "2026-01-02T03:04:05.000Z",
+          "updatedAt": "2026-06-07T08:09:10.000Z",
+          "customAssetField": "keep-qqq-field"
+        },
+        {
+          "id": "legacy-schd",
+          "market": "US",
+          "ticker": "SCHD",
+          "name": "User SCHD name",
+          "quantity": 20,
+          "price": 1500000,
+          "sortOrder": 4,
+          "createdAt": "2026-01-03T03:04:05.000Z",
+          "updatedAt": "2026-06-08T08:09:10.000Z",
+          "customAssetField": "keep-schd-field"
+        }
+      ]
+    }
+  ]
+}

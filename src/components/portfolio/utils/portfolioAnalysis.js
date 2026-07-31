@@ -27,14 +27,15 @@ function classifyAssetRole(asset = {}) {
 
 export function analyzePortfolioProfile({ assets = [], result = {} }) {
   const totalAssetValue = Number(result.totalAssetValue || 0);
+  const simulationStartValue = Number(result.simulationStartValue || 0);
   const activeAssets = assets.filter((asset) =>
-    String(asset?.ticker || "").trim() && getAssetEvaluationValue(asset) > 0
+    String(asset?.ticker || "").trim() && getAssetEvaluationValue(asset, simulationStartValue) > 0
   );
   const roleMap = new Map();
 
   activeAssets.forEach((asset) => {
     const role = classifyAssetRole(asset);
-    const weight = getAssetEvaluationWeight(asset, totalAssetValue);
+    const weight = getAssetEvaluationWeight(asset, totalAssetValue, simulationStartValue);
     const previous = roleMap.get(role.key) || { ...role, weight: 0 };
     roleMap.set(role.key, { ...previous, weight: previous.weight + weight });
   });
@@ -43,7 +44,7 @@ export function analyzePortfolioProfile({ assets = [], result = {} }) {
   const topAssets = [...activeAssets]
     .map((asset) => ({
       ticker: asset.ticker || "-",
-      weight: getAssetEvaluationWeight(asset, totalAssetValue),
+      weight: getAssetEvaluationWeight(asset, totalAssetValue, simulationStartValue),
     }))
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 3);
@@ -108,6 +109,6 @@ export function getPortfolioDetailReport(portfolio) {
     growthText: cagr >= 9 ? "성장 기대치가 높은 편입니다." : "성장 기대치는 중간 수준입니다.",
     riskText: Math.abs(mdd) >= 35 ? "하락장에서 손실폭이 커질 수 있는 구조입니다." : "입력값 기준 하락 위험은 과도하게 높지 않습니다.",
     dividendText: cashYield >= 3 ? `${cashFlowDisplay.yieldLabel}이 비교적 높아 현금흐름 측면의 매력이 있습니다.` : `${cashFlowDisplay.focusLabel}보다 가격 상승에 더 의존하는 구조입니다.`,
-    directionText: "목표비중을 조정한 뒤 적용 버튼으로 수량을 재계산하고, 상세분석에서 장기 성과와 리스크 변화를 함께 확인해보세요.",
+    directionText: "목표비중을 조정한 뒤 계산 버튼으로 평가금액을 반영하고, 상세분석에서 장기 성과와 리스크 변화를 함께 확인해보세요.",
   };
 }

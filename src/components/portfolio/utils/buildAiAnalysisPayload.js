@@ -29,19 +29,10 @@ function normalizeMarket(market) {
   return String(market || "").trim().toUpperCase() === "KR" ? "KR" : "US";
 }
 
-function getAssetValue(asset) {
-  const plannedValue = toFiniteNumber(asset?.targetEvaluationAmount);
-  if (plannedValue && plannedValue > 0) return plannedValue;
-
-  const quantity = toFiniteNumber(asset?.quantity) || 0;
-  const price = toFiniteNumber(asset?.price) || 0;
-  return quantity * price;
-}
-
 function getWeightedAssets(activeAssets) {
   const assetsWithValue = activeAssets.map((asset) => ({
     asset,
-    value: getAssetValue(asset),
+    value: Math.max(0, toFiniteNumber(asset?.targetWeight) || 0),
   }));
   const totalValue = assetsWithValue.reduce((sum, item) => sum + Math.max(0, item.value || 0), 0);
 
@@ -198,8 +189,7 @@ export function createAiAnalysisInputSignature({
   const signatureAssets = activeAssets.map((asset) => ({
     ticker: normalizeTicker(asset?.ticker),
     market: normalizeMarket(asset?.market),
-    quantity: toFiniteNumber(asset?.quantity),
-    price: toFiniteNumber(asset?.price),
+    targetWeight: toFiniteNumber(asset?.targetWeight),
     targetEvaluationAmount: toFiniteNumber(asset?.targetEvaluationAmount),
     cagr: toFiniteNumber(asset?.cagr),
     beta: toFiniteNumber(asset?.beta),
