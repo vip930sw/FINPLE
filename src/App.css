@@ -9304,7 +9304,13 @@ nav {
   font-size: 12px !important;
 }
 
-.tickerResultAction.added,
+.tickerResultAction.added {
+  border: 1px solid #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  cursor: pointer !important;
+}
+
 .tickerResultAction:disabled {
   border: 1px solid #bfdbfe !important;
   background: #eff6ff !important;
