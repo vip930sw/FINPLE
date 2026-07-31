@@ -464,16 +464,16 @@ function createStatusViewModel({ status, reasons = [], selectedPortfolioName, fi
       message: "검증된 월간 수익률 데이터가 연결되지 않았습니다.",
     },
     insufficient_data: {
-      title: "데이터 기간 부족",
+      title: "월간 데이터 기간 부족",
       message: "확률 밴드를 만들 만큼 공통 월별 이력이 충분하지 않습니다.",
     },
     blocked: {
-      title: "확률분석 사용 불가",
+      title: "확률분석 보류",
       message: "검증 조건을 통과하지 못해 확률 수치를 표시하지 않습니다.",
     },
     stale: {
-      title: "이전 확률분석 결과",
-      message: "현재 포트폴리오 또는 설정과 결과 identity가 일치하지 않습니다.",
+      title: "결과 재계산 필요",
+      message: "현재 포트폴리오 또는 설정과 기존 결과가 일치하지 않습니다.",
     },
     error: {
       title: "확률분석 오류",

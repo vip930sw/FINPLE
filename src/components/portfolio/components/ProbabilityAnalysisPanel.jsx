@@ -142,6 +142,9 @@ export default function ProbabilityAnalysisPanel({
   const isReady = isProbabilityViewModelReady(viewModel);
   const loadView = getScenarioLoadView(scenarioLoadStatus, scenarioLoadError);
   const showLoadStatus = scenarioLoadStatus !== "ready";
+  const displayView = scenarioLoadStatus === "ready" && !isReady
+    ? { status: viewModel.title }
+    : loadView;
 
   return (
     <div className="simulatorTabPanel probabilityAnalysisPanel">
@@ -154,8 +157,8 @@ export default function ProbabilityAnalysisPanel({
           </p>
         </div>
         <div className="probabilityFixtureBadge">
-          <span>{loadView.status}</span>
-          <strong>{loadView.badge || loadView.status}</strong>
+          <span>{displayView.status}</span>
+          <strong>{displayView.badge || displayView.status}</strong>
         </div>
       </div>
 
@@ -195,7 +198,7 @@ export default function ProbabilityAnalysisPanel({
         )}
         <div>
           <span>상태</span>
-          <strong>{loadView.status}</strong>
+          <strong>{displayView.status}</strong>
         </div>
       </section>
 

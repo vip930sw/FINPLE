@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import test from "node:test";
+import test, { after, before } from "node:test";
+
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createServer } from "vite";
 
 import { createManualCashAsset } from "../src/data/tickers/manualCashAsset.js";
 import {
@@ -19,6 +23,15 @@ import {
   formatUserFacingBaselineBlockReasons,
 } from "../src/components/portfolio/utils/baselineBlockReasonLabels.js";
 import { getStep4ScenarioAssets } from "../src/components/portfolio/utils/portfolioFormatters.js";
+import {
+  STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
+  STEP114_2G_FIXTURE_EXPECTED_OUTPUT_HASH,
+  STEP114_2G_FIXTURE_REVIEW_ASSETS,
+  STEP114_2G_FIXTURE_REVIEW_PORTFOLIO,
+  STEP114_2G_FIXTURE_REVIEW_SETTINGS,
+  STEP114_2G_PRECOMPUTED_BASELINE_FIXTURE,
+  STEP114_2G_PROBABILITY_FIXTURE_RESULT,
+} from "../src/components/portfolio/fixtures/probabilityScenarioResultFixture.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const hookSource = read("../src/components/portfolio/hooks/usePortfolioSimulator.js");
@@ -28,6 +41,25 @@ const fingerprintSource = read("../src/components/portfolio/utils/probabilitySce
 const productionSource = read("../src/data/tickers/productionAppExportDataSource.js");
 const canonicalLoaderSource = read("../src/data/tickers/screenerCandidateLoader.js");
 const canonicalCsvSource = read("../src/data/tickers/finple_app_candidates_v2.csv");
+
+let vite;
+let ProbabilityAnalysisPanel;
+
+before(async () => {
+  vite = await createServer({
+    root: process.cwd(),
+    appType: "custom",
+    logLevel: "silent",
+    server: { middlewareMode: true },
+  });
+  ProbabilityAnalysisPanel = (await vite.ssrLoadModule(
+    "/src/components/portfolio/components/ProbabilityAnalysisPanel.jsx",
+  )).default;
+});
+
+after(async () => {
+  await vite?.close();
+});
 
 const manifest = {
   sourceCandidatePackageId: "finple-p3-test",
@@ -74,6 +106,31 @@ function buildScenario(assets) {
     runtimeMode: "production_app_export_ready",
     simulationCount: 24,
   });
+}
+
+function clone(value) {
+  return structuredClone(value);
+}
+
+function renderStep4({
+  scenarioResult = STEP114_2G_PROBABILITY_FIXTURE_RESULT,
+  scenarioLoadStatus = "ready",
+  scenarioLoadError = "",
+  currentSettings = STEP114_2G_FIXTURE_REVIEW_SETTINGS,
+} = {}) {
+  return renderToStaticMarkup(React.createElement(ProbabilityAnalysisPanel, {
+    activePortfolio: STEP114_2G_FIXTURE_REVIEW_PORTFOLIO,
+    assets: STEP114_2G_FIXTURE_REVIEW_ASSETS,
+    settings: currentSettings,
+    result: STEP114_2G_PRECOMPUTED_BASELINE_FIXTURE,
+    fixtureBaselineResult: STEP114_2G_PRECOMPUTED_BASELINE_FIXTURE,
+    scenarioResult,
+    scenarioLoadStatus,
+    scenarioLoadError,
+    expectedInputHash: STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
+    expectedOutputHash: STEP114_2G_FIXTURE_EXPECTED_OUTPUT_HASH,
+    enableFixtureReview: true,
+  }));
 }
 
 test("one Step 4 asset helper owns shard, scenario, fingerprint, and display inputs", () => {
@@ -195,4 +252,54 @@ test("cash-only and monthly load statuses replace idle and precomputed UI copy",
   assert.match(panelSource, /scenarioLoadStatus === "ready" && !isReady/);
   assert.match(hookSource, /scenarioAssets\.every\(isManualCashAsset\)/);
   assert.match(hookSource, /status: "cash_only"/);
+});
+
+test("Step 4 SSR gives non-ready view-model states priority over loader ready", () => {
+  const insufficient = clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT);
+  insufficient.status = "insufficient_data";
+  insufficient.monthlyBands = [];
+  insufficient.terminalValue = null;
+  insufficient.dataQuality = { status: "insufficient_data", blockReasons: ["insufficient_common_history"] };
+  const insufficientHtml = renderStep4({ scenarioResult: insufficient });
+  assert.match(insufficientHtml, /월간 데이터 기간 부족/);
+  assert.match(insufficientHtml, /확률 밴드를 만들 만큼 공통 월별 이력이 충분하지 않습니다/);
+  assert.doesNotMatch(insufficientHtml, /분석 준비 완료/);
+
+  const blocked = clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT);
+  blocked.status = "blocked";
+  blocked.monthlyBands = [];
+  blocked.terminalValue = null;
+  blocked.dataQuality = { status: "blocked", blockReasons: ["fixture_gate_blocked"] };
+  const blockedHtml = renderStep4({ scenarioResult: blocked });
+  assert.match(blockedHtml, /확률분석 보류/);
+  assert.doesNotMatch(blockedHtml, /검증된 월간 데이터/);
+
+  const staleHtml = renderStep4({
+    currentSettings: { ...STEP114_2G_FIXTURE_REVIEW_SETTINGS, monthlyCashFlow: 600_000 },
+  });
+  assert.match(staleHtml, /결과 재계산 필요/);
+  assert.match(staleHtml, /현재 포트폴리오 또는 설정과 기존 결과가 일치하지 않습니다/);
+
+  const error = clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT);
+  error.status = "error";
+  error.monthlyBands = [];
+  const errorHtml = renderStep4({ scenarioResult: error });
+  assert.match(errorHtml, /확률분석 오류/);
+  assert.doesNotMatch(errorHtml, /분석 준비 완료/);
+
+  const readyHtml = renderStep4();
+  assert.match(readyHtml, /분석 준비 완료/);
+  assert.match(readyHtml, /검증된 월간 데이터/);
+});
+
+test("Step 4 SSR keeps one loader-state panel for unconfigured, cash-only, and baseline blocked", () => {
+  for (const fixture of [
+    { scenarioLoadStatus: "unconfigured", expected: "월간 데이터 연결 필요" },
+    { scenarioLoadStatus: "cash_only", expected: "현금성 자산 단독 포트폴리오입니다." },
+    { scenarioLoadStatus: "blocked", scenarioLoadError: "구체적인 baseline 보류 사유", expected: "구체적인 baseline 보류 사유" },
+  ]) {
+    const html = renderStep4({ ...fixture, scenarioResult: null });
+    assert.match(html, new RegExp(fixture.expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.equal((html.match(/class="probabilityStatusPanel/g) || []).length, 1);
+  }
 });
