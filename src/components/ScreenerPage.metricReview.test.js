@@ -159,6 +159,7 @@ test("Screener cards render dividend and metric review status as separate facts"
         assert.doesNotMatch(html, /최근 12개월 분배율/, fixture.ticker);
         assert.doesNotMatch(html, /<span>배당률 /, fixture.ticker);
       }
+      assert.doesNotMatch(html, /review-only/, fixture.ticker);
       assert.doesNotMatch(html, /분석 가능/, fixture.ticker);
       assert.match(
         html,
@@ -197,6 +198,29 @@ test("Screener cards render dividend and metric review status as separate facts"
     assert.match(shortHistoryHtml, /가격 이력 1\.9년/);
     assert.match(shortHistoryHtml, /포트폴리오 이용 불가/);
     assert.match(shortHistoryHtml, /2027-09-01 이후/);
+
+    const priceUnavailableHtml = renderToStaticMarkup(
+      React.createElement(ScreenerCandidateCard, {
+        item: {
+          ticker: "NOPRICE",
+          koreanName: "NOPRICE",
+          market: "US",
+          type: "ETF",
+          exposureType: "ordinary_etf",
+          distributionType: "ordinary_cash_dividend",
+          active: true,
+          listingStatus: "active",
+          priceUnavailable: true,
+          goals: [],
+          tags: [],
+        },
+        isAdded: false,
+        canAdd: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(priceUnavailableHtml, /가격 정보 없음/);
+    assert.doesNotMatch(priceUnavailableHtml, /review-only/);
 
     const leveragedHtml = renderToStaticMarkup(
       React.createElement(ScreenerCandidateCard, {
@@ -283,6 +307,29 @@ test("Screener cards render dividend and metric review status as separate facts"
     assert.match(finderTierHtml, /일일 \+3X/);
     assert.match(finderTierHtml, /leverageRiskNotice--high/);
     assert.match(finderTierHtml, /data-warning-severity="high"/);
+
+    const finderDistributionHtml = renderToStaticMarkup(
+      React.createElement(TickerResultCard, {
+        item: {
+          ticker: "QYLG",
+          market: "US",
+          type: "ETF",
+          exposureType: "index_covered_call_growth",
+          distributionType: "mixed_distribution",
+          distributionFrequency: "monthly",
+          trailingDistributionYield: 16.26,
+          portfolioEligible: true,
+          portfolioAddPolicy: "allow",
+          tags: [],
+        },
+        isAdded: false,
+        onAdd: () => {},
+      }),
+    );
+    assert.match(finderDistributionHtml, /옵션 분배/);
+    assert.match(finderDistributionHtml, /현금분배율 16\.26%/);
+    assert.match(finderDistributionHtml, /분배 주기: 월간/);
+    assert.doesNotMatch(finderDistributionHtml, /review-only/);
 
     const compareTierHtml = renderToStaticMarkup(
       React.createElement(ComparePanel, {

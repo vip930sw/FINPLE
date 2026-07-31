@@ -172,9 +172,7 @@ export function TickerResultCard({ item, isAdded, onAdd }) {
         <span>전략 {item.strategy || "-"}</span>
         <span>위험 {getRiskLabel(item.riskLevel)}</span>
         <span>CAGR {formatPercentValue(item.expectedCagr)}</span>
-        {nonOrdinaryDistribution ? (
-          <span>분배 review-only</span>
-        ) : (
+        {nonOrdinaryDistribution ? null : (
           <span>배당률 {formatPercentValue(item.dividendYield)}</span>
         )}
         <span>MDD {formatPercentValue(item.mdd)}</span>
