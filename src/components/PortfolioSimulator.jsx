@@ -327,10 +327,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             scenarioLoadStatus={previewScenarioStatus}
             scenarioLoadError={previewScenarioError}
             enableInternalPreviewReview={
-              screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only"
+              Boolean(previewScenarioResult?.internalPreviewContext)
             }
             enableProductionAppExport={
-              screenerCandidateSnapshot?.preview?.status === "production_app_export_ready"
+              Boolean(previewScenarioResult?.productionAppExportContext)
             }
           />
         </div>

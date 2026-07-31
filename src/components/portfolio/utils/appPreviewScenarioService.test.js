@@ -19,6 +19,7 @@ import {
 } from "./aiScenarioInterpretationContext.js";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
 import { reconcileIdentityScopedAssetMetadata } from "../../../data/tickers/portfolioAssetIdentityMetadata.js";
+import { createManualCashAsset } from "../../../data/tickers/manualCashAsset.js";
 
 function monthEnd(index) {
   const date = new Date(Date.UTC(2018, index + 1, 0));
@@ -971,4 +972,66 @@ test("production app export enables Step 4 only while AI scenario context stays 
     probabilityViewModel: viewModel,
   });
   assert.equal(getProviderScenarioContext(aiContext), null);
+});
+
+test("manual CASH uses the internal 2 percent return without a monthly shard", () => {
+  const activePortfolio = { id: "portfolio-cash", name: "Cash allocation" };
+  const settings = {
+    startValue: 10000,
+    monthlyCashFlow: 0,
+    years: 5,
+    inflationRate: 0,
+  };
+  const release = {
+    contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+    universeVersion: "finple-universe-v2-2026-07-24",
+    sourceAppExportSha256: "e".repeat(64),
+    metricDataThroughMonth: "2026-06",
+  };
+  const qqqOnly = buildAppExportScenarioResult({
+    activePortfolio,
+    assets: [{ market: "US", ticker: "QQQ", targetWeight: 100 }],
+    settings,
+    rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    simulationCount: 24,
+  });
+  const withCash = buildAppExportScenarioResult({
+    activePortfolio,
+    assets: [
+      { market: "US", ticker: "QQQ", targetWeight: 50 },
+      createManualCashAsset({ targetWeight: 50 }),
+    ],
+    settings,
+    rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    simulationCount: 24,
+  });
+  assert.equal(withCash.status, "ready", JSON.stringify(withCash.dataQuality));
+  assert.deepEqual(withCash.productionAppExportContext.identities, ["US:QQQ"]);
+  assert.notEqual(withCash.outputHash, qqqOnly.outputHash);
+
+  assertScenarioPolicyError(
+    () => buildAppExportScenarioResult({
+      activePortfolio,
+      assets: [
+        { market: "US", ticker: "QQQ", targetWeight: 50 },
+        { market: "CASH", ticker: "CASH", targetWeight: 50, dataSource: "unknown" },
+      ],
+      settings,
+      rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+      manifest,
+      release,
+      runtimeMode: "production_app_export_ready",
+      simulationCount: 24,
+    }),
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      identity: "CASH:CASH",
+    },
+  );
 });

@@ -32,6 +32,8 @@ import {
   buildProductionCatalogPolicyByIdentity,
   decodeProductionMonthlySeries,
   getProductionAppExportRequestLog,
+  isProductionAppExportConfigured,
+  isProductionMonthlyScenarioArtifactConfigured,
   loadProductionAppExportCatalog,
   loadProductionMonthlyReturnsForIdentities,
   isPinnedLegacyProductionBinding,
@@ -484,6 +486,34 @@ test("production monthly loader lazy-loads one shard and deduplicates concurrent
   assert.equal(getProductionAppExportRequestLog().filter(
     (url) => url.includes("monthly-returns-00.json"),
   ).length, 1);
+});
+
+test("monthly artifacts can be configured without replacing the canonical catalog", async () => {
+  resetProductionAppExportDataSourceForTests();
+  const fixture = makeFixture();
+  const monthlyOnly = options(fixture, { enabled: false, monthlyEnabled: true });
+  assert.equal(isProductionAppExportConfigured(monthlyOnly), false);
+  assert.equal(isProductionMonthlyScenarioArtifactConfigured(monthlyOnly), true);
+
+  const result = await loadProductionMonthlyReturnsForIdentities(["US:QQQ"], monthlyOnly);
+  assert.equal(result.enabled, true);
+  assert.equal(result.rowsByIdentity["US:QQQ"].length, 2);
+});
+
+test("monthly artifacts stay unavailable without every verified runtime binding", async () => {
+  resetProductionAppExportDataSourceForTests();
+  const fixture = makeFixture();
+  const incomplete = options(fixture, {
+    enabled: false,
+    monthlyEnabled: true,
+    releaseManifestSha256: "",
+  });
+  assert.equal(isProductionMonthlyScenarioArtifactConfigured(incomplete), false);
+
+  const result = await loadProductionMonthlyReturnsForIdentities(["US:QQQ"], incomplete);
+  assert.equal(result.enabled, false);
+  assert.deepEqual(result.missingIdentities, ["US:QQQ"]);
+  assert.equal(getProductionAppExportRequestLog().length, 0);
 });
 
 test("missing monthly identity is unavailable without zero fill or proxy requests", async () => {

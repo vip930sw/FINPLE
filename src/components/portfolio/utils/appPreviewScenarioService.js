@@ -1,4 +1,11 @@
 import { buildProbabilisticBootstrapScenario } from "../../../../server/src/services/scenario/probabilisticBootstrapEngine.js";
+import {
+  isManualCashAsset,
+  MANUAL_CASH_TOTAL_RETURN_PERCENT,
+} from "../../../data/tickers/manualCashAsset.js";
+
+const MANUAL_CASH_MONTHLY_RETURN =
+  (1 + MANUAL_CASH_TOTAL_RETURN_PERCENT / 100) ** (1 / 12) - 1;
 
 function normalizeMarket(value) {
   return String(value || "").trim().toUpperCase();
@@ -298,9 +305,20 @@ export function buildAppExportScenarioResult({
 } = {}) {
   const isProduction = runtimeMode === "production_app_export_ready" && Boolean(release);
   const activeAssets = (Array.isArray(assets) ? assets : [])
-    .filter((asset) => identityForAsset(asset))
-    .filter((asset) => normalizeTicker(asset.ticker) !== "CASH");
-  const identities = activeAssets.map(identityForAsset);
+    .filter((asset) => identityForAsset(asset));
+  const unknownCash = activeAssets.find(
+    (asset) => normalizeTicker(asset.ticker) === "CASH" && !isManualCashAsset(asset),
+  );
+  if (unknownCash) {
+    throw new AppExportScenarioPolicyError({
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      identity: identityForAsset(unknownCash),
+    });
+  }
+  const artifactAssets = activeAssets.filter(
+    (asset) => normalizeTicker(asset.ticker) !== "CASH",
+  );
+  const identities = artifactAssets.map(identityForAsset);
   identities.forEach((identity) => {
     assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity], {
       runtimeMode,
@@ -316,23 +334,32 @@ export function buildAppExportScenarioResult({
     Number.isFinite(configuredStartValue) && configuredStartValue > 0
       ? configuredStartValue
       : assetStartValue;
-  const seriesMaps = identities.map((identity) => rowsByMonthForIdentity(rowsByIdentity[identity]));
+  const seriesByIdentity = new Map(identities.map((identity) => [
+    identity,
+    rowsByMonthForIdentity(rowsByIdentity[identity]),
+  ]));
+  const seriesMaps = [...seriesByIdentity.values()];
   const commonMonths = intersectMonths(seriesMaps);
   const contiguousMonths = longestContiguousMonthSegment(commonMonths);
+  const manualCashCurrency =
+    seriesMaps[0]?.get(contiguousMonths[0])?.currency || "KRW";
   const monthlyReturnMatrix = [];
   for (const month of contiguousMonths) {
-    activeAssets.forEach((asset, index) => {
-      const row = seriesMaps[index].get(month);
+    activeAssets.forEach((asset) => {
+      const manualCash = normalizeTicker(asset.ticker) === "CASH";
+      const row = manualCash ? null : seriesByIdentity.get(identityForAsset(asset)).get(month);
       monthlyReturnMatrix.push({
-        month: row.month,
+        month: row?.month || month,
         market: normalizeMarket(asset.market),
         ticker: normalizeTicker(asset.ticker),
         returnBasis: "price_return",
-        currencyMode: row.currency,
-        priceReturn: row.priceReturn,
-        isProxy: row.isProxy,
-        proxyTicker: row.proxyTicker,
-        sourceHash: manifest.sourceCandidatePackageHash,
+        currencyMode: row?.currency || manualCashCurrency,
+        priceReturn: manualCash
+          ? MANUAL_CASH_MONTHLY_RETURN
+          : row.priceReturn,
+        isProxy: manualCash ? false : row.isProxy,
+        proxyTicker: manualCash ? "" : row.proxyTicker,
+        sourceHash: manualCash ? null : manifest.sourceCandidatePackageHash,
       });
     });
   }
