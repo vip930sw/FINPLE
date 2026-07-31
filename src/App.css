@@ -17733,6 +17733,14 @@ body,
 .detailPanel .detailAssetTable th:nth-child(8),
 .detailPanel .detailAssetTable td:nth-child(8) { width: 11% !important; }
 
+.settingsPanel .calculatorTable.alignedAssetTable th:last-child,
+.settingsPanel .calculatorTable.alignedAssetTable td:last-child,
+.detailPanel .detailAssetTable thead th:last-child,
+.detailPanel .detailAssetTable tbody td:last-child {
+  padding-right: 24px !important;
+  text-align: right !important;
+}
+
 @media screen and (max-width: 900px) {
   .settingsPanel .calculatorTable.alignedAssetTable td {
     display: table-cell !important;
@@ -17743,6 +17751,13 @@ body,
     width: 980px !important;
     min-width: 980px !important;
     table-layout: fixed !important;
+  }
+
+  .settingsPanel .calculatorTable.alignedAssetTable th:last-child,
+  .settingsPanel .calculatorTable.alignedAssetTable td:last-child,
+  .detailPanel .detailAssetTable thead th:last-child,
+  .detailPanel .detailAssetTable tbody td:last-child {
+    padding-right: 18px !important;
   }
 
   .detailMetricHelpItem.tableMetricHelpItem strong {

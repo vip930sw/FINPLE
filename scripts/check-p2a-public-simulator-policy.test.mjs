@@ -206,6 +206,9 @@ test("asset tables share compact distribution copy, guide tooltips, and eight-co
   assert.match(appCssSource, /@media screen and \(min-width: 901px\)[\s\S]*table-layout: fixed !important/);
   assert.match(appCssSource, /col\.assetNameColumn \{ width: 24% !important; \}/);
   assert.match(appCssSource, /col\.valueColumn \{ width: 17% !important; \}/);
+  assert.match(appCssSource, /calculatorTable\.alignedAssetTable th:last-child,[\s\S]*detailAssetTable tbody td:last-child \{[\s\S]*padding-right: 24px !important;[\s\S]*text-align: right !important;/);
+  assert.match(appCssSource, /@media screen and \(max-width: 900px\)[\s\S]*calculatorTable\.alignedAssetTable th:last-child,[\s\S]*detailAssetTable tbody td:last-child \{[\s\S]*padding-right: 18px !important;/);
+  assert.match(appCssSource, /col\.distributionColumn \{ width: 11% !important; \}/);
   assert.match(appCssSource, /@media screen and \(max-width: 900px\)[\s\S]*min-width: 980px !important/);
   assert.match(detailTableSource, /배당률\/분배율 \(%\)/);
 });
