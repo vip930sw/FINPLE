@@ -11,6 +11,12 @@ import {
   storeMbtiProfileFromResult,
 } from "./portfolio/utils/mbtiProfileStorage";
 import { upsertInvestmentMbtiProfile } from "./portfolio/services/serverPortfolioService";
+import {
+  FINPLE_PLAN_CONFIGS,
+  getPlanLimitMessage,
+  getStoredFinplePlan,
+} from "./portfolio/config/planConfig";
+import { getPortfolioCreationDecision } from "./portfolio/utils/portfolioLifecycle.js";
 import "./InvestmentMbtiPage.css";
 import "./InvestmentMbtiPage.step111.css";
 
@@ -440,6 +446,20 @@ export function saveResultToSimulator(result, marketMode = "US", options = {}) {
   try {
     previousValues = new Map(storageKeys.map((key) => [key, storage.getItem(key)]));
     const currentList = JSON.parse(storage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
+    const planKey = options.planKey || getStoredFinplePlan();
+    const plan = FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
+    const decision = getPortfolioCreationDecision({
+      portfolioCount: Array.isArray(currentList) ? currentList.length : 0,
+      portfolioLimit: plan.limits.portfolios,
+      requestedCount: Array.isArray(currentList) && currentList.some((item) => item?.id === id) ? 0 : 1,
+    });
+    if (!decision.allowed) {
+      options.onPlanLimit?.(decision);
+      if (!options.onPlanLimit && typeof window !== "undefined") {
+        window.alert(getPlanLimitMessage(plan.key, "portfolio"));
+      }
+      return false;
+    }
     const nextList = [portfolio, ...(Array.isArray(currentList) ? currentList.filter((item) => item?.id !== id) : [])];
     storage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(nextList));
     storage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);

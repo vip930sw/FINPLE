@@ -12,6 +12,7 @@ import {
   readScopedPortfolioStorageItem,
   writeScopedPortfolioStorageItem,
 } from "../utils/portfolioStorageScope.js";
+import { getPortfolioCreationDecision } from "../utils/portfolioLifecycle.js";
 
 const DEFAULT_API_BASE_URL =
   import.meta?.env?.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
@@ -608,14 +609,18 @@ export function importServerPortfoliosToBrowser(serverInput = [], options = {}) 
     (portfolio, index) =>
       hydratePortfolio(normalizeServerPortfolioForLocal(portfolio, index)),
   );
-  const maxPortfolios = Number(options.maxPortfolios);
-  const normalizedServerPortfolios =
-    Number.isFinite(maxPortfolios) && maxPortfolios >= 0
-      ? allNormalizedServerPortfolios.slice(0, maxPortfolios)
-      : allNormalizedServerPortfolios;
-
   const currentPortfolios = readScopedJson(PORTFOLIO_LIST_STORAGE_KEY, []);
   const currentList = Array.isArray(currentPortfolios) ? currentPortfolios : [];
+  const requestedCount = mode === "replace"
+    ? Math.max(0, allNormalizedServerPortfolios.length - currentList.length)
+    : allNormalizedServerPortfolios.length;
+  const decision = getPortfolioCreationDecision({
+    portfolioCount: currentList.length,
+    portfolioLimit: Number(options.portfolioLimit),
+    requestedCount,
+  });
+  if (!decision.allowed) throw new Error("portfolio_plan_limit_reached");
+  const normalizedServerPortfolios = allNormalizedServerPortfolios;
 
   let nextList;
 

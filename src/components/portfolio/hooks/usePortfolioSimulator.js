@@ -26,7 +26,10 @@ import {
   normalizeAsset,
   normalizeGlobalSettings,
 } from "../utils/portfolioFactory";
-import { deletePortfolioState } from "../utils/portfolioLifecycle.js";
+import {
+  deletePortfolioState,
+  getPortfolioCreationDecision,
+} from "../utils/portfolioLifecycle.js";
 import { writeScopedPortfolioStorageItem } from "../utils/portfolioStorageScope.js";
 
 import {
@@ -101,28 +104,6 @@ function createBackupFileName(portfolioName = "portfolio") { const now = new Dat
 function isValidBackupData(parsedData) { return parsedData && typeof parsedData === "object" && Array.isArray(parsedData.portfolioList) && parsedData.portfolioList.length > 0; }
 function getCurrentPlanConfig() { const planKey = getStoredFinplePlan(); return FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free; }
 
-function applyPortfolioPlanLimitToState(portfolioState) {
-  const currentPlan = getCurrentPlanConfig();
-  const portfolioLimit = currentPlan?.limits?.portfolios;
-  if (!portfolioState || !Array.isArray(portfolioState.portfolioList)) return portfolioState;
-  if (!Number.isFinite(portfolioLimit)) return portfolioState;
-  if (portfolioState.portfolioList.length === 0) {
-    return {
-      ...portfolioState,
-      portfolioList: [],
-      activePortfolioId: null,
-      activePortfolio: null,
-    };
-  }
-  const limit = Math.max(1, Number(portfolioLimit));
-  if (portfolioState.portfolioList.length <= limit) return portfolioState;
-  const activePortfolio = portfolioState.portfolioList.find((portfolio) => portfolio.id === portfolioState.activePortfolioId) || portfolioState.portfolioList[0];
-  let nextPortfolioList = portfolioState.portfolioList.slice(0, limit);
-  if (activePortfolio && !nextPortfolioList.some((portfolio) => portfolio.id === activePortfolio.id)) nextPortfolioList = [...nextPortfolioList.slice(0, Math.max(0, limit - 1)), activePortfolio];
-  const nextActivePortfolio = nextPortfolioList.find((portfolio) => portfolio.id === activePortfolio?.id) || nextPortfolioList[0];
-  return { ...portfolioState, portfolioList: nextPortfolioList, activePortfolioId: nextActivePortfolio.id, activePortfolio: nextActivePortfolio };
-}
-
 function openPricingSection() { if (typeof window === "undefined") return; try { window.dispatchEvent(new CustomEvent("finple-open-pricing")); } catch (error) {} window.setTimeout(() => { const pricingTarget = document.querySelector("#pricing, .accountPlanGrid, .pricingStatusPanel"); if (pricingTarget) { pricingTarget.scrollIntoView({ behavior: "smooth", block: "start" }); return; } try { window.localStorage.setItem("finple-current-page", "home"); window.location.hash = "pricing"; window.location.reload(); } catch (error) { window.location.hash = "pricing"; } }, 80); }
 function countRealAssets(assetList = []) { return assetList.filter((asset) => { const ticker = normalizeTicker(asset?.ticker); return ticker && ticker !== "XXX"; }).length; }
 function isActivatingEmptyAsset(currentAsset, field, value) { if (field !== "ticker") return false; const currentTicker = normalizeTicker(currentAsset?.ticker); const nextTicker = normalizeTicker(value); return !currentTicker && Boolean(nextTicker); }
@@ -145,7 +126,7 @@ function hydrateLoadedPortfolioState(portfolioState = {}) {
 
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => hydrateLoadedPortfolioState(
-    applyPortfolioPlanLimitToState(loadPortfolioState()),
+    loadPortfolioState(),
   ));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
   const [activePortfolioId, setActivePortfolioId] = useState(initialPortfolioState.activePortfolioId);
@@ -379,6 +360,16 @@ export default function usePortfolioSimulator() {
   const targetWeightSummary = { total: Number(targetWeightTotal.toFixed(2)), remaining: Number(targetWeightRemaining.toFixed(2)), overAmount: Number(targetWeightOverAmount.toFixed(2)), hasCash: false, isOver: targetWeightTotal > 100.01, isApplyDisabled: targetWeightRows.length === 0 || simulationStartValue <= 0 || !targetWeightIsBalanced };
 
   function showPlanLimitNotice(type) { const currentPlan = getCurrentPlanConfig(); const message = getPlanLimitMessage(currentPlan.key, type); setAssetLookupSummary(`${message} 요금제 화면에서 Personal/Pro 기능을 확인할 수 있습니다.`); if (typeof window !== "undefined") { const shouldMove = window.confirm(getUpgradePromptText(currentPlan.key, type)); if (shouldMove) openPricingSection(); } return message; }
+  function canIncreasePortfolioCount(requestedCount = 1, currentCount = portfolioList.length) {
+    const currentPlan = getCurrentPlanConfig();
+    const decision = getPortfolioCreationDecision({
+      portfolioCount: currentCount,
+      portfolioLimit: currentPlan.limits.portfolios,
+      requestedCount,
+    });
+    if (!decision.allowed) showPlanLimitNotice("portfolio");
+    return decision.allowed;
+  }
   function rejectDuplicateAsset({ index = -1, ticker, clearRow = false } = {}) {
     const normalizedTicker = normalizeTicker(ticker);
     if (clearRow && Number.isInteger(index) && assets[index]) {
@@ -807,6 +798,7 @@ export default function usePortfolioSimulator() {
     setIsPortfolioDropdownOpen(false);
   }
   function createPortfolioFromTemplate(templateKey = "default") {
+    if (!canIncreasePortfolioCount()) return;
     const templateMap = {
       default: DEFAULT_ASSETS,
       balanced: DEFAULT_ASSETS,
@@ -859,11 +851,12 @@ export default function usePortfolioSimulator() {
     setAssetLookupSummary(
       templateKey === "empty"
         ? message
-        : `${message} canonical 자산 지표를 적용했습니다.`,
+        : `${message} 자산 지표를 적용했습니다.`,
     );
   }
   function duplicateActivePortfolio() {
     if (!activePortfolio) return;
+    if (!canIncreasePortfolioCount()) return;
     const duplicatedPortfolio = duplicatePortfolio(activePortfolio, {
       name: `${activePortfolio.name || "포트폴리오"} 복사본`,
       assets: assets.map(hydratePortfolioAssetFromActiveCatalog),
@@ -882,14 +875,14 @@ export default function usePortfolioSimulator() {
   }
   function renameActivePortfolio(nextName) { setPortfolioList((previousList) => previousList.map((portfolio) => portfolio.id === activePortfolioId ? { ...portfolio, name: nextName, updatedAt: new Date().toISOString() } : portfolio)); }
   function deleteActivePortfolio(portfolioId = activePortfolioId) { const nextState = deletePortfolioState(portfolioList, portfolioId); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio?.assets || [])); setTargetWeightDrafts({}); }
-  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS.map(hydratePortfolioAssetFromActiveCatalog))); setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화하고 canonical 자산 지표를 적용했습니다."); }
+  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS.map(hydratePortfolioAssetFromActiveCatalog))); setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화하고 자산 지표를 적용했습니다."); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
   function changeSimulatorTab(nextTab) { setActiveSimulatorTab(normalizeSimulatorTab(nextTab)); }
   function scrollToPortfolioTop() { document.getElementById("saved-portfolios")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
   function selectPortfolioFromFloating(id) { selectPortfolio(id); }
   function downloadPortfolioBackup() { downloadJsonFile({ portfolioList, activePortfolioId, globalSettings: settings, appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, schemaVersion: FINPLE_BACKUP_SCHEMA_VERSION, exportedAt: new Date().toISOString() }, createBackupFileName(activePortfolio?.name)); }
   function openPortfolioBackupFile() { backupFileInputRef.current?.click(); }
-  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = applyPortfolioPlanLimitToState(loadPortfolioState(parsedData)); const hydratedPortfolioList = nextState.portfolioList.map(hydratePortfolioFromActiveCatalog); const hydratedActivePortfolio = hydratedPortfolioList.find((portfolio) => portfolio.id === nextState.activePortfolioId) || hydratedPortfolioList[0] || null; setPortfolioList(hydratedPortfolioList); setActivePortfolioId(hydratedActivePortfolio?.id || null); setAssets(cloneAssets(hydratedActivePortfolio?.assets || [])); setTargetWeightDrafts({}); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
+  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = loadPortfolioState(parsedData); const requestedCount = Math.max(0, nextState.portfolioList.length - portfolioList.length); if (!canIncreasePortfolioCount(requestedCount)) return; const hydratedPortfolioList = nextState.portfolioList.map(hydratePortfolioFromActiveCatalog); const hydratedActivePortfolio = hydratedPortfolioList.find((portfolio) => portfolio.id === nextState.activePortfolioId) || hydratedPortfolioList[0] || null; setPortfolioList(hydratedPortfolioList); setActivePortfolioId(hydratedActivePortfolio?.id || null); setAssets(cloneAssets(hydratedActivePortfolio?.assets || [])); setTargetWeightDrafts({}); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
   function downloadReportText() { downloadTextFile(createPortfolioReportText({ activePortfolio, detailReport, settings, result, assets }), `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.txt`); }
   function saveReportPdf() { window.print(); }
   function printReport() { window.print(); }

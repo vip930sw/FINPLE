@@ -14,10 +14,27 @@ export function deletePortfolioState(portfolioList = [], portfolioId = null) {
   };
 }
 
+export function getPortfolioCreationDecision({
+  portfolioCount = 0,
+  portfolioLimit = Infinity,
+  requestedCount = 1,
+} = {}) {
+  const current = Math.max(0, Number(portfolioCount) || 0);
+  const requested = Math.max(0, Number(requestedCount) || 0);
+  const limit = Number.isFinite(portfolioLimit)
+    ? Math.max(1, Number(portfolioLimit) || 1)
+    : Infinity;
+
+  return {
+    allowed: requested === 0 || !Number.isFinite(limit) || current + requested <= limit,
+    current,
+    requested,
+    limit,
+  };
+}
+
 export function canCreatePortfolio(portfolioCount, portfolioLimit) {
-  const count = Math.max(0, Number(portfolioCount) || 0);
-  if (!Number.isFinite(portfolioLimit)) return true;
-  return count < Math.max(1, Number(portfolioLimit) || 1);
+  return getPortfolioCreationDecision({ portfolioCount, portfolioLimit }).allowed;
 }
 
 export async function deletePortfolioWithServerSync({

@@ -19,6 +19,7 @@ import {
 import {
   FINPLE_PLAN_CONFIGS,
   getStoredFinplePlan,
+  getPlanLimitMessage,
   setStoredFinplePlan,
   getPlanUsageStatus,
   getFreeApiUsageStatus,
@@ -1747,13 +1748,20 @@ function ServerStoragePanel({ planKey = "free", isEducationAccount = false }) {
 
       if (!confirmed) return;
 
-      const result = importServerPortfoliosToBrowser(serverSnapshot, { mode });
+      const result = importServerPortfoliosToBrowser(serverSnapshot, {
+        mode,
+        portfolioLimit: currentPlan.limits.portfolios,
+      });
       setSnapshotVersion((value) => value + 1);
       setStatusMessage(
         `서버 데이터 ${actionLabel} 완료: ${result.importedCount}개 불러옴, 브라우저 총 ${result.totalCount}개`
       );
     } catch (error) {
-      setStatusMessage(error?.message || "서버 데이터를 브라우저로 불러오지 못했습니다.");
+      setStatusMessage(
+        error?.message === "portfolio_plan_limit_reached"
+          ? getPlanLimitMessage(currentPlan.key, "portfolio")
+          : error?.message || "서버 데이터를 브라우저로 불러오지 못했습니다."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -1849,4 +1857,3 @@ function formatServerDate(value) {
     minute: "2-digit",
   });
 }
-
