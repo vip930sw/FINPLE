@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import {
   FINPLE_PLAN_CONFIGS,
+  getPlanLimitMessage,
   getStoredFinplePlan,
 } from "../config/planConfig";
 import {
@@ -12,17 +13,18 @@ import {
 } from "../services/serverPortfolioService.js";
 import { deletePortfolioWithServerSync } from "../utils/portfolioLifecycle.js";
 
-function getCurrentPlanPortfolioLimit() {
+function getCurrentPlanConfig() {
   const planKey = getStoredFinplePlan();
-  const currentPlan = FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
-  const portfolioLimit = currentPlan?.limits?.portfolios;
-
-  return Number.isFinite(portfolioLimit) ? Math.max(1, Number(portfolioLimit)) : Infinity;
+  return FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
 }
 
 function getFriendlyServerSyncErrorMessage(error, actionLabel) {
   const rawMessage = String(error?.message || "").trim();
   const normalizedMessage = rawMessage.toLowerCase();
+
+  if (normalizedMessage === "portfolio_plan_limit_reached") {
+    return getPlanLimitMessage(getStoredFinplePlan(), "portfolio");
+  }
 
   if (
     normalizedMessage.includes("failed to fetch") ||
@@ -67,7 +69,9 @@ export default function PortfolioManagerPanel({
     "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요. 첫 요청은 서버 준비로 잠시 지연될 수 있습니다."
   );
   const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
-  const portfolioLimit = getCurrentPlanPortfolioLimit();
+  const currentPlan = getCurrentPlanConfig();
+  const portfolioLimit = currentPlan.limits.portfolios;
+  const canUseServerStorage = currentPlan.limits.serverStorage;
   async function savePortfoliosToServer() {
     if (isServerSyncLoading) return;
     const localSnapshot = getLocalPortfolioSnapshot();
@@ -110,17 +114,13 @@ export default function PortfolioManagerPanel({
 
     try {
       const payload = await listServerPortfolios();
-      const serverPortfolios = Array.isArray(payload?.portfolios) ? payload.portfolios : [];
       const result = importServerPortfoliosToBrowser(payload, {
         mode: "replace",
-        maxPortfolios: portfolioLimit,
+        portfolioLimit,
         hydratePortfolio,
       });
-      const limitedCount = serverPortfolios.length - result.totalCount;
       setServerSyncStatus(
-        limitedCount > 0
-          ? `서버 불러오기 완료: ${result.totalCount}개 포트폴리오. 현재 요금제 제한으로 ${limitedCount}개는 제외했습니다.`
-          : `서버 불러오기 완료: ${result.totalCount}개 포트폴리오`
+        `서버 불러오기 완료: ${result.totalCount}개 포트폴리오`
       );
       window.alert("서버 포트폴리오를 불러왔습니다. 화면을 새로고침합니다.");
       window.location.reload();
@@ -136,9 +136,17 @@ export default function PortfolioManagerPanel({
   async function handleDeleteActivePortfolio() {
     if (isServerSyncLoading || !activePortfolio) return;
     const confirmed = window.confirm(
-      `"${activePortfolio.name}" 포트폴리오를 삭제할까요? 서버 저장 목록에서도 삭제됩니다.`,
+      canUseServerStorage
+        ? `"${activePortfolio.name}" 포트폴리오를 삭제할까요? 서버 저장 목록에서도 삭제됩니다.`
+        : `"${activePortfolio.name}" 포트폴리오를 브라우저에서 삭제할까요?`,
     );
     if (!confirmed) return;
+
+    if (!canUseServerStorage) {
+      deleteActivePortfolio(activePortfolio.id);
+      setServerSyncStatus("포트폴리오를 브라우저에서 삭제했습니다.");
+      return;
+    }
 
     const snapshot = getLocalPortfolioSnapshot();
 
@@ -249,7 +257,7 @@ export default function PortfolioManagerPanel({
         </div>
       </div>
 
-      <div className="portfolioBackupPanel">
+      {canUseServerStorage ? <div className="portfolioBackupPanel">
         <div>
           <p>서버 저장 / 불러오기</p>
           <span>
@@ -275,7 +283,7 @@ export default function PortfolioManagerPanel({
             서버 불러오기
           </button>
         </div>
-      </div>
+      </div> : null}
 
       <div className="portfolioBackupPanel">
         <div>
