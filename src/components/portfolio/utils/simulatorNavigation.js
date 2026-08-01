@@ -2,9 +2,9 @@ export const SIMULATOR_TAB_ITEMS = Object.freeze([
   { key: "settings", step: "STEP 1", title: "설정", anchorId: "settings" },
   { key: "compare", step: "STEP 2", title: "비교", anchorId: "compare" },
   { key: "detail", step: "STEP 3", title: "상세분석·기준전망", anchorId: "detail" },
-  { key: "probability", step: "STEP 4", title: "확률분석", anchorId: "probability-analysis" },
-  { key: "shock", step: "STEP 5", title: "외부충격분석", anchorId: "external-shock-analysis" },
-  { key: "ai", step: "STEP 6", title: "AI 분석", anchorId: "ai-analysis" },
+  { key: "probability", step: "STEP 4", title: "확률분석", anchorId: "probability-analysis", capability: "probabilityAnalysis" },
+  { key: "shock", step: "STEP 5", title: "외부충격분석", anchorId: "external-shock-analysis", capability: "externalShockAnalysis" },
+  { key: "ai", step: "STEP 6", title: "AI 분석", anchorId: "ai-analysis", capability: "aiAnalysis" },
   { key: "saved", step: "STEP 7", title: "저장된 포트폴리오", anchorId: "saved-portfolios" },
 ]);
 

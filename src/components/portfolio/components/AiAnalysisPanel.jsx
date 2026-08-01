@@ -379,6 +379,7 @@ export default function AiAnalysisPanel({
   const [usageSummary, setUsageSummary] = useState(null);
   const [accessSummary, setAccessSummary] = useState(null);
   const lastSuccessSignatureRef = useRef("");
+  const analysisRequestRef = useRef(null);
 
   const activeAssets = useMemo(
     () => getActiveAssets(assets, isEmptyAssetRow),
@@ -442,10 +443,11 @@ export default function AiAnalysisPanel({
 
   useEffect(() => {
     let canceled = false;
+    const controller = new AbortController();
 
     async function loadUsageStatus() {
       try {
-        const status = await requestPortfolioAiAnalysisStatus();
+        const status = await requestPortfolioAiAnalysisStatus({ signal: controller.signal });
         if (!canceled && status?.usage) setUsageSummary(status.usage);
         if (!canceled && status?.access) setAccessSummary(status.access);
       } catch {
@@ -456,13 +458,19 @@ export default function AiAnalysisPanel({
     loadUsageStatus();
     return () => {
       canceled = true;
+      controller.abort();
     };
   }, []);
+
+  useEffect(() => () => analysisRequestRef.current?.abort(), []);
 
   async function handleCreateAnalysis() {
     if (!canRequestAnalysis) return;
 
     try {
+      analysisRequestRef.current?.abort();
+      const controller = new AbortController();
+      analysisRequestRef.current = controller;
       setAnalysisStatus("loading");
       setErrorMessage("");
       setUsageSummary(null);
@@ -474,7 +482,9 @@ export default function AiAnalysisPanel({
         settings,
         scenarioInterpretationContext,
       });
-      const { analysis: nextAnalysis, usage } = await requestPortfolioAiAnalysisResult(payload);
+      const { analysis: nextAnalysis, usage } = await requestPortfolioAiAnalysisResult(payload, {
+        signal: controller.signal,
+      });
 
       lastSuccessSignatureRef.current = inputSignature;
       setAnalysis(nextAnalysis);
@@ -491,6 +501,8 @@ export default function AiAnalysisPanel({
       if (error?.usage) setUsageSummary(error.usage);
       setErrorMessage(error?.message || "포트폴리오 AI 분석 요청에 실패했습니다.");
       setAnalysisStatus("error");
+    } finally {
+      analysisRequestRef.current = null;
     }
   }
 

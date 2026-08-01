@@ -1,7 +1,7 @@
 const DEFAULT_ALLOWED_PLANS = ["personal", "pro"];
 
 export function getAiAnalysisAccessMode() {
-  return String(process.env.FINPLE_AI_ANALYSIS_ACCESS_MODE || "public").trim().toLowerCase();
+  return String(process.env.FINPLE_AI_ANALYSIS_ACCESS_MODE || "personal").trim().toLowerCase();
 }
 
 export function getAiAnalysisAllowedPlans() {
@@ -15,16 +15,6 @@ export function getAiAnalysisAccessState(user, {
   accessMode = getAiAnalysisAccessMode(),
   allowedPlans = getAiAnalysisAllowedPlans(),
 } = {}) {
-  if (accessMode !== "personal") {
-    return {
-      allowed: true,
-      mode: accessMode,
-      reason: null,
-      requiredPlans: allowedPlans,
-      currentPlan: user?.plan || "guest",
-    };
-  }
-
   const plan = String(user?.plan || "free").trim().toLowerCase();
   const allowed = Boolean(user?.id) && allowedPlans.includes(plan);
 
@@ -38,12 +28,18 @@ export function getAiAnalysisAccessState(user, {
 }
 
 export function assertAiAnalysisAccessAllowed(user) {
+  if (!user?.id) {
+    const error = new Error("로그인이 필요합니다.");
+    error.statusCode = 401;
+    error.code = "AUTH_REQUIRED";
+    throw error;
+  }
+
   const access = getAiAnalysisAccessState(user);
   if (access.allowed) return access;
 
-  const error = new Error("AI analysis is available for Personal plan users.");
+  const error = new Error("포트폴리오 AI 분석은 Personal 플랜에서 사용할 수 있습니다.");
   error.statusCode = 403;
-  error.details = [`requiredPlans=${access.requiredPlans.join(",")}`];
-  error.access = access;
+  error.code = "AI_ANALYSIS_PLAN_REQUIRED";
   throw error;
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { SIMULATOR_TAB_ITEMS } from "../utils/simulatorNavigation";
 
-export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab }) {
+export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab, features = {} }) {
   const [isAllStepsOpen, setIsAllStepsOpen] = useState(false);
   const mobileStepRefs = useRef(new Map());
   const activeIndex = Math.max(
@@ -26,6 +26,10 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
     changeSimulatorTab(key, { userInitiated: true });
   }
 
+  function isLocked(item) {
+    return Boolean(item.capability && !features[item.capability]);
+  }
+
   return (
     <div className="simulatorStepNavigation">
       <nav
@@ -35,14 +39,15 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
         {SIMULATOR_TAB_ITEMS.map((item) => (
           <button
             key={item.key}
-            className={activeSimulatorTab === item.key ? "simulatorTabButton active" : "simulatorTabButton"}
+            className={`${activeSimulatorTab === item.key ? "simulatorTabButton active" : "simulatorTabButton"}${isLocked(item) ? " locked" : ""}`}
             type="button"
             id={`simulator-tab-${item.key}`}
             aria-current={activeSimulatorTab === item.key ? "step" : undefined}
+            aria-label={isLocked(item) ? `${item.step} ${item.title}, Personal 플랜 기능` : undefined}
             onClick={() => selectStep(item.key)}
           >
             <span>{item.step}</span>
-            <strong>{item.title}</strong>
+            <strong>{item.title}{isLocked(item) ? " — Personal" : ""}</strong>
           </button>
         ))}
       </nav>
@@ -50,7 +55,7 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
       <div className="simulatorMobileStepControls" aria-label="현재 시뮬레이터 단계">
         <div className="simulatorMobileCurrentStep" aria-live="polite">
           <span>{activeItem.step}</span>
-          <strong>{activeItem.title}</strong>
+          <strong>{activeItem.title}{isLocked(activeItem) ? " — Personal" : ""}</strong>
         </div>
         <div className="simulatorMobileStepActions">
           <button
@@ -95,11 +100,12 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
               }}
               type="button"
               aria-current={activeSimulatorTab === item.key ? "step" : undefined}
-              className={activeSimulatorTab === item.key ? "active" : ""}
+              aria-label={isLocked(item) ? `${item.step} ${item.title}, Personal 플랜 기능` : undefined}
+              className={`${activeSimulatorTab === item.key ? "active" : ""}${isLocked(item) ? " locked" : ""}`}
               onClick={() => selectStep(item.key)}
             >
               <span>{item.step.replace("STEP", "Step")}</span>
-              <strong>{item.title}</strong>
+              <strong>{item.title}{isLocked(item) ? " — Personal" : ""}</strong>
             </button>
           ))}
         </nav>

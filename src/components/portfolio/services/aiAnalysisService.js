@@ -47,10 +47,13 @@ function getTimerApi() {
   };
 }
 
-async function fetchWithTimeout(url, { timeoutMs, body, method = "POST" }) {
+async function fetchWithTimeout(url, { timeoutMs, body, method = "POST", signal }) {
   const controller = new AbortController();
   const timerApi = getTimerApi();
   const timerId = timerApi.setTimeout(() => controller.abort("timeout"), timeoutMs);
+  const abortFromCaller = () => controller.abort("cancelled");
+  signal?.addEventListener("abort", abortFromCaller, { once: true });
+  if (signal?.aborted) abortFromCaller();
 
   try {
     const session = getStoredFinpleAuthSession();
@@ -67,11 +70,13 @@ async function fetchWithTimeout(url, { timeoutMs, body, method = "POST" }) {
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error(
-        "포트폴리오 AI 분석 응답 시간이 예상보다 길어지고 있습니다. 잠시 후 다시 생성해주세요."
+        "포트폴리오 AI 분석 응답 시간이 예상보다 길어지고 있습니다. 잠시 후 다시 생성해주세요.",
+        { cause: error },
       );
     }
     throw error;
   } finally {
+    signal?.removeEventListener("abort", abortFromCaller);
     timerApi.clearTimeout(timerId);
   }
 }
@@ -103,6 +108,7 @@ export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
   const response = await fetchWithTimeout(`${apiBaseUrl}/ai/portfolio-analysis`, {
     timeoutMs: config.aiAnalysisTimeoutMs,
     body: payload,
+    signal: options.signal,
   });
   const responsePayload = await readJsonSafely(response);
 
@@ -129,6 +135,7 @@ export async function requestPortfolioAiAnalysisStatus(options = {}) {
   const response = await fetchWithTimeout(`${apiBaseUrl}/ai/portfolio-analysis/status`, {
     timeoutMs: config.aiAnalysisTimeoutMs,
     method: "GET",
+    signal: options.signal,
   });
   const responsePayload = await readJsonSafely(response);
 

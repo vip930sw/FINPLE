@@ -6,12 +6,12 @@ import {
   getAiAnalysisAccessState,
 } from "./aiAnalysisAccessControl.js";
 
-test("getAiAnalysisAccessState allows public mode callers", () => {
+test("getAiAnalysisAccessState does not let public mode bypass plan access", () => {
   const access = getAiAnalysisAccessState(null, { accessMode: "public", allowedPlans: ["personal"] });
 
-  assert.equal(access.allowed, true);
+  assert.equal(access.allowed, false);
   assert.equal(access.mode, "public");
-  assert.equal(access.currentPlan, "guest");
+  assert.equal(access.currentPlan, "free");
 });
 
 test("getAiAnalysisAccessState blocks guests when AI analysis is Personal only", () => {
@@ -64,14 +64,14 @@ test("assertAiAnalysisAccessAllowed throws a typed 403 for blocked users", () =>
   try {
     assert.throws(
       () => assertAiAnalysisAccessAllowed({ id: "user-a", plan: "free" }),
-      (error) => error.statusCode === 403 && error.access?.reason === "plan_required"
+      (error) =>
+        error.statusCode === 403 &&
+        error.code === "AI_ANALYSIS_PLAN_REQUIRED" &&
+        error.message === "포트폴리오 AI 분석은 Personal 플랜에서 사용할 수 있습니다."
     );
     assert.throws(
       () => assertAiAnalysisAccessAllowed(null),
-      (error) =>
-        error.statusCode === 403 &&
-        error.access?.reason === "plan_required" &&
-        error.access?.currentPlan === "free"
+      (error) => error.statusCode === 401 && error.code === "AUTH_REQUIRED"
     );
   } finally {
     if (previousMode === undefined) delete process.env.FINPLE_AI_ANALYSIS_ACCESS_MODE;

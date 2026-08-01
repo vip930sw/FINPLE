@@ -124,7 +124,7 @@ function hydrateLoadedPortfolioState(portfolioState = {}) {
   };
 }
 
-export default function usePortfolioSimulator() {
+export default function usePortfolioSimulator({ probabilityAnalysisAllowed = false } = {}) {
   const [initialPortfolioState] = useState(() => hydrateLoadedPortfolioState(
     loadPortfolioState(),
   ));
@@ -242,6 +242,9 @@ export default function usePortfolioSimulator() {
   const dataManagementSummary = { appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, portfolioCount: portfolioList.length, activeAssetCount, emptyAssetCount, lastLocalSaveAt, lastLocalSaveText: formatStorageDate(lastLocalSaveAt), activePortfolioUpdatedAt: activePortfolio?.updatedAt || null, activePortfolioUpdatedText: formatStorageDate(activePortfolio?.updatedAt) };
 
   useEffect(() => {
+    if (activeSimulatorTab === "probability" && !probabilityAnalysisAllowed) {
+      return undefined;
+    }
     if (activeSimulatorTab !== "probability") {
       setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null });
       return undefined;
@@ -345,6 +348,7 @@ export default function usePortfolioSimulator() {
     activePortfolio,
     activeSimulatorTab,
     assets,
+    probabilityAnalysisAllowed,
     screenerCandidateSnapshot.preview.status,
     effectiveStep4Settings,
     step4BaselineBlockMessage,
