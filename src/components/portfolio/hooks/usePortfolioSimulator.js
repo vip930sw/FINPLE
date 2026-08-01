@@ -851,7 +851,7 @@ export default function usePortfolioSimulator() {
     setAssetLookupSummary(
       templateKey === "empty"
         ? message
-        : `${message} canonical 자산 지표를 적용했습니다.`,
+        : `${message} 자산 지표를 적용했습니다.`,
     );
   }
   function duplicateActivePortfolio() {
@@ -875,7 +875,7 @@ export default function usePortfolioSimulator() {
   }
   function renameActivePortfolio(nextName) { setPortfolioList((previousList) => previousList.map((portfolio) => portfolio.id === activePortfolioId ? { ...portfolio, name: nextName, updatedAt: new Date().toISOString() } : portfolio)); }
   function deleteActivePortfolio(portfolioId = activePortfolioId) { const nextState = deletePortfolioState(portfolioList, portfolioId); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio?.assets || [])); setTargetWeightDrafts({}); }
-  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS.map(hydratePortfolioAssetFromActiveCatalog))); setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화하고 canonical 자산 지표를 적용했습니다."); }
+  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS.map(hydratePortfolioAssetFromActiveCatalog))); setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화하고 자산 지표를 적용했습니다."); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
   function changeSimulatorTab(nextTab) { setActiveSimulatorTab(normalizeSimulatorTab(nextTab)); }
   function scrollToPortfolioTop() { document.getElementById("saved-portfolios")?.scrollIntoView({ behavior: "smooth", block: "start" }); }

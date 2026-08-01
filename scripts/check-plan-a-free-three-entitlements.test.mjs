@@ -125,6 +125,9 @@ test("template, preset, duplicate, backup, menu, and MBTI use the shared decisio
   assert.match(hookSource, /getPortfolioCreationDecision/);
   assert.match(menuSource, /canCreatePortfolio/);
   assert.match(mbtiSource, /getPortfolioCreationDecision/);
+  assert.match(hookSource, /`\$\{message\} 자산 지표를 적용했습니다\.`/);
+  assert.match(hookSource, /기본 포트폴리오로 초기화하고 자산 지표를 적용했습니다\./);
+  assert.doesNotMatch(hookSource, /\$\{message\} canonical 자산 지표|기본 포트폴리오로 초기화하고 canonical 자산 지표/);
 });
 
 test("Investment MBTI US and KR allow three portfolios and preserve state on the fourth", async () => {
