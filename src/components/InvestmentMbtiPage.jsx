@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { hydrateAssetFromScreenerCandidate } from "../data/tickers/screenerCandidateLoader";
+import {
+  findScreenerCandidateByTicker,
+  hydrateAssetFromScreenerCandidate,
+} from "../data/tickers/screenerCandidateLoader";
 import {
   MBTI_PRESET_MAP,
+  MBTI_PRESET_STORAGE_KEY,
   buildMbtiProfileFromResult,
   readStoredMbtiProfile,
   storeMbtiProfileFromResult,
@@ -347,10 +351,6 @@ function calculateResult(answers) {
   return { answeredCount, totalCount: QUESTIONS.length, isComplete: answeredCount === QUESTIONS.length, axisScores, axes, type, calculatedRiskProfile, riskScore };
 }
 
-function formatWon(value) {
-  return Number(value || 0).toLocaleString("ko-KR");
-}
-
 function isStoredResultViewRequested() {
   if (typeof window === "undefined") return false;
   return new URLSearchParams(window.location.search).get("view") === "result";
@@ -377,12 +377,14 @@ async function copyTextToClipboard(text) {
   } catch (error) { console.warn("대체 복사 방식 실패", error); return false; }
 }
 
-function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode = "US") {
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode = "US") {
   const templates = marketMode === "KR" ? KR_ASSET_TEMPLATES : US_ASSET_TEMPLATES;
   return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).map(([assetKey, weight], index) => {
     const template = templates[assetKey] || templates.cash;
     const isCash = template.ticker === "CASH";
     const isKoreanStock = marketMode === "KR" && template.market === "KR" && !isCash;
+    const candidate = isCash ? null : findScreenerCandidateByTicker(template.ticker, template.market);
     const baseAsset = hydrateAssetFromScreenerCandidate({
       ...template,
       quantity: 0,
@@ -396,6 +398,7 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
     return {
       ...baseAsset,
       id: `mbti-${marketMode.toLowerCase()}-asset-${assetKey}-${Date.now()}-${index}`,
+      name: candidate?.koreanName || candidate?.nameKr || candidate?.ticker || baseAsset.name,
       quantity: 0,
       targetWeight: Number(weight || 0),
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
@@ -420,37 +423,56 @@ function saveMbtiProfileToServer(profile) {
   });
 }
 
-function saveResultToSimulator(result, marketMode = "US") {
+// eslint-disable-next-line react-refresh/only-export-components
+export function saveResultToSimulator(result, marketMode = "US", options = {}) {
   if (!result?.type) return false;
-  const now = new Date().toISOString();
-  const id = `mbti-${marketMode.toLowerCase()}-${Date.now()}`;
+  const storage = options.storage || (typeof localStorage !== "undefined" ? localStorage : null);
+  if (!storage) return false;
+  const now = options.now || new Date().toISOString();
+  const id = options.id || `mbti-${marketMode.toLowerCase()}-${Date.now()}`;
+  const saveProfileToServer = options.saveProfileToServer || saveMbtiProfileToServer;
   const type = result.type;
   const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate, startValue: 50000000 };
   const assets = buildAssetsFromPreset(type.preset, 50000000, marketMode);
   const portfolio = { id, name: type.nickname, settings, assets, updatedAt: now, source: marketMode === "KR" ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
+  const storageKeys = [PORTFOLIO_STORAGE_KEY, ACTIVE_PORTFOLIO_STORAGE_KEY, GLOBAL_SETTINGS_STORAGE_KEY, LEGACY_STORAGE_KEY, MBTI_PRESET_STORAGE_KEY];
+  let previousValues = null;
   try {
-    const currentList = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
+    previousValues = new Map(storageKeys.map((key) => [key, storage.getItem(key)]));
+    const currentList = JSON.parse(storage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
     const nextList = [portfolio, ...(Array.isArray(currentList) ? currentList.filter((item) => item?.id !== id) : [])];
-    localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(nextList));
-    localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
-    localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
+    storage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(nextList));
+    storage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
+    storage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
     const profile = buildMbtiProfileFromResult(result, {
       marketMode,
       createdAt: now,
       source: "investment-mbti-simulator",
     });
-    storeMbtiProfileFromResult(result, {
+    if (!storeMbtiProfileFromResult(result, {
+      storage,
       marketMode,
       createdAt: now,
       source: "investment-mbti-simulator",
-    });
-    saveMbtiProfileToServer(profile);
+    })) throw new Error("Investment MBTI profile storage failed");
+    Promise.resolve().then(() => saveProfileToServer(profile)).catch(() => null);
     return true;
-  } catch (error) { console.error("투자 MBTI 프리셋 저장 실패", error); return false; }
+  } catch (error) {
+    if (previousValues) {
+      for (const [key, value] of previousValues) {
+        try {
+          if (value === null) storage.removeItem(key);
+          else storage.setItem(key, value);
+        } catch { /* rollback remains best-effort if storage itself is unavailable */ }
+      }
+    }
+    console.error("투자 MBTI 프리셋 저장 실패", error);
+    return false;
+  }
 }
 
-function InvestmentMbtiPage({ onBack, onNavigate }) {
+function InvestmentMbtiPage({ onNavigate }) {
   const [answers, setAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showStoredResult, setShowStoredResult] = useState(isStoredResultViewRequested);
@@ -471,7 +493,7 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
       window.history.replaceState({ page: "personal", path: "/mbti" }, "", "/mbti");
     }
   }
-  function applyToSimulator(marketMode = "US") { saveResultToSimulator(result, marketMode); onNavigate?.("personal"); }
+  function applyToSimulator(marketMode = "US") { if (saveResultToSimulator(result, marketMode)) onNavigate?.("personal"); }
   if (showStoredResult && storedProfile) {
     return <main className="page investmentMbtiPage"><StoredMbtiResult profile={storedProfile} onReset={resetTest} /></main>;
   }
@@ -577,7 +599,7 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
     const shareText = [`저의 FINPLE 투자 MBTI는 “${type.nickname}”입니다.`, "", `성향: ${displayAxisValues(result.axes).join(" · ")}`, `FINPLE 유형: ${type.finpleType}`, `위험성향: ${result.calculatedRiskProfile}`, "", "FINPLE에서 나의 투자 성향도 확인해보세요.", "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다."].join("\n");
     const copyText = `${shareText}\n${shareUrl}`;
     setExportStatusMessage("공유 문구를 복사 중입니다.");
-    try { const copied = await copyTextToClipboard(copyText); if (copied) { setExportStatusMessage("공유 문구와 링크를 복사했습니다."); return; } if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다."); } catch (error) { if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요."); }
+    try { const copied = await copyTextToClipboard(copyText); if (copied) { setExportStatusMessage("공유 문구와 링크를 복사했습니다."); return; } if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다."); } catch { if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요."); }
   }
   function handlePdfSave() { setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다."); window.setTimeout(() => window.print(), 80); }
   return (
