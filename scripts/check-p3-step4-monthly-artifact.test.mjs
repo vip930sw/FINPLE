@@ -37,6 +37,7 @@ import {
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const hookSource = read("../src/components/portfolio/hooks/usePortfolioSimulator.js");
 const simulatorSource = read("../src/components/PortfolioSimulator.jsx");
+const settingsPanelSource = read("../src/components/portfolio/components/SettingsPanel.jsx");
 const panelSource = read("../src/components/portfolio/components/ProbabilityAnalysisPanel.jsx");
 const scenarioSource = read("../src/components/portfolio/utils/appPreviewScenarioService.js");
 const fingerprintSource = read("../src/components/portfolio/utils/probabilityScenarioAdapter.js");
@@ -297,6 +298,7 @@ test("Step 4 uses the displayed simulation start value for gate, scenario, and f
   assert.match(hookSource, /settings: effectiveStep4Settings/);
   assert.match(hookSource, /return \{ portfolioList,[^\n]+effectiveStep4Settings/);
   assert.match(simulatorSource, /<ProbabilityAnalysisPanel[\s\S]*settings=\{effectiveStep4Settings\}/);
+  assert.match(settingsPanelSource, /normalized \|\| floorToStartValueUnit\(simulationStartValue\)/);
 });
 
 test("runtime changes cancel the previous Step 4 request and recalculate automatically", () => {

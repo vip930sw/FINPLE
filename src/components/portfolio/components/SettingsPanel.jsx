@@ -80,7 +80,7 @@ export default function SettingsPanel({
   const commitStartValue = () => {
     const normalized = floorToStartValueUnit(toNumber(startValueInput));
     updateSetting("startValue", normalized);
-    setStartValueInput(formatNumber(normalized));
+    setStartValueInput(formatNumber(normalized || floorToStartValueUnit(simulationStartValue)));
   };
 
   const handleInflationInputChange = (value) => {
