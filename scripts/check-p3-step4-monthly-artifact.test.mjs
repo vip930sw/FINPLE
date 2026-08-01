@@ -22,6 +22,7 @@ import {
 import {
   formatUserFacingBaselineBlockReasons,
 } from "../src/components/portfolio/utils/baselineBlockReasonLabels.js";
+import { calculatePortfolioResult } from "../src/components/portfolio/utils/portfolioCalculations.js";
 import { getStep4ScenarioAssets } from "../src/components/portfolio/utils/portfolioFormatters.js";
 import {
   STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
@@ -35,6 +36,7 @@ import {
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const hookSource = read("../src/components/portfolio/hooks/usePortfolioSimulator.js");
+const simulatorSource = read("../src/components/PortfolioSimulator.jsx");
 const panelSource = read("../src/components/portfolio/components/ProbabilityAnalysisPanel.jsx");
 const scenarioSource = read("../src/components/portfolio/utils/appPreviewScenarioService.js");
 const fingerprintSource = read("../src/components/portfolio/utils/probabilityScenarioAdapter.js");
@@ -82,9 +84,13 @@ function monthEnd(index) {
 }
 
 function qqqRows() {
+  return rowsForTicker("QQQ");
+}
+
+function rowsForTicker(ticker) {
   return Array.from({ length: 80 }, (_, index) => ({
     market: "US",
-    ticker: "QQQ",
+    ticker,
     month: monthEnd(index),
     priceReturn: index % 2 === 0 ? 0.02 : -0.01,
     totalReturn: index % 2 === 0 ? 0.03 : 0,
@@ -236,6 +242,68 @@ test("baseline blocks before the monthly loader and user copy is specific", () =
   );
 });
 
+test("Step 4 uses the displayed simulation start value for gate, scenario, and fingerprint", () => {
+  const assets = [
+    { market: "US", ticker: "QQQ", targetWeight: 60, targetEvaluationAmount: 24_000_000 },
+    { market: "US", ticker: "SCHD", targetWeight: 40, targetEvaluationAmount: 16_000_000 },
+  ];
+  const rowsByIdentity = {
+    "US:QQQ": rowsForTicker("QQQ"),
+    "US:SCHD": rowsForTicker("SCHD"),
+  };
+  const buildWithStartValue = (rawStartValue) => {
+    const rawSettings = { ...settings, startValue: rawStartValue };
+    const baseline = calculatePortfolioResult(rawSettings, assets);
+    const effectiveSettings = { ...rawSettings, startValue: baseline.simulationStartValue };
+    const scenario = buildAppExportScenarioResult({
+      activePortfolio: { id: "p3-start-value", name: "P3 start value" },
+      assets,
+      settings: effectiveSettings,
+      rowsByIdentity,
+      manifest,
+      release,
+      runtimeMode: "production_app_export_ready",
+      simulationCount: 24,
+    });
+    const fingerprint = JSON.parse(getProbabilityPortfolioFingerprint({
+      portfolioId: "p3-start-value",
+      settings: effectiveSettings,
+      assets,
+    }));
+    return { baseline, scenario, fingerprint };
+  };
+
+  const fallback = buildWithStartValue(0);
+  assert.equal(fallback.baseline.simulationStartValue, 40_000_000);
+  assert.equal(fallback.scenario.monthlyBands[0].p50Nominal, 40_000_000);
+  assert.equal(fallback.fingerprint.settings.startValue, 40_000_000);
+
+  const explicit = buildWithStartValue(50_000_000);
+  assert.equal(explicit.baseline.simulationStartValue, 50_000_000);
+  assert.equal(explicit.scenario.monthlyBands[0].p50Nominal, 50_000_000);
+  assert.equal(explicit.fingerprint.settings.startValue, 50_000_000);
+
+  const zeroBaseline = calculatePortfolioResult(
+    { ...settings, startValue: 0 },
+    assets.map((asset) => ({ ...asset, targetEvaluationAmount: 0 })),
+  );
+  assert.equal(zeroBaseline.simulationStartValue, 0);
+  assert.notEqual(zeroBaseline.status, "ready");
+  assert.match(hookSource, /Number\(effectiveStep4Settings\.startValue\) > 0/);
+  assert.ok(
+    hookSource.indexOf("if (step4BaselineBlockMessage)") <
+      hookSource.indexOf("loadProductionMonthlyReturnsForIdentities", hookSource.indexOf("if (step4BaselineBlockMessage)")),
+  );
+  assert.match(hookSource, /settings: effectiveStep4Settings/);
+  assert.match(hookSource, /return \{ portfolioList,[^\n]+effectiveStep4Settings/);
+  assert.match(simulatorSource, /<ProbabilityAnalysisPanel[\s\S]*settings=\{effectiveStep4Settings\}/);
+});
+
+test("runtime changes cancel the previous Step 4 request and recalculate automatically", () => {
+  assert.match(hookSource, /return \(\) => \{\s*cancelled = true;\s*\};/);
+  assert.match(hookSource, /\[\s*activePortfolio,[\s\S]*assets,[\s\S]*effectiveStep4Settings,[\s\S]*step4BaselineBlockMessage,[\s\S]*\]/);
+});
+
 test("cash-only and monthly load statuses replace idle and precomputed UI copy", () => {
   for (const text of [
     "현금성 자산 단독 포트폴리오입니다.",
@@ -264,6 +332,8 @@ test("Step 4 SSR gives non-ready view-model states priority over loader ready", 
   assert.match(insufficientHtml, /월간 데이터 기간 부족/);
   assert.match(insufficientHtml, /확률 밴드를 만들 만큼 공통 월별 이력이 충분하지 않습니다/);
   assert.doesNotMatch(insufficientHtml, /분석 준비 완료/);
+
+  assert.equal((insufficientHtml.match(/class="probabilityStatusPanel/g) || []).length, 1);
 
   const blocked = clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT);
   blocked.status = "blocked";

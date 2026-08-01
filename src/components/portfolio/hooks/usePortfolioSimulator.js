@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ACTIVE_PORTFOLIO_STORAGE_KEY,
@@ -228,12 +228,16 @@ export default function usePortfolioSimulator() {
       }
     : calculatePortfolioResult(settings, assets);
   const { yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue } = result;
+  const effectiveStep4Settings = useMemo(
+    () => ({ ...settings, startValue: simulationStartValue }),
+    [settings, simulationStartValue],
+  );
   const step4BaselineBlockMessage = result.status !== "ready"
     ? [
         ...formatUserFacingBaselineBlockReasons(result.blockReasons),
         ...formatPortfolioEligibilityBlocks(result.portfolioEligibilityBlocks),
       ].filter(Boolean).join(" ")
-    : toNumber(settings.startValue) > 0
+    : Number(effectiveStep4Settings.startValue) > 0
       ? ""
       : "시작 평가금액을 0원보다 크게 입력해 주세요.";
   const comparisonPortfolios = isCanonicalCatalogUnavailable
@@ -324,7 +328,7 @@ export default function usePortfolioSimulator() {
       buildScenario: (monthlyReturns) => buildAppExportScenarioResult({
           activePortfolio,
           assets: scenarioAssets,
-          settings,
+          settings: effectiveStep4Settings,
           rowsByIdentity: monthlyReturns.rowsByIdentity,
           manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
           release: monthlyReturns.release || null,
@@ -360,7 +364,7 @@ export default function usePortfolioSimulator() {
     activeSimulatorTab,
     assets,
     screenerCandidateSnapshot.preview.status,
-    settings,
+    effectiveStep4Settings,
     step4BaselineBlockMessage,
   ]);
 
@@ -891,5 +895,5 @@ export default function usePortfolioSimulator() {
   function reportPdfFileName() { return `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.pdf`; }
   function copyReportSummary() { navigator.clipboard?.writeText(createReportSummaryText({ activePortfolio, detailReport, settings, result, assets })); }
 
-  return { portfolioList, activePortfolioId, activePortfolio, settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: monthlyScenarioArtifactState.result, previewScenarioStatus: monthlyScenarioArtifactState.status, previewScenarioError: monthlyScenarioArtifactState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, resolveTickerCandidate, addAsset, addCashAsset, addAssetFromTickerCandidate, moveAsset, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isEmptyAssetRow };
+  return { portfolioList, activePortfolioId, activePortfolio, settings, effectiveStep4Settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: monthlyScenarioArtifactState.result, previewScenarioStatus: monthlyScenarioArtifactState.status, previewScenarioError: monthlyScenarioArtifactState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, resolveTickerCandidate, addAsset, addCashAsset, addAssetFromTickerCandidate, moveAsset, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isEmptyAssetRow };
 }

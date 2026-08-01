@@ -26,6 +26,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     activePortfolioId,
     activePortfolio,
     settings,
+    effectiveStep4Settings,
     assets,
     targetWeightDrafts,
     targetWeightSummary,
@@ -321,7 +322,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
-            settings={settings}
+            settings={effectiveStep4Settings}
             scenarioResult={previewScenarioResult}
             scenarioLoadStatus={previewScenarioStatus}
             scenarioLoadError={previewScenarioError}
