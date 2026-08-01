@@ -422,14 +422,12 @@ function ScreenerPage({ onBack }) {
         <p className="sectionLabel">Asset Finder</p>
         <h2>FINPLE 자산 파인더</h2>
         <p className="screenerIntroText">
-          {isInternalPreview
-            ? "Canonical 국내·해외 ETF와 개별주 후보를 탐색하고, review-only 지표 상태를 확인할 수 있습니다."
-            : "검증된 가격지표를 가진 국내·해외 ETF와 개별주 후보를 탐색하고, 필요한 자산만 현재 포트폴리오에 담을 수 있습니다."}
+          검증된 가격지표를 가진 국내·해외 ETF와 개별주 후보를 탐색하고, 필요한 자산만 현재 포트폴리오에 담을 수 있습니다.
         </p>
         {isInternalPreview ? (
           <p className="screenerIntroText" role="status">
-            Internal Preview · review-only · {formatCount(activeCandidates.length)}개 자산 ·
-            active {formatCount(screenerCandidateSnapshot.preview.manifest?.activeAssetCount)} · inactive {formatCount(screenerCandidateSnapshot.preview.manifest?.inactiveAssetCount)} ·
+            검토 중인 자산 데이터 · {formatCount(activeCandidates.length)}개 자산 ·
+            이용 가능 {formatCount(screenerCandidateSnapshot.preview.manifest?.activeAssetCount)} · 이용 중지 {formatCount(screenerCandidateSnapshot.preview.manifest?.inactiveAssetCount)} ·
             지표 기준월 {screenerCandidateSnapshot.preview.manifest?.metricDataThroughMonth || "-"}
           </p>
         ) : null}

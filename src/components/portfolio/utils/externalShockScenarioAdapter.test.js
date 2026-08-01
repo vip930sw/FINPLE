@@ -113,7 +113,7 @@ test("review model accepts direct and market-beta scenarios with selector and co
   assert.equal(viewModel.shockMode, "market_beta");
   assert.equal(viewModel.scenarioOptions.length, 2);
   assert.equal(viewModel.scenarioComparisonRows.length, 2);
-  assert.deepEqual(viewModel.scenarioComparisonRows.map((row) => row.mode), ["direct_asset", "market_beta"]);
+  assert.deepEqual(viewModel.scenarioComparisonRows.map((row) => row.mode), ["자산별 충격", "시장 민감도"]);
   assert.equal(
     STEP114_2H_SCENARIO_FIXTURE_RESULTS[0].baselineIdentityHash,
     STEP114_2H_SCENARIO_FIXTURE_RESULTS[1].baselineIdentityHash,
@@ -188,10 +188,10 @@ test("ready market beta fixture is accepted with betaApplied true", () => {
   assert.equal(viewModel.shockMode, "market_beta");
   assert.equal(viewModel.audit.betaApplied, true);
   assert.equal(viewModel.audit.baselineIdentityHash, STEP114_2H_FIXTURE_EXPECTED_BASELINE_IDENTITY_HASH);
-  assert.equal(viewModel.methodology.find((item) => item.label === "betaProvenanceCount").value, "2");
-  assert.equal(viewModel.methodology.find((item) => item.label === "baselineIdentityHash").value, "available");
+  assert.equal(viewModel.methodology.find((item) => item.label === "충격 방식").value, "시장 민감도");
+  assert.equal(viewModel.methodology.some((item) => /Hash|Version|Provenance/.test(item.label)), false);
   assert.equal(viewModel.shockAssumptionRows.length, 2);
-  assert.equal(viewModel.shockAssumptionRows[0].mode, "market_beta");
+  assert.equal(viewModel.shockAssumptionRows[0].mode, "시장 민감도");
   assert.equal(viewModel.shockAssumptionRows[0].sourceName, "synthetic_beta_fixture");
   assert.equal(viewModel.shockAssumptionRows[0].asOfDate, "2024-12-31");
   assert.equal(viewModel.shockAssumptionRows[0].betaWindow, "36m-monthly");
@@ -357,20 +357,18 @@ test("navigation includes Step 5 between Step 4 and AI without removing existing
   );
 });
 
-test("panel source includes review-only scenario selector, comparison table, and stress disclaimer", () => {
+test("panel source includes user-facing scenario selector, comparison table, and stress disclaimer", () => {
   const panelSource = fs.readFileSync("src/components/portfolio/components/ExternalShockAnalysisPanel.jsx", "utf8");
   const chartSource = fs.readFileSync("src/components/portfolio/components/ExternalShockPathChart.jsx", "utf8");
   assert.match(panelSource, /ScenarioSelector/);
   assert.match(panelSource, /ScenarioComparisonTable/);
   assert.match(panelSource, /ShockAssumptionsTable/);
   assert.match(panelSource, /externalShockTableScroll/);
-  assert.match(panelSource, /sourceName/);
-  assert.match(panelSource, /betaWindow/);
-  assert.match(panelSource, /deterministic/);
+  assert.doesNotMatch(panelSource, /sourceName|betaWindow|sourceHash|fixture-safe|deterministic/);
   assert.match(panelSource, /예측|보장|투자 권유|investment advice/i);
   assert.match(chartSource, /formatShockAssumptions/);
   assert.match(chartSource, /marketFactorShock/);
-  assert.match(chartSource, /betaProvenance/);
+  assert.doesNotMatch(chartSource, /sourceName|sourceHash/);
 
   const styleSource = fs.readFileSync("src/App.css", "utf8");
   assert.match(styleSource, /externalShockTableScroll/);

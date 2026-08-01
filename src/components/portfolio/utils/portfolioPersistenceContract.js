@@ -29,6 +29,47 @@ function safeObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== "";
+}
+
+export function migrateLegacyPortfolioValuation(portfolio = {}, globalSettings = {}) {
+  const assets = Array.isArray(portfolio.assets) ? portfolio.assets : [];
+  const legacyAssets = assets.filter((asset) => String(asset?.ticker || "").trim());
+  if (
+    legacyAssets.length === 0 ||
+    legacyAssets.some((asset) => hasValue(asset.targetWeight) || hasValue(asset.targetEvaluationAmount))
+  ) return portfolio;
+
+  const legacyValues = legacyAssets.map((asset) => Number(asset.quantity) * Number(asset.price));
+  if (legacyValues.some((value) => !Number.isFinite(value) || value <= 0)) return portfolio;
+
+  const totalValue = legacyValues.reduce((sum, value) => sum + value, 0);
+  const portfolioStartValue = Number(portfolio.settings?.startValue ?? portfolio.startValue);
+  const globalStartValue = Number(globalSettings.startValue);
+  const startValue = portfolioStartValue > 0 ? portfolioStartValue : globalStartValue > 0 ? globalStartValue : 0;
+  const migratedByAsset = new Map();
+  let assignedWeight = 0;
+  legacyAssets.forEach((asset, index) => {
+    const targetWeight = index === legacyAssets.length - 1
+      ? Number((100 - assignedWeight).toFixed(6))
+      : Number((legacyValues[index] / totalValue * 100).toFixed(6));
+    assignedWeight += targetWeight;
+    migratedByAsset.set(asset, {
+      ...asset,
+      targetWeight,
+      ...(startValue > 0
+        ? { targetEvaluationAmount: Number((startValue * targetWeight / 100).toFixed(0)) }
+        : {}),
+    });
+  });
+
+  return {
+    ...portfolio,
+    assets: assets.map((asset) => migratedByAsset.get(asset) || asset),
+  };
+}
+
 export function normalizePortfolioPersistenceGlobalSettings(settings = {}) {
   const source = safeObject(settings);
   return {
@@ -157,7 +198,10 @@ export function normalizePortfolioPersistenceSnapshot(snapshot = {}) {
     : Array.isArray(source.portfolioList)
       ? source.portfolioList
       : [];
-  const portfolios = sourcePortfolios.map(normalizePortfolioPersistencePortfolio);
+  const globalSettings = normalizePortfolioPersistenceGlobalSettings(source.globalSettings);
+  const portfolios = sourcePortfolios
+    .map((portfolio) => migrateLegacyPortfolioValuation(portfolio, globalSettings))
+    .map(normalizePortfolioPersistencePortfolio);
   const requestedActiveId = source.activePortfolioId || null;
   const activePortfolioId = portfolios.some(
     (portfolio) => portfolio.id === requestedActiveId,
@@ -169,7 +213,7 @@ export function normalizePortfolioPersistenceSnapshot(snapshot = {}) {
     schemaVersion: PORTFOLIO_PERSISTENCE_SCHEMA_VERSION,
     portfolios,
     activePortfolioId,
-    globalSettings: normalizePortfolioPersistenceGlobalSettings(source.globalSettings),
+    globalSettings,
   };
 }
 

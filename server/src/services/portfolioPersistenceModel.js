@@ -5,6 +5,7 @@ import {
   normalizePortfolioPersistenceAsset,
   normalizePortfolioPersistenceGlobalSettings,
   normalizePortfolioPersistencePortfolio,
+  normalizePortfolioPersistenceSnapshot,
   PORTFOLIO_PERSISTENCE_SCHEMA_VERSION,
 } from "../../../src/components/portfolio/utils/portfolioPersistenceContract.js";
 
@@ -95,9 +96,11 @@ export function createPortfolioApiSnapshot(portfolios = [], fallbackEnvelope = n
   const persistenceEnvelope =
     portfolios.find((portfolio) => portfolio?.__persistenceEnvelope)
       ?.__persistenceEnvelope || fallbackEnvelope;
-  const publicPortfolios = portfolios.map(
-    ({ __persistenceEnvelope, ...portfolio }) => portfolio,
-  );
+  const publicPortfolios = portfolios.map((portfolio) => {
+    const publicPortfolio = { ...portfolio };
+    delete publicPortfolio.__persistenceEnvelope;
+    return publicPortfolio;
+  });
   const legacyPortfolio = publicPortfolios[0] || {};
   const activePortfolioId =
     persistenceEnvelope?.activePortfolioId &&
@@ -107,7 +110,7 @@ export function createPortfolioApiSnapshot(portfolios = [], fallbackEnvelope = n
       ? persistenceEnvelope.activePortfolioId
       : publicPortfolios[0]?.id || null;
 
-  return {
+  return normalizePortfolioPersistenceSnapshot({
     schemaVersion:
       persistenceEnvelope?.schemaVersion || PORTFOLIO_PERSISTENCE_SCHEMA_VERSION,
     portfolios: publicPortfolios,
@@ -122,7 +125,7 @@ export function createPortfolioApiSnapshot(portfolios = [], fallbackEnvelope = n
         dividendReinvest: legacyPortfolio.dividendReinvest,
       },
     ),
-  };
+  });
 }
 
 export function encodeEmptyPortfolioPersistenceSnapshot(input = {}) {

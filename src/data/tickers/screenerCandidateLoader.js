@@ -26,7 +26,9 @@ const normalizeTicker = (ticker = "") => stripBom(ticker).trim().toUpperCase();
 const normalizeMarket = (market = "") => String(market || "US").trim().toUpperCase();
 const normalizeAssetType = (assetType = "") => {
   const value = String(assetType || "").trim().toLowerCase();
-  return value === "stock" || value === "single_stock" ? "stock" : "ETF";
+  if (value === "stock" || value === "single_stock") return "stock";
+  if (value === "etf") return "ETF";
+  return "unknown";
 };
 const REQUIRED_CANONICAL_HEADERS = [
   "market",
@@ -128,6 +130,11 @@ export const SCREENER_METRICS_POLICY_NOTE =
 export function normalizeScreenerCandidate(row = {}) {
   const market = normalizeMarket(row.market || "US");
   const assetType = normalizeAssetType(row.assetType);
+  const defaultExposureType = assetType === "stock"
+    ? "ordinary_equity"
+    : assetType === "ETF"
+      ? "ordinary_etf"
+      : "unknown";
   const marketCap = toNumber(row.marketCap);
   const aum = toNumber(row.aum);
   const sizeMetric = assetType === "ETF" ? aum ?? marketCap : marketCap ?? aum;
@@ -143,7 +150,7 @@ export function normalizeScreenerCandidate(row = {}) {
   const distributionFields = resolveDistributionYieldFields(
     {
       ...row,
-      exposureType: row.exposureType || (assetType === "stock" ? "ordinary_equity" : "ordinary_etf"),
+      exposureType: row.exposureType || defaultExposureType,
       distributionType: row.distributionType || "unknown",
     },
     row.dividendYield,
@@ -198,7 +205,7 @@ export function normalizeScreenerCandidate(row = {}) {
     tags: splitPipe(row.tags),
     notes: row.notes || "",
     underlyingTicker: row.underlyingTicker || "",
-    exposureType: row.exposureType || (assetType === "stock" ? "ordinary_equity" : "ordinary_etf"),
+    exposureType: row.exposureType || defaultExposureType,
     leverageMultiple: toNumber(row.leverageMultiple),
     direction: row.direction || "long",
     resetFrequency: row.resetFrequency || "not_applicable",
@@ -225,14 +232,16 @@ export function normalizeScreenerCandidate(row = {}) {
     priceHistoryStartDate: row.priceHistoryStartDate || "",
     usablePriceHistoryYears: toNumber(row.usablePriceHistoryYears),
     minimumPortfolioHistoryYears: toNumber(row.minimumPortfolioHistoryYears),
-    portfolioEligible: row.portfolioEligible === "" || row.portfolioEligible === undefined
-      ? undefined
+    portfolioEligible: assetType === "unknown"
+      ? false
+      : row.portfolioEligible === "" || row.portfolioEligible === undefined
+        ? undefined
       : toBoolean(row.portfolioEligible),
     portfolioEligibilityStatus: row.portfolioEligibilityStatus || "",
     portfolioEligibilityReason: row.portfolioEligibilityReason || "",
     portfolioEligibleAfterDate: row.portfolioEligibleAfterDate || "",
     cagrConfidence: row.cagrConfidence || "",
-    portfolioAddPolicy: row.portfolioAddPolicy || "",
+    portfolioAddPolicy: assetType === "unknown" ? "deny" : row.portfolioAddPolicy || "",
     portfolioWarningCodes: splitPipe(row.portfolioWarningCodes),
     simulationCashYield: distributionFields.simulationCashYield,
     reinvestmentCashYield: distributionFields.reinvestmentCashYield,

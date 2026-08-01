@@ -33,13 +33,9 @@ function formatShockAssumptions(marker) {
     .join(", ");
   if (marker.shockMode === "market_beta") {
     const betaRows = Object.entries(marker.assetBetas || {})
-      .map(([key, value]) => {
-        const provenance = marker.betaProvenance?.[key];
-        const source = provenance?.sourceName ? ` source ${provenance.sourceName}` : "";
-        return `${key} beta ${value}${source}`;
-      })
+      .map(([key, value]) => `${key} BETA ${value}`)
       .join(", ");
-    return `market factor ${formatPercent(marker.marketFactorShock)}; ${betaRows}; shocks ${assetShocks}`;
+    return `시장 충격 ${formatPercent(marker.marketFactorShock)}; ${betaRows}; 자산 충격 ${assetShocks}`;
   }
   return assetShocks;
 }
@@ -145,7 +141,7 @@ export default function ExternalShockPathChart({ chart }) {
             <g key={`${marker.monthIndex}-${marker.label}`} tabIndex={0} className="externalShockMarker">
               <line x1={getX(marker.monthIndex)} y1={padding} x2={getX(marker.monthIndex)} y2={height - padding} />
               <circle cx={getX(marker.monthIndex)} cy={getY(stressedValues.find((point) => point.monthIndex === marker.monthIndex)?.value)} r="6" />
-              <title>{`${formatMonthLabel(marker.monthIndex)} ${marker.label} ${marker.shockMode}: ${formatShockAssumptions(marker)}`}</title>
+              <title>{`${formatMonthLabel(marker.monthIndex)} ${marker.label} ${marker.shockMode === "market_beta" ? "시장 민감도" : "자산별 충격"}: ${formatShockAssumptions(marker)}`}</title>
             </g>
           ))}
 

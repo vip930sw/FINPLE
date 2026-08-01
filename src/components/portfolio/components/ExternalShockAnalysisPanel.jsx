@@ -132,26 +132,21 @@ function ShockAssumptionsTable({ rows = [] }) {
       <div className="externalShockSectionTitle">
         <Info size={18} aria-hidden="true" />
         <div>
-          <p className="sectionLabel">Shock Assumptions</p>
-          <h4>Selected scenario assumptions</h4>
+          <p className="sectionLabel">분석 조건</p>
+          <h4>선택 시나리오 조건</h4>
         </div>
       </div>
       <div className="externalShockTableScroll">
         <table>
           <thead>
             <tr>
-              <th>Shock month</th>
-              <th>Label</th>
-              <th>Asset</th>
-              <th>Mode</th>
-              <th>Asset shock</th>
-              <th>Market factor</th>
+              <th>충격 시점</th>
+              <th>시나리오</th>
+              <th>자산</th>
+              <th>방식</th>
+              <th>자산 충격</th>
+              <th>시장 충격</th>
               <th>Beta</th>
-              <th>sourceName</th>
-              <th>asOfDate</th>
-              <th>betaWindow</th>
-              <th>methodVersion</th>
-              <th>sourceHash</th>
             </tr>
           </thead>
           <tbody>
@@ -164,11 +159,6 @@ function ShockAssumptionsTable({ rows = [] }) {
                 <td>{row.directShockLabel}</td>
                 <td>{row.marketFactorShockLabel}</td>
                 <td>{row.betaLabel}</td>
-                <td>{row.sourceName}</td>
-                <td>{row.asOfDate}</td>
-                <td>{row.betaWindow}</td>
-                <td>{row.methodVersion}</td>
-                <td>{row.sourceHashStatus}</td>
               </tr>
             ))}
           </tbody>
@@ -238,17 +228,6 @@ function MethodologyPanel({ viewModel }) {
         ))}
       </dl>
 
-      <details className="externalShockAuditDetails">
-        <summary>개발·감사용 메타데이터</summary>
-        <dl>
-          <div><dt>fixtureOnly</dt><dd>{String(Boolean(viewModel.fixtureOnly))}</dd></div>
-          <div><dt>sourceHashCount</dt><dd>{viewModel.audit?.sourceHashCount ?? "-"}</dd></div>
-          <div><dt>outputHash</dt><dd>{viewModel.audit?.outputHash ? "available" : "-"}</dd></div>
-          <div><dt>betaApplied</dt><dd>{String(viewModel.audit?.betaApplied ?? false)}</dd></div>
-          <div><dt>cagrCalibrationApplied</dt><dd>{String(viewModel.audit?.cagrCalibrationApplied ?? false)}</dd></div>
-          <div><dt>historicalMddApplied</dt><dd>{String(viewModel.audit?.historicalMddApplied ?? false)}</dd></div>
-        </dl>
-      </details>
     </section>
   );
 }
@@ -291,13 +270,13 @@ export default function ExternalShockAnalysisPanel({
           <p className="sectionLabel">Step 5. External Shock</p>
           <h3>외부충격분석</h3>
           <p>
-            검증된 fixture review 결과가 있을 때만 기준 경로와 충격 경로를 비교합니다.
-            일반 화면에서는 실제 포트폴리오 숫자와 synthetic fixture 숫자를 자동 결합하지 않습니다.
+            검증된 외부충격 분석 결과가 있을 때만 기준 경로와 충격 경로를 비교합니다.
+            일반 화면에서는 별도 검증 데이터와 실제 포트폴리오 값을 자동 결합하지 않습니다.
           </p>
         </div>
         <div className="externalShockFixtureBadge">
-          <span>{enableFixtureReview ? "fixture review" : "idle"}</span>
-          <strong>{enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
+          <span>{enableFixtureReview ? "검증 데이터 연결" : "분석 대기"}</span>
+          <strong>{enableFixtureReview ? "결과 확인 가능" : "데이터 연결 필요"}</strong>
         </div>
       </div>
 
@@ -305,7 +284,7 @@ export default function ExternalShockAnalysisPanel({
         {isReady ? (
           <>
             <div>
-              <span>분석 identity</span>
+              <span>선택 포트폴리오</span>
               <strong>{viewModel.selectedPortfolioName}</strong>
             </div>
             <div>
@@ -344,10 +323,10 @@ export default function ExternalShockAnalysisPanel({
           <section className="externalShockReadyNotice" aria-label="외부충격분석 검증 상태">
             <Activity size={20} aria-hidden="true" />
             <div>
-              <strong>검증된 fixture-safe 외부충격 경로</strong>
+              <strong>검증된 외부충격 경로</strong>
               <p>
-                충격은 offline fixture 입력으로만 계산되며, 예측·보장·투자 권유가 아닙니다.
-                Step 4 확률분석의 분위수 의미와 분리된 deterministic 비교입니다.
+                충격은 사전에 검증된 입력으로만 계산되며, 예측·보장·투자 권유가 아닙니다.
+                Step 4 확률분석의 분위수 의미와 분리된 동일 조건 비교입니다.
               </p>
             </div>
           </section>
@@ -365,7 +344,7 @@ export default function ExternalShockAnalysisPanel({
       <section className="externalShockDisclaimer" aria-label="외부충격분석 고지">
         <strong>투자 유의사항</strong>
         <p>
-          이 외부충격분석은 synthetic fixture 기반의 결정론적 비교입니다.
+          이 외부충격분석은 사전에 검증된 시나리오 기반의 비교입니다.
           충격의 발생 확률이나 미래 수익률을 예측하지 않으며 투자 권유가 아닙니다.
           실제 시장 데이터 호출, 실시간 공급자 호출, 주문 또는 AI 해석을 수행하지 않습니다.
         </p>

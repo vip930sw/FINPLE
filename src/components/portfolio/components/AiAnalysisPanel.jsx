@@ -75,13 +75,6 @@ function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
   return (
     <section className={`aiScenarioContextPanel ${providerContext ? "ready" : "muted"} status-${state.status}`}>
       <div>
-        <span className="aiScenarioContextState">
-          state: {state.status}
-          {state.includedSections.length > 0 ? ` / included: ${state.includedSections.join(", ")}` : ""}
-          {state.excludedSections.length > 0
-            ? ` / excluded: ${state.excludedSections.map((entry) => `${entry.section}:${entry.reasonCategory}`).join(", ")}`
-            : ""}
-        </span>
         <strong>STEP 4·5 검증 결과</strong>
         <p>
           AI는 STEP 4·5에서 계산된 검증 결과를 해석하며 직접 확률·MDD·충격 결과를 계산하지 않습니다.
@@ -113,14 +106,14 @@ function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
         </div>
       ) : (
         <div className="aiScenarioContextEmpty">
-          <strong>검증 scenario context 미포함</strong>
+          <strong>검증된 분석 결과 미포함</strong>
           <span>
             {state.status === "stale"
-              ? "stale identity context is excluded from the AI provider payload."
+              ? "현재 설정과 일치하지 않는 이전 결과는 AI 분석에 포함하지 않습니다."
               : state.status === "blocked"
-                ? `blocked context is excluded: ${state.reasonCategory}.`
+                ? "계산이 보류된 결과는 AI 분석에 포함하지 않습니다."
                 : state.excludedSections.length > 0
-              ? "review-only, fixture, stale 또는 승인 미완료 결과는 AI provider payload에서 제외됩니다."
+              ? "검증이 완료되지 않은 결과는 AI 분석에 포함하지 않습니다."
               : "기존 AI 요청과 동일하게 현재 포트폴리오 입력만 해석합니다."}
           </span>
         </div>
