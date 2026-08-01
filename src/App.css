@@ -5237,6 +5237,47 @@ nav {
   outline-offset: 3px;
 }
 
+.simulatorTabButton.locked:not(.active) {
+  border-color: #dbe3ee;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.advancedAnalysisLockedPanel {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  min-height: 280px;
+  padding: 40px;
+  border: 1px solid #dbe3ee;
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.advancedAnalysisLockedPanel h3,
+.advancedAnalysisLockedPanel p {
+  margin: 0;
+}
+
+.advancedAnalysisLockedPanel p {
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.advancedAnalysisPlanBadge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.advancedAnalysisLockedPanel .primaryButton {
+  margin-top: 8px;
+  text-decoration: none;
+}
+
 .simulatorTabPanel {
   animation: tabFadeIn 0.18s ease;
 }
@@ -17609,6 +17650,11 @@ body,
     border-color: #0f172a;
     background: #0f172a;
     color: #ffffff;
+  }
+
+  .advancedAnalysisLockedPanel {
+    min-height: 240px;
+    padding: 28px 22px;
   }
 }
 

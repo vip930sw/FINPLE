@@ -200,6 +200,7 @@ app.use((error, request, response, next) => {
     ok: false,
     message: error.message || "서버 오류가 발생했습니다.",
     requestId: request.requestId || null,
+    ...(statusCode < 500 && error.code ? { code: error.code } : {}),
     ...(statusCode < 500 && Array.isArray(error.details) ? { details: error.details } : {}),
     ...(statusCode < 500 && error.usage?.limited
       ? {

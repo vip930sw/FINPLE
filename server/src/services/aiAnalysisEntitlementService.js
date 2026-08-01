@@ -1,4 +1,5 @@
 import { isDatabaseConfigured, query } from "../db/database.js";
+import { getEffectiveSubscriptionState } from "./subscriptionEffectiveStatus.js";
 
 const AI_PAID_PLANS = new Set(["personal", "pro"]);
 
@@ -6,24 +7,26 @@ function normalizePlan(plan) {
   return String(plan || "").trim().toLowerCase();
 }
 
-export function applyAiAnalysisEntitlement(user, entitlement = null) {
+export function applyAiAnalysisEntitlement(user, entitlement = null, subscription = null, now = new Date()) {
   if (!user?.id) return user || null;
 
-  const entitlementPlan = normalizePlan(entitlement?.plan);
-  if (!AI_PAID_PLANS.has(entitlementPlan)) {
+  const effective = getEffectiveSubscriptionState({ user, subscription, entitlement, now });
+  const effectivePlan = normalizePlan(user.plan) === "pro" ? "pro" : effective.effectivePlan;
+  if (!AI_PAID_PLANS.has(effectivePlan)) {
     return {
       ...user,
+      plan: "free",
       aiPlanSource: "user",
     };
   }
 
   return {
     ...user,
-    plan: entitlementPlan,
-    aiPlanSource: entitlement?.source || "entitlement",
+    plan: effectivePlan,
+    aiPlanSource: entitlement?.source || (subscription ? "subscription" : "user"),
     aiEntitlement: {
-      plan: entitlementPlan,
-      source: entitlement?.source || "entitlement",
+      plan: effectivePlan,
+      source: entitlement?.source || (subscription ? "subscription" : "user"),
       validUntil: entitlement?.valid_until || null,
     },
   };
@@ -33,7 +36,7 @@ export async function enrichUserWithAiAnalysisEntitlement(user) {
   if (!user?.id || !isDatabaseConfigured()) return applyAiAnalysisEntitlement(user);
 
   try {
-    const result = await query(
+    const entitlementResult = await query(
       `SELECT plan, source, valid_until
        FROM user_entitlements
        WHERE user_id = $1
@@ -43,9 +46,22 @@ export async function enrichUserWithAiAnalysisEntitlement(user) {
        LIMIT 1`,
       [user.id]
     );
+    const subscriptionResult = await query(
+      `SELECT plan, status, current_period_start, current_period_end,
+              cancel_at_period_end, ended_at, provider
+       FROM subscriptions
+       WHERE user_id = $1
+       ORDER BY current_period_start DESC NULLS LAST, current_period_end DESC NULLS LAST
+       LIMIT 1`,
+      [user.id]
+    );
 
-    return applyAiAnalysisEntitlement(user, result.rows?.[0] || null);
-  } catch (error) {
-    return applyAiAnalysisEntitlement(user);
+    return applyAiAnalysisEntitlement(
+      user,
+      entitlementResult.rows?.[0] || null,
+      subscriptionResult.rows?.[0] || null,
+    );
+  } catch {
+    return applyAiAnalysisEntitlement({ ...user, plan: "free" });
   }
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { setStoredFinpleAuthUser } from "../../portfolio/services/serverPortfolioService";
-import { setStoredFinplePlan } from "../../portfolio/config/planConfig";
+import { getStoredFinplePlan, setStoredFinplePlan } from "../../portfolio/config/planConfig";
 import {
   getPlanFromPayload,
   getSubscriptionPlanDecision,
@@ -57,7 +57,9 @@ function normalizePayload(payload, user) {
 function syncSubscriptionToStorage(result, user) {
   if (!result?.authenticated) return;
 
-  setStoredFinplePlan(result.effectivePlan);
+  if (getStoredFinplePlan() !== result.effectivePlan) {
+    setStoredFinplePlan(result.effectivePlan);
+  }
   if (user?.id) {
     setStoredFinpleAuthUser({
       ...user,
@@ -133,7 +135,7 @@ export function useSubscriptionStatus(user) {
       }));
       return null;
     }
-  }, [user, userKey]);
+  }, [user]);
 
   useEffect(() => {
     refresh();
@@ -141,14 +143,15 @@ export function useSubscriptionStatus(user) {
 
   const derived = useMemo(() => {
     const data = state.data;
+    const isCurrentUser = data?.userKey === userKey;
     return {
       ...state,
-      effectivePlan: data?.effectivePlan || "free",
-      effectiveStatus: data?.effectiveStatus || "beta_free",
-      accessUntilLabel: formatDateLabel(data?.accessUntil),
-      nextBillingLabel: data?.effectivePlan === "personal" ? formatDateLabel(data?.nextBillingAt || data?.accessUntil) : "해당 없음",
+      effectivePlan: isCurrentUser ? data.effectivePlan : "free",
+      effectiveStatus: isCurrentUser ? data.effectiveStatus : "beta_free",
+      accessUntilLabel: formatDateLabel(isCurrentUser ? data?.accessUntil : null),
+      nextBillingLabel: isCurrentUser && data?.effectivePlan === "personal" ? formatDateLabel(data?.nextBillingAt || data?.accessUntil) : "해당 없음",
     };
-  }, [state]);
+  }, [state, userKey]);
 
   return { ...derived, refresh };
 }

@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -8,6 +8,7 @@ import DetailPanel from "./portfolio/components/DetailPanel";
 import ProbabilityAnalysisPanel from "./portfolio/components/ProbabilityAnalysisPanel";
 import ExternalShockAnalysisPanel from "./portfolio/components/ExternalShockAnalysisPanel";
 import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
+import AdvancedAnalysisLockedPanel from "./portfolio/components/AdvancedAnalysisLockedPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import PortfolioAddDecisionDialog from "./portfolio/components/PortfolioAddDecisionDialog";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
@@ -18,9 +19,16 @@ import {
 } from "./portfolio/utils/simulatorNavigation";
 import { buildSimulatorAiScenarioContext } from "./portfolio/utils/aiScenarioInterpretationContext";
 import { PRODUCTION_APP_EXPORT_LOADING_STATUS } from "../data/tickers/screenerCandidateLoader";
+import { FINPLE_PLAN_CONFIGS, normalizeFinplePlan } from "./portfolio/config/planConfig";
+import { getStoredFinpleAuthUser } from "./portfolio/services/serverPortfolioService";
+import { useSubscriptionStatus } from "./mypage/hooks/useSubscriptionStatus";
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange, scenarioContextInputs = null } = props || {};
+  const [subscriptionUser, setSubscriptionUser] = useState(() => getStoredFinpleAuthUser());
+  const subscription = useSubscriptionStatus(subscriptionUser);
+  const refreshSubscription = subscription.refresh;
+  const planFeatures = FINPLE_PLAN_CONFIGS[normalizeFinplePlan(subscription.effectivePlan)].features;
   const {
     portfolioList,
     activePortfolioId,
@@ -96,7 +104,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     toNumber,
     isAutoAsset,
     isEmptyAssetRow
-  } = usePortfolioSimulator();
+  } = usePortfolioSimulator({ probabilityAnalysisAllowed: planFeatures.probabilityAnalysis });
 
   const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
   const isProductionCatalogLoading =
@@ -111,6 +119,24 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   useEffect(() => {
     changeSimulatorTabRef.current = changeSimulatorTab;
   }, [changeSimulatorTab]);
+
+  useEffect(() => {
+    function refreshSubscriptionUser() {
+      setSubscriptionUser(getStoredFinpleAuthUser());
+    }
+    function refreshSubscriptionPlan() {
+      refreshSubscription({ force: true });
+    }
+
+    window.addEventListener("finple-auth-updated", refreshSubscriptionUser);
+    window.addEventListener("finple-plan-updated", refreshSubscriptionPlan);
+    window.addEventListener("storage", refreshSubscriptionUser);
+    return () => {
+      window.removeEventListener("finple-auth-updated", refreshSubscriptionUser);
+      window.removeEventListener("finple-plan-updated", refreshSubscriptionPlan);
+      window.removeEventListener("storage", refreshSubscriptionUser);
+    };
+  }, [refreshSubscription]);
 
   useEffect(() => {
     onActiveTabChange?.(effectiveActiveSimulatorTab, activeTabChangeContextRef.current);
@@ -221,6 +247,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       <SimulatorTabNav
         activeSimulatorTab={effectiveActiveSimulatorTab}
         changeSimulatorTab={handleSimulatorTabChange}
+        features={planFeatures}
       />
 
       {isProductionCatalogLoading ? (
@@ -318,7 +345,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
       {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "probability" && (
         <div id="probability-analysis" className="simulatorTabAnchor">
-          <ProbabilityAnalysisPanel
+          {planFeatures.probabilityAnalysis ? <ProbabilityAnalysisPanel
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
@@ -332,25 +359,25 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             enableProductionAppExport={
               Boolean(previewScenarioResult?.productionAppExportContext)
             }
-          />
+          /> : <AdvancedAnalysisLockedPanel capability="probabilityAnalysis" />}
         </div>
       )}
 
       {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "shock" && (
         <div id="external-shock-analysis" className="simulatorTabAnchor">
-          <ExternalShockAnalysisPanel
+          {planFeatures.externalShockAnalysis ? <ExternalShockAnalysisPanel
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
             settings={settings}
             isEmptyAssetRow={isEmptyAssetRow}
-          />
+          /> : <AdvancedAnalysisLockedPanel capability="externalShockAnalysis" />}
         </div>
       )}
 
       {!isProductionCatalogLoading && effectiveActiveSimulatorTab === "ai" && (
         <div id="ai-analysis" className="simulatorTabAnchor">
-          <AiAnalysisPanel
+          {planFeatures.aiAnalysis ? <AiAnalysisPanel
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
@@ -359,7 +386,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             formatNumber={formatNumber}
             formatPercent={formatPercent}
             isEmptyAssetRow={isEmptyAssetRow}
-          />
+          /> : <AdvancedAnalysisLockedPanel capability="aiAnalysis" />}
         </div>
       )}
 
