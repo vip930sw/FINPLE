@@ -34,6 +34,8 @@ test("Production monthly artifacts stay separate from the canonical v2 runtime c
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_ENABLED/);
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_RELEASE_SHA256/);
   assert.match(production, /VITE_FINPLE_PRODUCTION_APP_EXPORT_SOURCE_SHA256/);
+  assert.match(production, /VITE_FINPLE_MONTHLY_SCENARIO_ARTIFACT_ENABLED/);
+  assert.match(production, /isProductionMonthlyScenarioArtifactConfigured/);
   assert.doesNotMatch(production, /VITE_FINPLE_APP_PREVIEW_ENABLED/);
 });
 
@@ -96,6 +98,12 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   const simulator = read("src/components/PortfolioSimulator.jsx");
   const personal = read("src/components/PersonalPage.jsx");
   assert.match(hook, /loadProductionMonthlyReturnsForIdentities/);
+  assert.match(hook, /isProductionMonthlyScenarioArtifactConfigured/);
+  assert.match(hook, /monthlyScenarioArtifactState/);
+  assert.doesNotMatch(
+    hook,
+    /!\["internal_preview_review_only",\s*"production_app_export_ready"\]\.includes/,
+  );
   assert.match(hook, /resolveAppExportScenarioState/);
   assert.doesNotMatch(hook, /activateProductionAppExportFallback/);
   assert.doesNotMatch(scenario, /activateCatalogFallback/);
@@ -114,6 +122,7 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   assert.match(identityMetadata, /sourceHash: ""/);
   assert.match(identityMetadata, /proxyLineageStatus: ""/);
   assert.match(simulator, /enableProductionAppExport/);
+  assert.match(simulator, /previewScenarioResult\?\.productionAppExportContext/);
   assert.doesNotMatch(
     personal,
     /scenarioContextInputs\s*=\s*\{[^}]*previewScenarioResult/,

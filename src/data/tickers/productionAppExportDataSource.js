@@ -499,6 +499,21 @@ export function isProductionAppExportConfigured(overrides = {}) {
   return getProductionAppExportRuntimeConfig(overrides).enabled;
 }
 
+export function isProductionMonthlyScenarioArtifactConfigured(overrides = {}) {
+  const config = getProductionAppExportRuntimeConfig(overrides);
+  const enabled = Boolean(
+    overrides.monthlyEnabled ??
+    (normalizeBoolean(buildEnv.VITE_FINPLE_MONTHLY_SCENARIO_ARTIFACT_ENABLED) ||
+      config.enabled)
+  );
+  return Boolean(
+    enabled &&
+    config.baseUrl &&
+    SHA256_PATTERN.test(config.releaseManifestSha256) &&
+    SHA256_PATTERN.test(config.sourceAppExportSha256)
+  );
+}
+
 export async function loadProductionAppExportCatalog(options = {}) {
   const config = getProductionAppExportRuntimeConfig(options);
   if (!config.enabled) {
@@ -670,16 +685,16 @@ export async function loadProductionMonthlyReturnsForIdentities(identities = [],
   const normalizedIdentities = [...new Set(
     identities.map(normalizeIdentity).filter(Boolean),
   )].sort();
-  const catalog = await loadProductionAppExportCatalog(options);
-  if (!catalog.enabled) {
+  if (!isProductionMonthlyScenarioArtifactConfigured(options)) {
     return {
       enabled: false,
       rowsByIdentity: {},
       missingIdentities: normalizedIdentities,
       requestedShardPaths: [],
-      catalogPolicyByIdentity: catalog.catalogPolicyByIdentity,
+      catalogPolicyByIdentity: Object.freeze({}),
     };
   }
+  const catalog = await loadProductionAppExportCatalog({ ...options, enabled: true });
   const missingIdentities = normalizedIdentities
     .filter((identity) => !catalog.index.assets[identity]);
   if (missingIdentities.length > 0) {

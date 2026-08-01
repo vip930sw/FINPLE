@@ -4,8 +4,8 @@ import test from "node:test";
 import {
   APP_EXPORT_SCENARIO_ERROR_CODES,
   AppExportScenarioPolicyError,
-  buildAppExportScenarioResult,
-  buildAppPreviewScenarioResult,
+  buildAppExportScenarioResult as buildAppExportScenarioResultRaw,
+  buildAppPreviewScenarioResult as buildAppPreviewScenarioResultRaw,
   longestContiguousMonthSegment,
   resolveAppExportScenarioState,
 } from "./appPreviewScenarioService.js";
@@ -19,6 +19,7 @@ import {
 } from "./aiScenarioInterpretationContext.js";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
 import { reconcileIdentityScopedAssetMetadata } from "../../../data/tickers/portfolioAssetIdentityMetadata.js";
+import { createManualCashAsset } from "../../../data/tickers/manualCashAsset.js";
 
 function monthEnd(index) {
   const date = new Date(Date.UTC(2018, index + 1, 0));
@@ -78,6 +79,25 @@ const manifest = {
   calculationPolicyVersion: "metrics-calculation-policy-2026-06-26",
   metricDataThroughMonth: "2024-08",
 };
+
+function withScenarioTargetWeights(options = {}) {
+  const assets = Array.isArray(options.assets) ? options.assets : [];
+  const total = assets.reduce((sum, asset) => sum + Number(asset.targetEvaluationAmount || 0), 0);
+  return {
+    ...options,
+    assets: assets.map((asset) => asset.targetWeight !== undefined && asset.targetWeight !== null && asset.targetWeight !== ""
+      ? asset
+      : { ...asset, targetWeight: total > 0 ? Number(asset.targetEvaluationAmount || 0) / total * 100 : 0 }),
+  };
+}
+
+function buildAppExportScenarioResult(options) {
+  return buildAppExportScenarioResultRaw(withScenarioTargetWeights(options));
+}
+
+function buildAppPreviewScenarioResult(options) {
+  return buildAppPreviewScenarioResultRaw(withScenarioTargetWeights(options));
+}
 
 function assertScenarioPolicyError(action, { code, identity }) {
   assert.throws(action, (error) => {
@@ -971,4 +991,106 @@ test("production app export enables Step 4 only while AI scenario context stays 
     probabilityViewModel: viewModel,
   });
   assert.equal(getProviderScenarioContext(aiContext), null);
+});
+
+test("zero-weight assets do not request monthly rows or change the scenario", () => {
+  const activePortfolio = { id: "portfolio-zero-weight", name: "Zero weight" };
+  const settings = { startValue: 10000, monthlyCashFlow: 0, years: 5, inflationRate: 0 };
+  const release = {
+    contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+    universeVersion: "finple-universe-v2-2026-07-24",
+    sourceAppExportSha256: "e".repeat(64),
+    metricDataThroughMonth: "2026-06",
+  };
+  const options = {
+    activePortfolio,
+    settings,
+    rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    simulationCount: 24,
+  };
+  const qqqOnly = buildAppExportScenarioResult({
+    ...options,
+    assets: [{ market: "US", ticker: "QQQ", targetWeight: 100 }],
+  });
+  const withZeroWeightBnd = buildAppExportScenarioResult({
+    ...options,
+    assets: [
+      { market: "US", ticker: "QQQ", targetWeight: 100 },
+      { market: "US", ticker: "BND", targetWeight: 0 },
+    ],
+  });
+  assert.equal(withZeroWeightBnd.status, "ready");
+  assert.deepEqual(withZeroWeightBnd.productionAppExportContext.identities, ["US:QQQ"]);
+  assert.deepEqual(withZeroWeightBnd.assets, qqqOnly.assets);
+  assert.equal(withZeroWeightBnd.outputHash, qqqOnly.outputHash);
+});
+
+test("manual CASH uses the internal 2 percent return without a monthly shard", () => {
+  const activePortfolio = { id: "portfolio-cash", name: "Cash allocation" };
+  const settings = {
+    startValue: 10000,
+    monthlyCashFlow: 0,
+    years: 5,
+    inflationRate: 0,
+  };
+  const release = {
+    contractVersion: "finple-production-app-export-release-v1-step114-2zc",
+    universeVersion: "finple-universe-v2-2026-07-24",
+    sourceAppExportSha256: "e".repeat(64),
+    metricDataThroughMonth: "2026-06",
+  };
+  const qqqOnly = buildAppExportScenarioResult({
+    activePortfolio,
+    assets: [{ market: "US", ticker: "QQQ", targetWeight: 100 }],
+    settings,
+    rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    simulationCount: 24,
+  });
+  const withCash = buildAppExportScenarioResult({
+    activePortfolio,
+    assets: [
+      { market: "US", ticker: "QQQ", targetWeight: 90 },
+      createManualCashAsset({ targetWeight: 10 }),
+    ],
+    settings,
+    rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+    manifest,
+    release,
+    runtimeMode: "production_app_export_ready",
+    simulationCount: 24,
+  });
+  assert.equal(withCash.status, "ready", JSON.stringify(withCash.dataQuality));
+  assert.deepEqual(withCash.productionAppExportContext.identities, ["US:QQQ"]);
+  assert.deepEqual(withCash.scenarioAssetWeights, [
+    { identity: "US:QQQ", targetWeight: 0.9 },
+    { identity: "CASH:CASH", targetWeight: 0.1 },
+  ]);
+  assert.notEqual(withCash.outputHash, qqqOnly.outputHash);
+  assert.ok(withCash.scenarioMdd.p50 > qqqOnly.scenarioMdd.p50);
+
+  assertScenarioPolicyError(
+    () => buildAppExportScenarioResult({
+      activePortfolio,
+      assets: [
+        { market: "US", ticker: "QQQ", targetWeight: 50 },
+        { market: "CASH", ticker: "CASH", targetWeight: 50, dataSource: "unknown" },
+      ],
+      settings,
+      rowsByIdentity: { "US:QQQ": rows("US", "QQQ") },
+      manifest,
+      release,
+      runtimeMode: "production_app_export_ready",
+      simulationCount: 24,
+    }),
+    {
+      code: APP_EXPORT_SCENARIO_ERROR_CODES.IDENTITY_UNAVAILABLE,
+      identity: "CASH:CASH",
+    },
+  );
 });

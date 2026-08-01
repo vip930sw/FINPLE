@@ -26,6 +26,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     activePortfolioId,
     activePortfolio,
     settings,
+    effectiveStep4Settings,
     assets,
     targetWeightDrafts,
     targetWeightSummary,
@@ -321,16 +322,15 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
-            settings={settings}
-            isEmptyAssetRow={isEmptyAssetRow}
+            settings={effectiveStep4Settings}
             scenarioResult={previewScenarioResult}
             scenarioLoadStatus={previewScenarioStatus}
             scenarioLoadError={previewScenarioError}
             enableInternalPreviewReview={
-              screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only"
+              Boolean(previewScenarioResult?.internalPreviewContext)
             }
             enableProductionAppExport={
-              screenerCandidateSnapshot?.preview?.status === "production_app_export_ready"
+              Boolean(previewScenarioResult?.productionAppExportContext)
             }
           />
         </div>
