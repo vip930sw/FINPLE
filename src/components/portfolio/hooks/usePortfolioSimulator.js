@@ -21,6 +21,7 @@ import {
 import {
   cloneAssets,
   createPortfolio,
+  duplicatePortfolio,
   loadPortfolioState,
   normalizeAsset,
   normalizeGlobalSettings,
@@ -863,7 +864,7 @@ export default function usePortfolioSimulator() {
   }
   function duplicateActivePortfolio() {
     if (!activePortfolio) return;
-    const duplicatedPortfolio = createPortfolio({
+    const duplicatedPortfolio = duplicatePortfolio(activePortfolio, {
       name: `${activePortfolio.name || "포트폴리오"} 복사본`,
       assets: assets.map(hydratePortfolioAssetFromActiveCatalog),
       settings,

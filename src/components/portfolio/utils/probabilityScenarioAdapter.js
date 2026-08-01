@@ -520,14 +520,12 @@ function createSummaryCards(result) {
 
 function createMethodology(result = {}) {
   return [
-    { label: "returnBasis", value: result.returnBasis || "-" },
-    { label: "currencyMode", value: result.currencyMode || "-" },
-    { label: "dataStartDate", value: result.dataStartDate || "-" },
-    { label: "dataEndDate", value: result.dataEndDate || "-" },
-    { label: "simulationCount", value: String(result.simulationCount ?? "-") },
-    { label: "blockMonths", value: String(result.blockMonths ?? "-") },
-    { label: "randomSeed", value: String(result.randomSeed ?? "-") },
-    { label: "scenarioVersion", value: result.scenarioVersion || "-" },
+    { label: "수익률 기준", value: result.returnBasis === "total_return" ? "총수익률" : result.returnBasis === "price_return" ? "가격수익률" : "-" },
+    { label: "통화 기준", value: result.currencyMode || "-" },
+    { label: "데이터 시작", value: result.dataStartDate || "-" },
+    { label: "데이터 종료", value: result.dataEndDate || "-" },
+    { label: "시뮬레이션 횟수", value: String(result.simulationCount ?? "-") },
+    { label: "분석 묶음 기간", value: String(result.blockMonths ?? "-") },
   ];
 }
 
@@ -821,11 +819,7 @@ export function buildProbabilityScenarioViewModel({
 
   return createReadyViewModel({
     result,
-    selectedPortfolioName:
-      result.internalPreviewContext?.portfolioName ||
-      result.productionAppExportContext?.portfolioName ||
-      result.fixtureContext?.portfolioName ||
-      selectedPortfolioName,
+    selectedPortfolioName,
     assets,
     baselineResult,
     fingerprint,

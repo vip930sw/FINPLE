@@ -413,7 +413,7 @@ function createStatusViewModel({ status, reasons = [], selectedPortfolioName, fi
   const copy = {
     idle: {
       title: "외부충격분석 대기",
-      message: "검증된 review-only 충격 분석 fixture가 연결된 경우에만 결과를 표시합니다.",
+      message: "검증된 외부충격 분석 데이터가 연결된 경우에만 결과를 표시합니다.",
     },
     insufficient_data: {
       title: "데이터 기간 부족",
@@ -425,7 +425,7 @@ function createStatusViewModel({ status, reasons = [], selectedPortfolioName, fi
     },
     stale: {
       title: "이전 외부충격분석 결과",
-      message: "현재 포트폴리오 또는 설정과 fixture identity가 일치하지 않습니다.",
+      message: "현재 포트폴리오 또는 설정과 기존 결과가 일치하지 않습니다.",
     },
     error: {
       title: "외부충격분석 오류",
@@ -473,8 +473,8 @@ function formatRecovery(value, unrecovered) {
 function createScenarioComparisonRows(results = []) {
   return safeArray(results).map((result) => ({
     scenarioId: result.scenarioId,
-    label: result.scenarioLabel || result.scenarioId,
-    mode: result.shockMode,
+    label: formatScenarioLabel(result),
+    mode: formatShockMode(result.shockMode),
     terminalDeltaRate: result.summary?.terminalDeltaRate,
     terminalDeltaRateLabel: formatPercent(result.summary?.terminalDeltaRate),
     stressedMdd: result.summary?.stressedMdd,
@@ -486,6 +486,18 @@ function createScenarioComparisonRows(results = []) {
     longestRecoveryMonths: result.summary?.longestRecoveryMonths,
     unrecovered: result.summary?.unrecovered === true,
   }));
+}
+
+function formatShockMode(value) {
+  if (value === "market_beta") return "시장 민감도";
+  if (value === "direct_asset") return "자산별 충격";
+  return "확인 필요";
+}
+
+function formatScenarioLabel(result = {}) {
+  const label = String(result.scenarioLabel || "").trim();
+  if (label && !/fixture|synthetic|review-only|internal|hash/i.test(label)) return label;
+  return result.shockMode === "market_beta" ? "시장 민감도 충격" : "자산별 직접 충격";
 }
 
 function compactSourceHash(value) {
@@ -503,9 +515,11 @@ function createShockAssumptionRows(result = {}) {
         return {
           rowKey: `${event.monthIndex}:${key}:market_beta`,
           month: monthLabel,
-          label: event.label || result.scenarioLabel || result.scenarioId,
+          label: event.label && !/fixture|synthetic|review-only|internal|hash/i.test(event.label)
+            ? event.label
+            : formatScenarioLabel(result),
           asset: key,
-          mode: "market_beta",
+          mode: formatShockMode("market_beta"),
           directShockLabel: "-",
           marketFactorShockLabel: formatPercent(event.marketFactorShock),
           betaLabel: isFiniteNumber(beta) ? beta.toFixed(3) : "-",
@@ -520,9 +534,11 @@ function createShockAssumptionRows(result = {}) {
     return Object.entries(event.assetShockReturns || {}).map(([key, shockReturn]) => ({
       rowKey: `${event.monthIndex}:${key}:direct_asset`,
       month: monthLabel,
-      label: event.label || result.scenarioLabel || result.scenarioId,
+      label: event.label && !/fixture|synthetic|review-only|internal|hash/i.test(event.label)
+        ? event.label
+        : formatScenarioLabel(result),
       asset: key,
-      mode: "direct_asset",
+      mode: formatShockMode("direct_asset"),
       directShockLabel: formatPercent(shockReturn),
       marketFactorShockLabel: "-",
       betaLabel: "-",
@@ -580,22 +596,15 @@ function validateScenarioComparisonBaselineIdentity(results, issues) {
 }
 
 function createMethodology(result = {}) {
-  const betaProvenanceCount = safeArray(result.shockEvents)
-    .flatMap((event) => Object.values(event.betaProvenance || {}))
-    .filter(Boolean).length;
   return [
-    { label: "scenarioId", value: result.scenarioId || "-" },
-    { label: "scenarioLabel", value: result.scenarioLabel || "-" },
-    { label: "baselineIdentityHash", value: result.baselineIdentityHash ? "available" : "-" },
-    { label: "shockMode", value: result.shockMode || "-" },
-    { label: "returnBasis", value: result.returnBasis || "-" },
-    { label: "rebalanceFrequency", value: result.rebalanceFrequency || "-" },
-    { label: "inflationRate", value: result.inflationRate === null || result.inflationRate === undefined ? "-" : String(result.inflationRate) },
-    { label: "currencyMode", value: result.currencyMode || "-" },
-    { label: "dataStartDate", value: result.dataStartDate || "-" },
-    { label: "dataEndDate", value: result.dataEndDate || "-" },
-    { label: "betaProvenanceCount", value: String(betaProvenanceCount) },
-    { label: "scenarioVersion", value: result.scenarioVersion || "-" },
+    { label: "시나리오", value: formatScenarioLabel(result) },
+    { label: "충격 방식", value: formatShockMode(result.shockMode) },
+    { label: "수익률 기준", value: result.returnBasis === "total_return" ? "총수익률" : result.returnBasis === "price_return" ? "가격수익률" : "-" },
+    { label: "비중 조정 주기", value: result.rebalanceFrequency === "monthly" ? "월간" : result.rebalanceFrequency || "-" },
+    { label: "물가상승률", value: result.inflationRate === null || result.inflationRate === undefined ? "-" : String(result.inflationRate) },
+    { label: "통화 기준", value: result.currencyMode || "-" },
+    { label: "데이터 시작", value: result.dataStartDate || "-" },
+    { label: "데이터 종료", value: result.dataEndDate || "-" },
   ];
 }
 
@@ -635,8 +644,8 @@ function createReadyViewModel({
     shockMode: result.shockMode,
     scenarioOptions: comparisonResults.map((item) => ({
       scenarioId: item.scenarioId,
-      label: item.scenarioLabel || item.scenarioId,
-      mode: item.shockMode,
+      label: formatScenarioLabel(item),
+      mode: formatShockMode(item.shockMode),
       selected: item.scenarioId === result.scenarioId,
     })),
     scenarioComparisonRows: createScenarioComparisonRows(comparisonResults),
@@ -649,7 +658,9 @@ function createReadyViewModel({
       baselineReference: normalizeBaselineReference({ baselineResult, result, fingerprint }),
       shockMarkers: result.shockEvents.map((event) => ({
         monthIndex: event.monthIndex,
-        label: event.label || "shock",
+        label: event.label && !/fixture|synthetic|review-only|internal|hash/i.test(event.label)
+          ? event.label
+          : formatScenarioLabel(result),
         shockMode: event.shockMode,
         marketFactorShock: event.marketFactorShock ?? null,
         assetShockReturns: event.assetShockReturns || {},
@@ -820,7 +831,7 @@ export function buildExternalShockScenarioViewModel({
 
   return createReadyViewModel({
     result: selectedResult,
-    selectedPortfolioName: selectedResult.fixtureContext?.portfolioName || selectedPortfolioName,
+    selectedPortfolioName,
     assets,
     baselineResult,
     fingerprint,

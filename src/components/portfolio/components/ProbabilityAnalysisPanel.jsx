@@ -93,20 +93,6 @@ function MethodologyPanel({ viewModel }) {
         ))}
       </dl>
 
-      <details className="probabilityAuditDetails">
-        <summary>개발·감사용 메타데이터</summary>
-        <dl>
-          <div><dt>fixtureOnly</dt><dd>{String(Boolean(viewModel.fixtureOnly))}</dd></div>
-          <div><dt>internalPreviewReviewOnly</dt><dd>{String(Boolean(viewModel.internalPreviewReviewOnly))}</dd></div>
-          <div><dt>metricDataThroughMonth</dt><dd>{viewModel.internalPreviewContext?.metricDataThroughMonth || "-"}</dd></div>
-          <div><dt>gapsForwardFilled</dt><dd>{String(viewModel.internalPreviewContext?.gapsForwardFilled ?? false)}</dd></div>
-          <div><dt>sourceHashCount</dt><dd>{viewModel.audit?.sourceHashCount ?? "-"}</dd></div>
-          <div><dt>outputHash</dt><dd>{viewModel.audit?.outputHash ? "available" : "-"}</dd></div>
-          <div><dt>betaApplied</dt><dd>{String(viewModel.audit?.betaApplied ?? false)}</dd></div>
-          <div><dt>cagrCalibrationApplied</dt><dd>{String(viewModel.audit?.cagrCalibrationApplied ?? false)}</dd></div>
-          <div><dt>historicalMddApplied</dt><dd>{String(viewModel.audit?.historicalMddApplied ?? false)}</dd></div>
-        </dl>
-      </details>
     </section>
   );
 }
@@ -176,7 +162,7 @@ export default function ProbabilityAnalysisPanel({
         {isReady ? (
           <>
             <div>
-              <span>분석 identity</span>
+              <span>선택 포트폴리오</span>
               <strong>{viewModel.selectedPortfolioName}</strong>
             </div>
             <div>
@@ -212,7 +198,7 @@ export default function ProbabilityAnalysisPanel({
               <strong>검증된 월간 데이터 확률 밴드</strong>
               <p>
                 P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은
-                동일 analysis identity가 확인된 경우에만 함께 표시됩니다.
+                같은 포트폴리오와 설정이 확인된 경우에만 함께 표시됩니다.
               </p>
             </div>
           </section>

@@ -1,11 +1,15 @@
 const USER_FACING_BLOCK_REASON_LABELS = Object.freeze({
   canonical_catalog_load_error:
     "최신 자산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-  unsupported_metric_status: "승인된 지표 상태를 확인할 수 없습니다.",
-  invalid_production_metric_approval: "승인된 지표 상태를 확인할 수 없습니다.",
+  unsupported_metric_status: "현재 분석 기준에서 지원되지 않는 자산입니다.",
+  invalid_production_metric_approval: "현재 분석 기준에서 지원되지 않는 자산입니다.",
+  metric_source_not_publish_approved: "현재 분석 기준에서 지원되지 않는 자산입니다.",
+  unsupported_calculation_policy_version: "현재 분석 기준에서 지원되지 않는 자산입니다.",
+  unsupported_pipeline_version: "현재 분석 기준에서 지원되지 않는 자산입니다.",
   unsupported_distribution_calculation_policy:
     "이 상품의 분배금은 일반 배당 재투자 방식으로 계산할 수 없습니다.",
-  missing_metric_lineage: "지표 출처 정보가 부족합니다.",
+  missing_metric_lineage: "분석에 필요한 자산 데이터가 충분하지 않습니다.",
+  provider_event_error: "현금분배 정보를 확인할 수 없습니다.",
   portfolio_add_denied: "포트폴리오에 사용할 수 없는 자산이 포함되어 있습니다.",
   missing_cash_yield_for_reinvestment:
     "분배금 재투자에 필요한 현금수익률 데이터가 없습니다.",
@@ -61,7 +65,7 @@ export function formatUserFacingBaselineBlockReason(reason = "") {
   if (code === "portfolio_add_denied") {
     return `${ticker}: 포트폴리오에 사용할 수 없는 자산입니다.`;
   }
-  return USER_FACING_BLOCK_REASON_LABELS[code] || "지표 계산 계약을 확인할 수 없습니다.";
+  return USER_FACING_BLOCK_REASON_LABELS[code] || "현재 분석 기준에서 지원되지 않는 자산입니다.";
 }
 
 export function formatUserFacingBaselineBlockReasons(reasons = []) {

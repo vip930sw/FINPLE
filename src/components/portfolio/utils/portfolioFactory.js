@@ -12,7 +12,10 @@ import {
   isManualCashAsset,
 } from "../../../data/tickers/manualCashAsset";
 import { normalizePersistedMetricFields } from "./portfolioAssetPersistence";
+import { migrateLegacyPortfolioValuation } from "./portfolioPersistenceContract.js";
 import { readScopedPortfolioStorageItem } from "./portfolioStorageScope";
+
+export { migrateLegacyPortfolioValuation } from "./portfolioPersistenceContract.js";
 
 export function createId() {
     return `portfolio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -59,8 +62,8 @@ export function normalizeAsset(asset, index = 0) {
       displayCurrency: marketMetadata.displayCurrency,
       assetType: marketMetadata.assetType,
 
-      quantity: Number(source.quantity || 0),
-      price: Number(source.price || 0),
+      quantity: Number.isFinite(Number(source.quantity)) ? Number(source.quantity) : 0,
+      price: Number.isFinite(Number(source.price)) ? Number(source.price) : 0,
       ...normalizePersistedMetricFields(source),
 
       priceMode: source.priceMode || "manual",
@@ -80,46 +83,6 @@ export function normalizeAsset(asset, index = 0) {
     };
   }
 
-function hasValue(value) {
-  return value !== null && value !== undefined && value !== "";
-}
-
-export function migrateLegacyPortfolioValuation(portfolio = {}, globalSettings = {}) {
-  const assets = Array.isArray(portfolio.assets) ? portfolio.assets : [];
-  const legacyAssets = assets.filter((asset) => String(asset?.ticker || "").trim());
-  if (
-    legacyAssets.length === 0 ||
-    legacyAssets.some((asset) => hasValue(asset.targetWeight) || hasValue(asset.targetEvaluationAmount))
-  ) return portfolio;
-
-  const legacyValues = legacyAssets.map((asset) => Number(asset.quantity) * Number(asset.price));
-  if (legacyValues.some((value) => !Number.isFinite(value) || value <= 0)) return portfolio;
-
-  const totalValue = legacyValues.reduce((sum, value) => sum + value, 0);
-  const portfolioStartValue = Number(portfolio.settings?.startValue ?? portfolio.startValue);
-  const globalStartValue = Number(globalSettings.startValue);
-  const startValue = portfolioStartValue > 0 ? portfolioStartValue : globalStartValue > 0 ? globalStartValue : 0;
-  const migratedByAsset = new Map();
-  let assignedWeight = 0;
-  legacyAssets.forEach((asset, index) => {
-    const targetWeight = index === legacyAssets.length - 1
-      ? Number((100 - assignedWeight).toFixed(6))
-      : Number((legacyValues[index] / totalValue * 100).toFixed(6));
-    assignedWeight += targetWeight;
-    migratedByAsset.set(asset, {
-      ...asset,
-      targetWeight,
-      ...(startValue > 0
-        ? { targetEvaluationAmount: Number((startValue * targetWeight / 100).toFixed(0)) }
-        : {}),
-    });
-  });
-
-  return {
-    ...portfolio,
-    assets: assets.map((asset) => migratedByAsset.get(asset) || asset),
-  };
-}
 export function cloneAssets(assets) {
     return assets.map((asset, index) => normalizeAsset(asset, index));
   }
@@ -129,9 +92,11 @@ export function createPortfolio({
   description = "",
   settings = DEFAULT_SETTINGS,
   assets = DEFAULT_ASSETS,
+  ...customFields
 } = {}) {
   const now = new Date().toISOString();
   return {
+    ...customFields,
     id,
     name,
     description,
@@ -141,6 +106,18 @@ export function createPortfolio({
     updatedAt: now,
     sortOrder: 0,
   };
+}
+export function duplicatePortfolio(portfolio = {}, { name, assets, settings } = {}) {
+  const userFields = { ...portfolio };
+  ["id", "createdAt", "updatedAt", "sortOrder", "serverId", "result"].forEach(
+    (field) => delete userFields[field],
+  );
+  return createPortfolio({
+    ...userFields,
+    name: name || `${portfolio.name || "포트폴리오"} 복사본`,
+    assets: assets || portfolio.assets,
+    settings: settings || portfolio.settings,
+  });
 }
 export function normalizePortfolio(portfolio, index = 0) {
     return {
