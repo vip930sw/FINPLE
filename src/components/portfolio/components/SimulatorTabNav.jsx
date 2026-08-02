@@ -30,6 +30,20 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
     return Boolean(item.capability && !features[item.capability]);
   }
 
+  function renderStepLabel(item, stepLabel = item.step) {
+    return (
+      <>
+        <span className="simulatorTabButtonHeader">
+          <span>{stepLabel}</span>
+          {isLocked(item) ? (
+            <small className="simulatorPlanBadge" aria-hidden="true">Personal</small>
+          ) : null}
+        </span>
+        <strong>{item.title}</strong>
+      </>
+    );
+  }
+
   return (
     <div className="simulatorStepNavigation">
       <nav
@@ -46,16 +60,18 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
             aria-label={isLocked(item) ? `${item.step} ${item.title}, Personal 플랜 기능` : undefined}
             onClick={() => selectStep(item.key)}
           >
-            <span>{item.step}</span>
-            <strong>{item.title}{isLocked(item) ? " — Personal" : ""}</strong>
+            {renderStepLabel(item)}
           </button>
         ))}
       </nav>
 
       <div className="simulatorMobileStepControls" aria-label="현재 시뮬레이터 단계">
-        <div className="simulatorMobileCurrentStep" aria-live="polite">
-          <span>{activeItem.step}</span>
-          <strong>{activeItem.title}{isLocked(activeItem) ? " — Personal" : ""}</strong>
+        <div
+          className="simulatorMobileCurrentStep"
+          aria-live="polite"
+          aria-label={isLocked(activeItem) ? `${activeItem.step} ${activeItem.title}, Personal 플랜 기능` : undefined}
+        >
+          {renderStepLabel(activeItem)}
         </div>
         <div className="simulatorMobileStepActions">
           <button
@@ -104,8 +120,7 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
               className={`${activeSimulatorTab === item.key ? "active" : ""}${isLocked(item) ? " locked" : ""}`}
               onClick={() => selectStep(item.key)}
             >
-              <span>{item.step.replace("STEP", "Step")}</span>
-              <strong>{item.title}{isLocked(item) ? " — Personal" : ""}</strong>
+              {renderStepLabel(item, item.step.replace("STEP", "Step"))}
             </button>
           ))}
         </nav>
