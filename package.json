@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
-    "prebuild": "node scripts/verify-ai-analysis-build.cjs prebuild",
-    "build": "vite build && node scripts/verify-ai-analysis-build.cjs postbuild",
+    "prebuild": "node scripts/verify-ai-analysis-build.cjs prebuild && node scripts/verify-pinned-production-monthly-artifact-build.mjs --source",
+    "build": "vite build && node scripts/verify-ai-analysis-build.cjs postbuild && node scripts/verify-pinned-production-monthly-artifact-build.mjs --dist",
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint .",
     "check:frontend": "npm run build",
@@ -15,6 +15,7 @@
     "check:step2-step3-integrated-qa": "node --test scripts/check-step2-step3-integrated-qa.test.mjs",
     "check:p2a-public-simulator-policy": "node --test scripts/check-p2a-public-simulator-policy.test.mjs",
     "check:p3-step4-monthly-artifact": "node --test scripts/check-p3-step4-monthly-artifact.test.mjs",
+    "check:p3a-production-monthly-artifact-publication": "npm run build && node --test scripts/check-p3a-production-monthly-artifact-publication.test.mjs",
     "check:p4-investment-mbti-canonical-apply": "node --test scripts/check-p4-investment-mbti-canonical-apply.test.mjs",
     "check:p5-persistence-etn-user-copy": "node --test scripts/check-p5-persistence-etn-user-copy.test.mjs",
     "check:plan-a-free-three-entitlements": "node --test scripts/check-plan-a-free-three-entitlements.test.mjs",
