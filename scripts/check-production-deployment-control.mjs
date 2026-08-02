@@ -49,6 +49,11 @@ test("documents fail-closed operational boundaries", () => {
   }
 });
 
+test("documents the direct fast-forward enforcement limit", () => {
+  assert.match(document, /독립 fast-forward commit까지 완전히 차단하지 않는다/);
+  assert.match(document, /git push origin <APPROVED_MAIN_SHA>:refs\/heads\/production/);
+});
+
 test("keeps production artifact configuration visible", () => {
   for (const name of [
     "VITE_FINPLE_MONTHLY_SCENARIO_ARTIFACT_ENABLED",

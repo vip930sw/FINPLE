@@ -53,13 +53,21 @@ PR #411 병합으로 `main`이 갱신되자 Vercel Git 연동이 새 Production 
 - Hobby에서도 추가 유료 기능이나 새 배포 도구 없이 동작한다.
 - rollback target은 exact deployment ID와 40자리 commit SHA로 고정한다.
 
-## 1회 설정 전 승인 게이트
+## 1회 설정 적용 기록
 
-아래 변경은 이 문서를 병합해도 자동 실행하지 않는다. 각각 별도 명시 승인이 필요하다.
+2026-08-02 별도 명시 승인에 따라 다음 설정을 적용했다.
 
-1. 현재 Production SHA에서 GitHub `production` 브랜치 생성
+1. Plan-A Production SHA `e0b12dc8d050332d9046d99024ccdfd76f37e8d9`에서 GitHub `production` 브랜치 생성
 2. Vercel Production environment의 Branch Tracking을 `main`에서 `production`으로 변경
-3. GitHub `production` 브랜치를 fast-forward-only로 보호
+3. GitHub `production` 브랜치에 관리자 포함 linear history, force-push 금지, 삭제 금지 적용
+
+승인된 SHA 포인터를 직접 fast-forward하는 운영을 유지하므로, GitHub 설정만으로 독립 fast-forward commit까지 완전히 차단하지 않는다. 독립 commit, cherry-pick, merge commit은 운영 절차로 금지하고 다음 non-force 명령만 사용한다.
+
+```text
+git push origin <APPROVED_MAIN_SHA>:refs/heads/production
+```
+
+이후 Branch Tracking, 보호 규칙 또는 `production` 이동은 다시 별도 승인을 받는다.
 
 설정 중에도 다음 경계를 지킨다.
 
@@ -69,7 +77,7 @@ PR #411 병합으로 `main`이 갱신되자 Vercel Git 연동이 새 Production 
 - alias/domain 변경 금지
 - rollback deployment 삭제 금지
 
-설정 직후 `main`의 새 commit이 Production을 바꾸지 않고 Preview만 만드는지 확인한다. 예상과 다르면 즉시 중단하고 기존 Branch Tracking으로 원복한다.
+설정 직후 현재 Production deployment와 SHA가 유지됐고 새 Production deployment가 생성되지 않음을 확인했다. 이후 `main`의 새 commit이 Production을 바꾸지 않고 Preview만 만드는지도 첫 병합 때 재확인한다. 예상과 다르면 즉시 중단하고 기존 Branch Tracking으로 원복한다.
 
 ## 승인된 Production cutover 절차
 
