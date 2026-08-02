@@ -22,6 +22,7 @@
     "check:p5-persistence-etn-user-copy": "node --test scripts/check-p5-persistence-etn-user-copy.test.mjs",
     "check:plan-a-free-three-entitlements": "node --test scripts/check-plan-a-free-three-entitlements.test.mjs",
     "check:plan-b-advanced-analysis-entitlements": "node --test scripts/check-plan-b-advanced-analysis-entitlements.test.mjs",
+    "check:simulator-locked-step-personal-badge": "node --test scripts/check-simulator-locked-step-personal-badge.test.mjs",
     "check:portfolio-persistence-lifecycle": "node --test src/components/portfolio/utils/portfolioPersistenceContract.test.js src/components/portfolio/services/serverPortfolioService.persistence.test.js src/components/portfolio/utils/portfolioLifecycle.test.js server/src/routes/portfolioDbRoutes.persistence.test.js src/components/portfolio/utils/simulatorStep7SavedPortfolios.test.js",
     "check:step114-2zb-dynamic-universe-megacap-income": "node --test scripts/check-step114-2zb.test.mjs src/data/tickers/distributionPathIntegration.test.js",
     "check:step114-2zc-production-app-export-cutover": "node --test scripts/check-step114-2zc.test.mjs src/data/tickers/productionAppExportDataSource.test.js src/data/tickers/distributionPathIntegration.test.js src/components/portfolio/utils/appPreviewScenarioService.test.js src/components/portfolio/utils/monthlyBaselineEngine.test.js",

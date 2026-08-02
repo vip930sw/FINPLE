@@ -73,10 +73,12 @@ test("3. Personal and Pro allow all simulator capabilities", () => {
   assert.ok(Object.values(FINPLE_PLAN_CONFIGS.pro.features).every(Boolean));
 });
 
-test("4. Free navigation keeps all seven steps visible with three Personal labels", () => {
+test("4. Free navigation keeps all seven steps visible with three Personal badges", () => {
   const html = renderNav("free");
   for (let step = 1; step <= 7; step += 1) assert.match(html, new RegExp(`STEP ${step}`));
-  assert.equal((html.match(/— Personal/g) || []).length, 6); // desktop and mobile all-steps lists
+  assert.equal((html.match(/class="simulatorPlanBadge"/g) || []).length, 6); // desktop and mobile all-steps lists
+  assert.equal((html.match(/aria-hidden="true"/g) || []).length, 6);
+  assert.doesNotMatch(html, /— Personal/);
   assert.match(html, /STEP 4 확률분석, Personal 플랜 기능/);
   assert.match(html, /STEP 5 외부충격분석, Personal 플랜 기능/);
   assert.match(html, /STEP 6 AI 분석, Personal 플랜 기능/);
@@ -84,7 +86,7 @@ test("4. Free navigation keeps all seven steps visible with three Personal label
 
 test("5. Personal and Pro navigation expose no locked labels", () => {
   for (const plan of ["personal", "pro"]) {
-    assert.doesNotMatch(renderNav(plan), /Personal 플랜 기능|— Personal/);
+    assert.doesNotMatch(renderNav(plan), /Personal 플랜 기능|simulatorPlanBadge|— Personal/);
   }
 });
 

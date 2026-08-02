@@ -8345,7 +8345,7 @@ nav {
   overflow-wrap: anywhere !important;
 }
 
-.simulatorTabNav.fourStepNav .simulatorTabButton span {
+.simulatorTabNav.fourStepNav .simulatorTabButtonHeader > span {
   font-size: 11px !important;
   font-weight: 950 !important;
   letter-spacing: 0.8px !important;
@@ -17500,6 +17500,44 @@ body,
   overscroll-behavior-inline: contain !important;
 }
 
+.simulatorTabButtonHeader {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.simulatorTabNav.fourStepNav .simulatorTabButton .simulatorPlanBadge,
+.simulatorMobileStepControls .simulatorPlanBadge {
+  flex: 0 0 auto !important;
+  padding: 2px 7px !important;
+  border-radius: 999px;
+  background: #eaf2ff;
+  color: #1d4ed8 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1.2;
+  letter-spacing: 0;
+  opacity: 1 !important;
+  white-space: nowrap;
+}
+
+.simulatorTabButton.active .simulatorPlanBadge,
+.simulatorMobileAllSteps button.active .simulatorPlanBadge {
+  background: #ffffff;
+  color: #1d4ed8 !important;
+}
+
+.simulatorTabNav.fourStepNav .simulatorTabButton > strong,
+.simulatorMobileCurrentStep > strong,
+.simulatorMobileAllSteps button > strong {
+  max-width: 100%;
+  overflow-wrap: normal !important;
+  word-break: keep-all;
+}
+
 @media (max-width: 980px) {
   .simulatorTabNav.fourStepNav.sevenStepNav {
     grid-template-columns: repeat(2, minmax(132px, 1fr)) !important;
@@ -17561,13 +17599,13 @@ body,
   }
 
   .simulatorMobileCurrentStep {
-    display: flex;
+    display: grid;
     min-width: 0;
-    align-items: baseline;
-    gap: 8px;
+    align-items: stretch;
+    gap: 4px;
   }
 
-  .simulatorMobileCurrentStep span {
+  .simulatorMobileCurrentStep .simulatorTabButtonHeader > span {
     flex: 0 0 auto;
     color: #2563eb;
     font-size: 11px;
@@ -17630,13 +17668,14 @@ body,
   .simulatorMobileAllSteps button {
     display: grid;
     flex: 0 0 112px;
-    place-items: center;
+    align-items: center;
     gap: 2px;
     padding: 8px;
+    text-align: left;
     scroll-snap-align: center;
   }
 
-  .simulatorMobileAllSteps button span {
+  .simulatorMobileAllSteps .simulatorTabButtonHeader > span {
     font-size: 10px;
     letter-spacing: 0.04em;
   }
