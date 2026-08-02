@@ -3,15 +3,11 @@ import { getEffectiveSubscriptionState } from "./subscriptionEffectiveStatus.js"
 
 const AI_PAID_PLANS = new Set(["personal", "pro"]);
 
-function normalizePlan(plan) {
-  return String(plan || "").trim().toLowerCase();
-}
-
 export function applyAiAnalysisEntitlement(user, entitlement = null, subscription = null, now = new Date()) {
   if (!user?.id) return user || null;
 
   const effective = getEffectiveSubscriptionState({ user, subscription, entitlement, now });
-  const effectivePlan = normalizePlan(user.plan) === "pro" ? "pro" : effective.effectivePlan;
+  const effectivePlan = effective.effectivePlan;
   if (!AI_PAID_PLANS.has(effectivePlan)) {
     return {
       ...user,
@@ -20,14 +16,17 @@ export function applyAiAnalysisEntitlement(user, entitlement = null, subscriptio
     };
   }
 
+  const planSource = effective.effectiveSource === "entitlement"
+    ? entitlement?.source || "entitlement"
+    : effective.effectiveSource;
   return {
     ...user,
     plan: effectivePlan,
-    aiPlanSource: entitlement?.source || (subscription ? "subscription" : "user"),
+    aiPlanSource: planSource,
     aiEntitlement: {
       plan: effectivePlan,
-      source: entitlement?.source || (subscription ? "subscription" : "user"),
-      validUntil: entitlement?.valid_until || null,
+      source: planSource,
+      validUntil: effective.accessUntil,
     },
   };
 }

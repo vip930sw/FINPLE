@@ -725,23 +725,16 @@ router.get("/subscription/me", async (request, response, next) => {
     }
 
     const effective = getEffectiveSubscriptionState({ user, subscription, entitlement });
-    const accessUntil =
-      subscription?.current_period_end ||
-      subscription?.currentPeriodEnd ||
-      entitlement?.valid_until ||
-      entitlement?.validUntil ||
-      null;
-    const accessReason = subscription?.current_period_end || subscription?.currentPeriodEnd
+    const accessUntil = effective.accessUntil;
+    const accessReason = effective.effectiveSource === "subscription"
       ? "subscription_current_period_end"
-      : entitlement?.valid_until || entitlement?.validUntil
+      : effective.effectiveSource === "entitlement"
         ? "entitlement_valid_until"
-        : effective.warnings?.includes("personal_period_end_missing_temporary_access")
-          ? "missing_period_end_temporary_access"
-          : effective.effectiveStatus || "not_paid";
+        : effective.effectiveStatus || "not_paid";
     const currentPeriodEnd = subscription?.current_period_end || subscription?.currentPeriodEnd || null;
     const currentPeriodStart = subscription?.current_period_start || subscription?.currentPeriodStart || null;
     const nextBillingAt =
-      effective.effectivePlan === "personal" && effective.effectiveStatus !== "cancel_at_period_end"
+      effective.effectiveSource === "subscription" && effective.effectiveStatus !== "cancel_at_period_end"
         ? currentPeriodEnd
         : null;
 
@@ -768,8 +761,8 @@ router.get("/subscription/me", async (request, response, next) => {
       subscription,
       entitlement,
       warnings: effective.warnings,
-      message: effective.effectivePlan === "personal"
-        ? "서버 기준 Personal 이용 권한이 확인되었습니다."
+      message: effective.effectivePlan !== "free"
+        ? "서버 기준 유료 이용 권한이 확인되었습니다."
         : "서버 기준 유료 권한이 확인되지 않아 Free 기준으로 표시합니다.",
     });
   } catch (error) {

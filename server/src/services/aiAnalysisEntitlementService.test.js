@@ -51,3 +51,34 @@ test("applyAiAnalysisEntitlement accepts an active authoritative subscription", 
 
   assert.equal(enriched.plan, "personal");
 });
+
+test("applyAiAnalysisEntitlement preserves authoritative Pro access", () => {
+  const enriched = applyAiAnalysisEntitlement({ id: "user-pro", plan: "pro" });
+
+  assert.equal(enriched.plan, "pro");
+  assert.equal(enriched.aiPlanSource, "user");
+});
+
+test("applyAiAnalysisEntitlement lets a valid grant override an old canceled subscription", () => {
+  const enriched = applyAiAnalysisEntitlement(
+    { id: "user-education", plan: "personal" },
+    { plan: "personal", source: "education", valid_until: "2026-12-31T00:00:00.000Z" },
+    { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(enriched.plan, "personal");
+  assert.equal(enriched.aiPlanSource, "education");
+});
+
+test("applyAiAnalysisEntitlement blocks expired grants with canceled subscriptions", () => {
+  const enriched = applyAiAnalysisEntitlement(
+    { id: "user-expired", plan: "personal" },
+    { plan: "personal", source: "education", valid_until: "2026-01-01T00:00:00.000Z" },
+    { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(enriched.plan, "free");
+  assert.equal(enriched.aiEntitlement, undefined);
+});

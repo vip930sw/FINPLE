@@ -6,8 +6,10 @@ import test, { after, before } from "node:test";
 import { createServer } from "vite";
 
 import { FINPLE_PLAN_CONFIGS } from "../src/components/portfolio/config/planConfig.js";
+import { getPlanFromPayload } from "../src/components/portfolio/utils/subscriptionPlanStatus.js";
 import { assertAiAnalysisAccessAllowed, getAiAnalysisAccessState } from "../server/src/services/aiAnalysisAccessControl.js";
 import { applyAiAnalysisEntitlement } from "../server/src/services/aiAnalysisEntitlementService.js";
+import { getEffectiveSubscriptionState } from "../server/src/services/subscriptionEffectiveStatus.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const simulatorSource = read("../src/components/PortfolioSimulator.jsx");
@@ -15,6 +17,7 @@ const hookSource = read("../src/components/portfolio/hooks/usePortfolioSimulator
 const subscriptionHookSource = read("../src/components/mypage/hooks/useSubscriptionStatus.js");
 const navigationSource = read("../src/components/portfolio/utils/simulatorNavigation.js");
 const aiRouteSource = read("../server/src/routes/aiPortfolioAnalysisRoutes.js");
+const paymentRouteSource = read("../server/src/routes/paymentRoutes.js");
 const aiPanelSource = read("../src/components/portfolio/components/AiAnalysisPanel.jsx");
 const aiServiceSource = read("../src/components/portfolio/services/aiAnalysisService.js");
 const serverIndexSource = read("../server/src/index.js");
@@ -195,4 +198,81 @@ test("20. AI POST orders access before payload, usage, and provider while Step 3
   assert.match(simulatorSource, /effectiveActiveSimulatorTab === "detail"/);
   assert.match(simulatorSource, /effectiveActiveSimulatorTab === "saved"/);
   assert.equal(FINPLE_PLAN_CONFIGS.free.limits.pdfEnabled, false);
+});
+
+function resolveIntegratedPlan(records) {
+  const effective = getEffectiveSubscriptionState({
+    ...records,
+    now: new Date("2026-08-01T00:00:00.000Z"),
+  });
+  return getPlanFromPayload({
+    authenticated: true,
+    ...effective,
+    subscription: records.subscription || null,
+    entitlement: records.entitlement || null,
+  });
+}
+
+test("21. source records resolve Pro through server state into frontend capabilities and AI access", () => {
+  const plan = resolveIntegratedPlan({
+    user: { id: "pro-user", plan: "pro" },
+    subscription: { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+  });
+  const user = applyAiAnalysisEntitlement({ id: "pro-user", plan: "pro" });
+
+  assert.equal(plan, "pro");
+  assert.ok(Object.values(FINPLE_PLAN_CONFIGS[plan].features).every(Boolean));
+  assert.equal(assertAiAnalysisAccessAllowed(user).allowed, true);
+});
+
+test("22. valid Personal entitlement outranks an old subscription across frontend and AI access", () => {
+  const records = {
+    user: { id: "education-user", plan: "personal" },
+    entitlement: { plan: "personal", source: "education", valid_until: "2026-12-31T00:00:00.000Z" },
+    subscription: { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+  };
+  const plan = resolveIntegratedPlan(records);
+  const user = applyAiAnalysisEntitlement(
+    records.user,
+    records.entitlement,
+    records.subscription,
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(plan, "personal");
+  assert.ok(Object.values(FINPLE_PLAN_CONFIGS[plan].features).every(Boolean));
+  assert.equal(assertAiAnalysisAccessAllowed(user).allowed, true);
+});
+
+test("23. invalid paid sources stay Free across frontend capabilities and AI access", () => {
+  const records = {
+    user: { id: "expired-user", plan: "personal" },
+    entitlement: { plan: "personal", valid_until: "2026-01-01T00:00:00.000Z" },
+    subscription: { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+  };
+  const plan = resolveIntegratedPlan(records);
+  const user = applyAiAnalysisEntitlement(
+    records.user,
+    records.entitlement,
+    records.subscription,
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(plan, "free");
+  assert.equal(FINPLE_PLAN_CONFIGS[plan].features.probabilityAnalysis, false);
+  assert.equal(FINPLE_PLAN_CONFIGS[plan].features.externalShockAnalysis, false);
+  assert.equal(FINPLE_PLAN_CONFIGS[plan].features.aiAnalysis, false);
+  assert.throws(
+    () => assertAiAnalysisAccessAllowed(user),
+    (error) => error.statusCode === 403 && error.code === "AI_ANALYSIS_PLAN_REQUIRED",
+  );
+});
+
+test("24. frontend consumes the authoritative effective plan and keeps fail-closed refresh guards", () => {
+  const planStatusSource = read("../src/components/portfolio/utils/subscriptionPlanStatus.js");
+  assert.match(planStatusSource, /Object\.hasOwn\(payload, "effectivePlan"\)/);
+  assert.match(paymentRouteSource, /const accessUntil = effective\.accessUntil/);
+  assert.match(subscriptionHookSource, /isCurrentUser \? data\.effectivePlan : "free"/);
+  assert.match(simulatorSource, /useSubscriptionStatus\(subscriptionUser\)/);
+  assert.doesNotMatch(simulatorSource, /getStoredFinplePlan/);
 });

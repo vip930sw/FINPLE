@@ -79,3 +79,26 @@ test("personal payload with expired entitlement falls back to free", () => {
   assert.equal(decision.plan, "free");
   assert.equal(decision.status, "expired");
 });
+
+test("authoritative effective plan is not downgraded by stale nested records", () => {
+  const decision = getSubscriptionPlanDecision({
+    authenticated: true,
+    effectivePlan: "personal",
+    effectiveStatus: "active",
+    subscription: { plan: "personal", status: "canceled", current_period_end: past },
+    entitlement: { plan: "personal", valid_until: future },
+  });
+
+  assert.equal(decision.plan, "personal");
+  assert.equal(decision.status, "active");
+});
+
+test("authoritative Pro effective plan stays Pro", () => {
+  const decision = getSubscriptionPlanDecision({
+    authenticated: true,
+    effectivePlan: "pro",
+    effectiveStatus: "active",
+  });
+
+  assert.equal(decision.plan, "pro");
+});
