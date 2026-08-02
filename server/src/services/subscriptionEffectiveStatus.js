@@ -1,5 +1,5 @@
-const PERSONAL_ACCESS_STATUSES = new Set(["active", "trialing", "cancel_at_period_end"]);
-const PERSONAL_BLOCKED_STATUSES = new Set([
+const PAID_ACCESS_STATUSES = new Set(["active", "trialing", "cancel_at_period_end"]);
+const BLOCKED_STATUSES = new Set([
   "expired",
   "refunded",
   "payment_failed",
@@ -9,121 +9,123 @@ const PERSONAL_BLOCKED_STATUSES = new Set([
   "free",
   "beta_free",
 ]);
+const PLAN_RANK = { free: 0, personal: 1, pro: 2 };
+const SOURCE_RANK = { user: 0, entitlement: 1, subscription: 2 };
 
-function normalizePlan(plan) {
-  return String(plan || "free").toLowerCase() === "personal" ? "personal" : "free";
+export function normalizePlan(plan) {
+  const normalized = String(plan || "free").trim().toLowerCase();
+  return Object.hasOwn(PLAN_RANK, normalized) ? normalized : "free";
 }
 
 function normalizeStatus(status) {
-  return String(status || "beta_free").toLowerCase();
+  return String(status || "beta_free").trim().toLowerCase();
 }
 
 function getEntitlementValidUntil(entitlement = {}) {
-  return entitlement?.valid_until || entitlement?.validUntil || null;
+  return entitlement?.valid_until ?? entitlement?.validUntil ?? null;
 }
 
-function getRawStatus({ subscription, entitlement }) {
-  if (subscription?.status) return normalizeStatus(subscription.status);
-  if (normalizePlan(entitlement?.plan) === "personal" && getEntitlementValidUntil(entitlement)) {
-    return "active";
-  }
-  return "beta_free";
+function getEntitlementValidFrom(entitlement = {}) {
+  return entitlement?.valid_from ?? entitlement?.validFrom ?? null;
 }
 
-function parseTime(value) {
-  if (!value) return null;
+function getSubscriptionPeriodEnd(subscription = {}) {
+  return subscription?.current_period_end || subscription?.currentPeriodEnd || null;
+}
+
+function getTimeState(value, nowMs) {
+  if (value === null || value === undefined) return "missing";
   const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function getFutureState(value, nowMs) {
-  const timestamp = parseTime(value);
-  if (timestamp === null) return "missing";
+  if (!Number.isFinite(timestamp)) return "invalid";
   return timestamp > nowMs ? "future" : "past";
 }
 
-function getDateDecision({ status, subscription, entitlement, nowMs }) {
-  const subscriptionPeriodState = getFutureState(
-    subscription?.current_period_end || subscription?.currentPeriodEnd,
-    nowMs
-  );
-  if (subscriptionPeriodState !== "missing") return subscriptionPeriodState;
+function getEntitlementCandidate(entitlement, nowMs) {
+  const plan = normalizePlan(entitlement?.plan);
+  const validFromState = getTimeState(getEntitlementValidFrom(entitlement), nowMs);
+  const validUntil = getEntitlementValidUntil(entitlement);
+  const validUntilState = getTimeState(validUntil, nowMs);
+  if (
+    PLAN_RANK[plan] === 0 ||
+    validFromState === "future" ||
+    validFromState === "invalid" ||
+    validUntilState === "past" ||
+    validUntilState === "invalid"
+  ) return null;
+  return { plan, status: "active", source: "entitlement", accessUntil: validUntil, warnings: [] };
+}
 
-  const entitlementState = getFutureState(getEntitlementValidUntil(entitlement), nowMs);
-  if (entitlementState !== "missing") return entitlementState;
+function getSubscriptionCandidate(subscription, nowMs) {
+  const plan = normalizePlan(subscription?.plan);
+  const status = normalizeStatus(subscription?.status);
+  if (PLAN_RANK[plan] === 0 || !PAID_ACCESS_STATUSES.has(status)) return null;
 
-  return status === "active" || status === "trialing" ? "missing_allowed" : "missing";
+  const periodEnd = getSubscriptionPeriodEnd(subscription);
+  const periodState = getTimeState(periodEnd, nowMs);
+  if (periodState === "future") {
+    return { plan, status, source: "subscription", accessUntil: periodEnd, warnings: [] };
+  }
+  return null;
+}
+
+function getBlockedState(subscription, entitlement, nowMs) {
+  const subscriptionPlan = normalizePlan(subscription?.plan);
+  const subscriptionStatus = normalizeStatus(subscription?.status);
+  if (PLAN_RANK[subscriptionPlan] > 0 && subscription?.status) {
+    if (!PAID_ACCESS_STATUSES.has(subscriptionStatus) && !BLOCKED_STATUSES.has(subscriptionStatus)) {
+      return { status: subscriptionStatus, warnings: ["unknown_subscription_status_blocked"] };
+    }
+    if (PAID_ACCESS_STATUSES.has(subscriptionStatus) &&
+        getTimeState(getSubscriptionPeriodEnd(subscription), nowMs) !== "future") {
+      return { status: "expired", warnings: ["personal_entitlement_expired"] };
+    }
+    if (BLOCKED_STATUSES.has(subscriptionStatus)) return { status: subscriptionStatus, warnings: [] };
+  }
+
+  if (PLAN_RANK[normalizePlan(entitlement?.plan)] > 0) {
+    return { status: "expired", warnings: ["personal_entitlement_expired"] };
+  }
+  return { status: "beta_free", warnings: [] };
 }
 
 export function getEffectiveSubscriptionState({ user, subscription, entitlement, now = new Date() } = {}) {
   const nowMs = now instanceof Date ? now.getTime() : Date.parse(now);
   const normalizedNowMs = Number.isFinite(nowMs) ? nowMs : Date.now();
-  const rawStatus = getRawStatus({ subscription, entitlement });
-  const rawPlan = normalizePlan(entitlement?.plan || subscription?.plan || user?.plan || "free");
-  const warnings = [];
+  const candidates = [
+    normalizePlan(user?.plan) === "pro"
+      ? { plan: "pro", status: "active", source: "user", accessUntil: null, warnings: [] }
+      : null,
+    getEntitlementCandidate(entitlement, normalizedNowMs),
+    getSubscriptionCandidate(subscription, normalizedNowMs),
+  ].filter(Boolean);
+  const winner = candidates.reduce((best, candidate) => (
+    !best ||
+    PLAN_RANK[candidate.plan] > PLAN_RANK[best.plan] ||
+    (candidate.plan === best.plan && SOURCE_RANK[candidate.source] > SOURCE_RANK[best.source])
+      ? candidate
+      : best
+  ), null);
 
-  if (rawPlan !== "personal") {
+  if (winner) {
     return {
-      plan: "free",
-      status: rawStatus,
-      effectivePlan: "free",
-      effectiveStatus: rawStatus,
-      warnings,
+      plan: winner.plan,
+      status: winner.status,
+      effectivePlan: winner.plan,
+      effectiveStatus: winner.status,
+      effectiveSource: winner.source,
+      accessUntil: winner.accessUntil,
+      warnings: winner.warnings,
     };
   }
 
-  if (PERSONAL_BLOCKED_STATUSES.has(rawStatus)) {
-    return {
-      plan: "free",
-      status: rawStatus,
-      effectivePlan: "free",
-      effectiveStatus: rawStatus,
-      warnings,
-    };
-  }
-
-  if (!PERSONAL_ACCESS_STATUSES.has(rawStatus)) {
-    return {
-      plan: "free",
-      status: rawStatus,
-      effectivePlan: "free",
-      effectiveStatus: rawStatus || "unknown",
-      warnings: ["unknown_subscription_status_blocked"],
-    };
-  }
-
-  const dateDecision = getDateDecision({
-    status: rawStatus,
-    subscription,
-    entitlement,
-    nowMs: normalizedNowMs,
-  });
-
-  if (dateDecision === "future") {
-    return {
-      plan: "personal",
-      status: rawStatus,
-      effectivePlan: "personal",
-      effectiveStatus: rawStatus,
-      warnings,
-    };
-  }
-
-  if (dateDecision === "missing_allowed") {
-    return {
-      plan: "personal",
-      status: rawStatus,
-      effectivePlan: "personal",
-      effectiveStatus: rawStatus,
-      warnings: ["personal_period_end_missing_temporary_access"],
-    };
-  }
-
+  const blocked = getBlockedState(subscription, entitlement, normalizedNowMs);
   return {
     plan: "free",
-    status: "expired",
+    status: blocked.status,
     effectivePlan: "free",
-    effectiveStatus: "expired",
-    warnings: ["personal_entitlement_expired"],
+    effectiveStatus: blocked.status,
+    effectiveSource: "user",
+    accessUntil: null,
+    warnings: blocked.warnings,
   };
 }

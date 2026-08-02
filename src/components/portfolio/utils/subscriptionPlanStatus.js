@@ -63,13 +63,22 @@ export function hasUsablePersonalEntitlement({ plan, status, subscription, entit
 export function getSubscriptionPlanDecision(payload) {
   const subscription = payload?.subscription || {};
   const entitlement = payload?.entitlement || {};
-  const plan = normalizeFinplePlan(payload?.plan || entitlement?.plan || subscription?.plan || "free");
-  const status = getPayloadStatus({ payload, plan, subscription, entitlement });
   const warnings = [];
 
   if (!payload?.authenticated) {
     return { plan: "free", status: "guest", warnings };
   }
+
+  if (Object.hasOwn(payload, "effectivePlan")) {
+    return {
+      plan: normalizeFinplePlan(payload.effectivePlan),
+      status: normalizeBillingStatus(payload.effectiveStatus || payload.status),
+      warnings: Array.isArray(payload.warnings) ? payload.warnings : warnings,
+    };
+  }
+
+  const plan = normalizeFinplePlan(payload?.plan || entitlement?.plan || subscription?.plan || "free");
+  const status = getPayloadStatus({ payload, plan, subscription, entitlement });
 
   if (hasUsablePersonalEntitlement({ plan, status, subscription, entitlement })) {
     if (!getPeriodEnd(subscription) && !getEntitlementValidUntil(entitlement)) {

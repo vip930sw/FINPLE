@@ -3,15 +3,11 @@ import { getEffectiveSubscriptionState } from "./subscriptionEffectiveStatus.js"
 
 const AI_PAID_PLANS = new Set(["personal", "pro"]);
 
-function normalizePlan(plan) {
-  return String(plan || "").trim().toLowerCase();
-}
-
 export function applyAiAnalysisEntitlement(user, entitlement = null, subscription = null, now = new Date()) {
   if (!user?.id) return user || null;
 
   const effective = getEffectiveSubscriptionState({ user, subscription, entitlement, now });
-  const effectivePlan = normalizePlan(user.plan) === "pro" ? "pro" : effective.effectivePlan;
+  const effectivePlan = effective.effectivePlan;
   if (!AI_PAID_PLANS.has(effectivePlan)) {
     return {
       ...user,
@@ -20,14 +16,17 @@ export function applyAiAnalysisEntitlement(user, entitlement = null, subscriptio
     };
   }
 
+  const planSource = effective.effectiveSource === "entitlement"
+    ? entitlement?.source || "entitlement"
+    : effective.effectiveSource;
   return {
     ...user,
     plan: effectivePlan,
-    aiPlanSource: entitlement?.source || (subscription ? "subscription" : "user"),
+    aiPlanSource: planSource,
     aiEntitlement: {
       plan: effectivePlan,
-      source: entitlement?.source || (subscription ? "subscription" : "user"),
-      validUntil: entitlement?.valid_until || null,
+      source: planSource,
+      validUntil: effective.accessUntil,
     },
   };
 }
@@ -41,7 +40,7 @@ export async function enrichUserWithAiAnalysisEntitlement(user) {
        FROM user_entitlements
        WHERE user_id = $1
          AND (valid_from IS NULL OR valid_from <= NOW())
-         AND (valid_until IS NULL OR valid_until >= NOW())
+         AND (valid_until IS NULL OR valid_until > NOW())
        ORDER BY updated_at DESC NULLS LAST, valid_until DESC NULLS LAST
        LIMIT 1`,
       [user.id]
