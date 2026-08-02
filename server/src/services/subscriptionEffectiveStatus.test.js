@@ -6,9 +6,10 @@ import { getEffectiveSubscriptionState, normalizePlan } from "./subscriptionEffe
 const now = new Date("2026-08-01T00:00:00.000Z");
 const future = "2026-12-31T00:00:00.000Z";
 const past = "2026-01-01T00:00:00.000Z";
-const entitlement = (plan = "personal", validUntil = future) => ({
+const entitlement = (plan = "personal", validUntil = future, validFrom = null) => ({
   plan,
   source: "education",
+  valid_from: validFrom,
   valid_until: validUntil,
 });
 const subscription = (plan = "personal", status = "active", periodEnd = future) => ({
@@ -100,5 +101,70 @@ const resolve = (records = {}) => getEffectiveSubscriptionState({ ...records, no
   }],
   ["29. active subscription without a valid future period fails closed", () => {
     assert.equal(resolve({ subscription: subscription("personal", "active", null) }).effectivePlan, "free");
+  }],
+  ["30. Personal entitlement without an expiry remains Personal", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", null) }).effectivePlan, "personal");
+  }],
+  ["31. Pro entitlement without an expiry remains Pro", () => {
+    assert.equal(resolve({ entitlement: entitlement("pro", null) }).effectivePlan, "pro");
+  }],
+  ["32. past valid-from with no expiry is active", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", null, past) }).effectivePlan, "personal");
+  }],
+  ["33. future valid-from with no expiry is not active", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", null, future) }).effectivePlan, "free");
+  }],
+  ["34. invalid valid-from fails closed", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", null, "not-a-date") }).effectivePlan, "free");
+  }],
+  ["35. invalid valid-until fails closed", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", "not-a-date") }).effectivePlan, "free");
+  }],
+  ["36. indefinite Personal entitlement survives an old canceled subscription", () => {
+    const result = resolve({ entitlement: entitlement("personal", null), subscription: subscription("personal", "canceled", past) });
+    assert.equal(result.effectivePlan, "personal");
+    assert.equal(result.effectiveSource, "entitlement");
+  }],
+  ["37. indefinite Pro entitlement survives an old expired subscription", () => {
+    const result = resolve({ entitlement: entitlement("pro", null), subscription: subscription("personal", "expired", past) });
+    assert.equal(result.effectivePlan, "pro");
+    assert.equal(result.effectiveSource, "entitlement");
+  }],
+  ["38. active Personal subscription wins a same-plan payment entitlement", () => {
+    const result = resolve({ entitlement: entitlement("personal"), subscription: subscription("personal") });
+    assert.equal(result.effectivePlan, "personal");
+    assert.equal(result.effectiveSource, "subscription");
+  }],
+  ["39. active Pro subscription wins a same-plan Pro entitlement", () => {
+    const result = resolve({ entitlement: entitlement("pro"), subscription: subscription("pro") });
+    assert.equal(result.effectivePlan, "pro");
+    assert.equal(result.effectiveSource, "subscription");
+  }],
+  ["40. higher Pro entitlement wins a lower Personal subscription", () => {
+    const result = resolve({ entitlement: entitlement("pro"), subscription: subscription("personal") });
+    assert.equal(result.effectivePlan, "pro");
+    assert.equal(result.effectiveSource, "entitlement");
+  }],
+  ["41. valid Personal entitlement wins an invalid same-plan subscription", () => {
+    const result = resolve({ entitlement: entitlement("personal"), subscription: subscription("personal", "canceled", past) });
+    assert.equal(result.effectivePlan, "personal");
+    assert.equal(result.effectiveSource, "entitlement");
+  }],
+  ["42. authoritative user Pro remains the source when it is the only candidate", () => {
+    const result = resolve({ user: { plan: "pro" } });
+    assert.equal(result.effectivePlan, "pro");
+    assert.equal(result.effectiveSource, "user");
+  }],
+  ["43. subscription winner supplies its current period as access-until", () => {
+    const result = resolve({ entitlement: entitlement("personal"), subscription: subscription("personal") });
+    assert.equal(result.accessUntil, future);
+  }],
+  ["44. empty date strings fail closed instead of granting indefinite access", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", "") }).effectivePlan, "free");
+  }],
+  ["45. current start is active, current expiry is expired, and undefined expiry is indefinite", () => {
+    assert.equal(resolve({ entitlement: entitlement("personal", null, now.toISOString()) }).effectivePlan, "personal");
+    assert.equal(resolve({ entitlement: entitlement("personal", now.toISOString()) }).effectivePlan, "free");
+    assert.equal(resolve({ entitlement: { plan: "personal" } }).effectivePlan, "personal");
   }],
 ].forEach(([name, assertion]) => test(name, assertion));

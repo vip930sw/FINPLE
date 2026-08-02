@@ -9,6 +9,7 @@ import { FINPLE_PLAN_CONFIGS } from "../src/components/portfolio/config/planConf
 import { getPlanFromPayload } from "../src/components/portfolio/utils/subscriptionPlanStatus.js";
 import { assertAiAnalysisAccessAllowed, getAiAnalysisAccessState } from "../server/src/services/aiAnalysisAccessControl.js";
 import { applyAiAnalysisEntitlement } from "../server/src/services/aiAnalysisEntitlementService.js";
+import { buildSubscriptionStatusFields } from "../server/src/services/subscriptionStatusResponse.js";
 import { getEffectiveSubscriptionState } from "../server/src/services/subscriptionEffectiveStatus.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
@@ -271,8 +272,62 @@ test("23. invalid paid sources stay Free across frontend capabilities and AI acc
 test("24. frontend consumes the authoritative effective plan and keeps fail-closed refresh guards", () => {
   const planStatusSource = read("../src/components/portfolio/utils/subscriptionPlanStatus.js");
   assert.match(planStatusSource, /Object\.hasOwn\(payload, "effectivePlan"\)/);
-  assert.match(paymentRouteSource, /const accessUntil = effective\.accessUntil/);
+  assert.match(paymentRouteSource, /buildSubscriptionStatusFields\(\{ user, subscription, entitlement \}\)/);
   assert.match(subscriptionHookSource, /isCurrentUser \? data\.effectivePlan : "free"/);
   assert.match(simulatorSource, /useSubscriptionStatus\(subscriptionUser\)/);
   assert.doesNotMatch(simulatorSource, /getStoredFinplePlan/);
+});
+
+test("25. indefinite entitlement stays paid through resolver, frontend, and AI access", () => {
+  const records = {
+    user: { id: "education-user", plan: "personal" },
+    entitlement: { plan: "personal", source: "education", valid_from: "2026-01-01T00:00:00.000Z", valid_until: null },
+    subscription: { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+  };
+  const plan = resolveIntegratedPlan(records);
+  const enriched = applyAiAnalysisEntitlement(
+    records.user,
+    records.entitlement,
+    records.subscription,
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(plan, "personal");
+  assert.equal(assertAiAnalysisAccessAllowed(enriched).allowed, true);
+  assert.equal(enriched.aiEntitlement.validUntil, null);
+});
+
+test("26. same-plan subscription supplies the payment response billing date", () => {
+  const periodEnd = "2026-12-31T00:00:00.000Z";
+  const result = buildSubscriptionStatusFields({
+    user: { id: "paid-user", plan: "personal" },
+    entitlement: { plan: "personal", source: "payment", valid_until: periodEnd },
+    subscription: { plan: "personal", status: "active", current_period_end: periodEnd },
+    now: new Date("2026-08-01T00:00:00.000Z"),
+  });
+
+  assert.equal(result.effectivePlan, "personal");
+  assert.equal(result.accessReason, "subscription_current_period_end");
+  assert.equal(result.accessUntil, periodEnd);
+  assert.equal(result.nextBillingAt, periodEnd);
+});
+
+test("27. future or invalid entitlement dates stay Free across capability and AI gates", () => {
+  for (const entitlement of [
+    { plan: "personal", valid_from: "2026-12-31T00:00:00.000Z", valid_until: null },
+    { plan: "personal", valid_from: "not-a-date", valid_until: null },
+    { plan: "personal", valid_until: "not-a-date" },
+  ]) {
+    const records = { user: { id: "blocked-user", plan: "personal" }, entitlement };
+    const plan = resolveIntegratedPlan(records);
+    const enriched = applyAiAnalysisEntitlement(
+      records.user,
+      entitlement,
+      null,
+      new Date("2026-08-01T00:00:00.000Z"),
+    );
+    assert.equal(plan, "free");
+    assert.equal(FINPLE_PLAN_CONFIGS[plan].features.aiAnalysis, false);
+    assert.throws(() => assertAiAnalysisAccessAllowed(enriched));
+  }
 });

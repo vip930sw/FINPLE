@@ -5,7 +5,7 @@ import express from "express";
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
 import { sendSubscriptionAdminNotification } from "../services/inquiryNotificationService.js";
-import { getEffectiveSubscriptionState } from "../services/subscriptionEffectiveStatus.js";
+import { buildSubscriptionStatusFields } from "../services/subscriptionStatusResponse.js";
 import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
@@ -724,19 +724,7 @@ router.get("/subscription/me", async (request, response, next) => {
       }
     }
 
-    const effective = getEffectiveSubscriptionState({ user, subscription, entitlement });
-    const accessUntil = effective.accessUntil;
-    const accessReason = effective.effectiveSource === "subscription"
-      ? "subscription_current_period_end"
-      : effective.effectiveSource === "entitlement"
-        ? "entitlement_valid_until"
-        : effective.effectiveStatus || "not_paid";
-    const currentPeriodEnd = subscription?.current_period_end || subscription?.currentPeriodEnd || null;
-    const currentPeriodStart = subscription?.current_period_start || subscription?.currentPeriodStart || null;
-    const nextBillingAt =
-      effective.effectiveSource === "subscription" && effective.effectiveStatus !== "cancel_at_period_end"
-        ? currentPeriodEnd
-        : null;
+    const subscriptionStatus = buildSubscriptionStatusFields({ user, subscription, entitlement });
 
     response.json({
       ok: true,
@@ -747,21 +735,10 @@ router.get("/subscription/me", async (request, response, next) => {
         email: user.email,
         name: user.name,
       },
-      plan: effective.plan,
-      status: effective.status,
-      effectivePlan: effective.effectivePlan,
-      effectiveStatus: effective.effectiveStatus,
-      accessUntil,
-      currentPeriodStart,
-      currentPeriodEnd,
-      nextBillingAt,
-      accessReason,
-      rawPlan: entitlement?.plan || user.plan || "free",
-      rawStatus: subscription?.status || "beta_free",
+      ...subscriptionStatus,
       subscription,
       entitlement,
-      warnings: effective.warnings,
-      message: effective.effectivePlan !== "free"
+      message: subscriptionStatus.effectivePlan !== "free"
         ? "서버 기준 유료 이용 권한이 확인되었습니다."
         : "서버 기준 유료 권한이 확인되지 않아 Free 기준으로 표시합니다.",
     });

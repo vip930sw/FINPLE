@@ -82,3 +82,28 @@ test("applyAiAnalysisEntitlement blocks expired grants with canceled subscriptio
   assert.equal(enriched.plan, "free");
   assert.equal(enriched.aiEntitlement, undefined);
 });
+
+test("applyAiAnalysisEntitlement preserves an indefinite education grant over an old subscription", () => {
+  const enriched = applyAiAnalysisEntitlement(
+    { id: "user-indefinite", plan: "personal" },
+    { plan: "personal", source: "education", valid_from: "2026-01-01T00:00:00.000Z", valid_until: null },
+    { plan: "personal", status: "canceled", current_period_end: "2026-01-01T00:00:00.000Z" },
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(enriched.plan, "personal");
+  assert.equal(enriched.aiPlanSource, "education");
+  assert.equal(enriched.aiEntitlement.validUntil, null);
+});
+
+test("applyAiAnalysisEntitlement fails closed before a future entitlement start", () => {
+  const enriched = applyAiAnalysisEntitlement(
+    { id: "user-future", plan: "personal" },
+    { plan: "personal", source: "education", valid_from: "2026-12-31T00:00:00.000Z", valid_until: null },
+    null,
+    new Date("2026-08-01T00:00:00.000Z"),
+  );
+
+  assert.equal(enriched.plan, "free");
+  assert.equal(enriched.aiEntitlement, undefined);
+});

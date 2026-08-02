@@ -40,7 +40,7 @@ export async function enrichUserWithAiAnalysisEntitlement(user) {
        FROM user_entitlements
        WHERE user_id = $1
          AND (valid_from IS NULL OR valid_from <= NOW())
-         AND (valid_until IS NULL OR valid_until >= NOW())
+         AND (valid_until IS NULL OR valid_until > NOW())
        ORDER BY updated_at DESC NULLS LAST, valid_until DESC NULLS LAST
        LIMIT 1`,
       [user.id]
