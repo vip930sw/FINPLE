@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "check:frontend": "npm run build",
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
+    "check:production-deployment-control": "node --test scripts/check-production-deployment-control.mjs",
     "check:official-portfolio-baseline": "node --test scripts/check-official-portfolio-baseline.test.mjs",
     "check:step2-step3-integrated-qa": "node --test scripts/check-step2-step3-integrated-qa.test.mjs",
     "check:p2a-public-simulator-policy": "node --test scripts/check-p2a-public-simulator-policy.test.mjs",
