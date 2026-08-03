@@ -1,12 +1,54 @@
-export const EXTERNAL_SHOCK_UI_VERSION = "external-shock-ui-shell-v1-step114-2h";
+export const EXTERNAL_SHOCK_UI_VERSION = "external-shock-ui-v2-step5b";
 export const SUPPORTED_EXTERNAL_SHOCK_SCENARIO_VERSION = "external-shock-scenario-v1-step114-2h";
+export const SUPPORTED_PRODUCTION_EXTERNAL_SHOCK_SCENARIO_VERSION = "external-shock-scenario-v2-step5a";
 export const SUPPORTED_EXTERNAL_SHOCK_METHOD = "deterministic_external_shock";
 
-const SUPPORTED_STATUSES = new Set(["idle", "ready", "insufficient_data", "blocked", "stale", "error"]);
+const SUPPORTED_STATUSES = new Set(["idle", "loading", "ready", "insufficient_data", "blocked", "stale", "error"]);
 const SUPPORTED_SHOCK_MODES = new Set(["direct_asset", "market_beta"]);
 const SUPPORTED_RETURN_BASIS = new Set(["price_return", "total_return"]);
 const HASH_PATTERN = /^[a-f0-9]{64}$/i;
 const APPROVAL_EVIDENCE_VERSION = "scenario-provider-approval-evidence-v1-step114-2j";
+const PUBLIC_STATUS_COPY = Object.freeze({
+  idle: {
+    title: "분석 준비 중",
+    message: "외부충격분석을 준비합니다.",
+  },
+  loading: {
+    title: "월간 데이터 확인 중",
+    message: "포트폴리오의 월간 데이터를 불러오고 있습니다.",
+  },
+  ready: {
+    title: "분석 완료",
+    message: "외부충격분석 결과를 확인할 수 있습니다.",
+  },
+  insufficient_data: {
+    title: "공통 이력 부족",
+    message: "선택 자산의 공통 월간 이력이 투자기간보다 짧아 분석할 수 없습니다.",
+  },
+  blocked: {
+    title: "필수값 확인 필요",
+    message: "필수 분석값을 확인할 수 없어 결과를 계산하지 못했습니다.",
+  },
+  stale: {
+    title: "다시 계산 중",
+    message: "포트폴리오가 변경되어 결과를 다시 계산하고 있습니다.",
+  },
+  error: {
+    title: "분석 오류",
+    message: "외부충격분석을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  },
+});
+
+const PRODUCTION_SCENARIO_COPY = Object.freeze({
+  market_drawdown_moderate: {
+    label: "주식시장 급락 · 중간",
+    assumptionLabel: "시장 충격 -20%",
+  },
+  market_drawdown_severe: {
+    label: "주식시장 급락 · 강함",
+    assumptionLabel: "시장 충격 -35%",
+  },
+});
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -58,6 +100,38 @@ function normalizeProviderApprovalEvidence(evidence, result, fingerprint) {
 function normalizeStatus(value) {
   const status = String(value || "idle").trim();
   return SUPPORTED_STATUSES.has(status) ? status : "blocked";
+}
+
+function isV1FixtureResult(result) {
+  return result?.scenarioVersion === SUPPORTED_EXTERNAL_SHOCK_SCENARIO_VERSION;
+}
+
+function isV2ProductionResult(result) {
+  return result?.scenarioVersion === SUPPORTED_PRODUCTION_EXTERNAL_SHOCK_SCENARIO_VERSION;
+}
+
+export function getExternalShockStatusCopy(status) {
+  return PUBLIC_STATUS_COPY[normalizeStatus(status)] || PUBLIC_STATUS_COPY.blocked;
+}
+
+export function formatExternalShockBlockReason(reason = "") {
+  const value = String(reason || "");
+  if (/market_beta_coverage_invalid|assetBetas.*must_be_finite_number|beta.*must_be_finite_number/i.test(value)) {
+    return "일부 자산의 Beta를 확인할 수 없습니다.";
+  }
+  if (/insufficient_data|missing_asset_month|missing_monthly_identity|baselineReturnMatrix:must_be_non_empty_array/i.test(value)) {
+    return "선택 자산의 공통 월간 이력이 부족합니다.";
+  }
+  if (/asset_weight_sum_invalid/i.test(value)) return "자산 목표비중 합계를 100%로 맞춰 주세요.";
+  if (/settings\.initialInvestment/i.test(value)) return "시작 평가금액을 0원보다 크게 입력해 주세요.";
+  if (/settings\.monthlyContribution/i.test(value)) return "월 납입금 값을 확인해 주세요.";
+  if (/settings\.investmentMonths|shock_month_out_of_range/i.test(value)) return "투자기간을 확인해 주세요.";
+  if (/settings\.inflationRate/i.test(value)) return "물가상승률을 확인해 주세요.";
+  if (/duplicate_asset|portfolio_identity_mismatch/i.test(value)) return "현재 포트폴리오 자산 구성을 다시 확인해 주세요.";
+  if (/less_than_or_equal_minus_100/i.test(value)) {
+    return "해당 충격에서는 일부 자산의 계산 수익률이 -100% 이하가 되어 분석할 수 없습니다.";
+  }
+  return PUBLIC_STATUS_COPY.blocked.message;
 }
 
 function normalizeTicker(asset = {}) {
@@ -180,16 +254,17 @@ function validateHash(value, label, issues) {
   return true;
 }
 
-function validateContractHeader(result, issues) {
+function validateContractHeader(result, issues, { strictAudit = false } = {}) {
   if (!isPlainObject(result)) {
     issues.push("result_not_object");
     return;
   }
   if (!String(result.scenarioId || "").trim()) issues.push("scenarioId_missing");
   if (!String(result.scenarioLabel || "").trim()) issues.push("scenarioLabel_missing");
-  if (result.scenarioVersion !== SUPPORTED_EXTERNAL_SHOCK_SCENARIO_VERSION) issues.push("unsupported_scenarioVersion");
+  if (!isV1FixtureResult(result) && !isV2ProductionResult(result)) issues.push("unsupported_scenarioVersion");
   if (result.method !== SUPPORTED_EXTERNAL_SHOCK_METHOD) issues.push("unsupported_method");
   if (!SUPPORTED_SHOCK_MODES.has(result.shockMode)) issues.push("unsupported_shockMode");
+  if (isV2ProductionResult(result) && result.shockMode !== "market_beta") issues.push("production_shockMode_must_be_market_beta");
   if (!SUPPORTED_RETURN_BASIS.has(result.returnBasis)) issues.push("unsupported_returnBasis");
   if (!result.currencyMode) issues.push("currencyMode_missing");
   if (result.betaApplied !== (result.shockMode === "market_beta")) issues.push("betaApplied_inconsistent");
@@ -200,9 +275,11 @@ function validateContractHeader(result, issues) {
   validateHash(result.inputHash, "inputHash", issues);
   validateHash(result.baselineIdentityHash, "baselineIdentityHash", issues);
   validateHash(result.outputHash, "outputHash", issues);
-  if (safeArray(result.sourceHashes).length === 0) issues.push("sourceHashes_missing");
-  for (const field of ["normalizationVersion", "calculationPolicyVersion", "pipelineVersion"]) {
-    if (!String(result[field] || "").trim()) issues.push(`${field}_missing`);
+  if (strictAudit) {
+    if (safeArray(result.sourceHashes).length === 0) issues.push("sourceHashes_missing");
+    for (const field of ["normalizationVersion", "calculationPolicyVersion", "pipelineVersion"]) {
+      if (!String(result[field] || "").trim()) issues.push(`${field}_missing`);
+    }
   }
 }
 
@@ -257,13 +334,27 @@ function validateContributionSeries(series, expectedMonthIndexes, issues) {
   }
 }
 
-function validateShockEvents(result, issues) {
+function validatePathContributionAlignment(paths, series, issues) {
+  for (const [pathLabel, path] of paths) {
+    for (const [index, point] of safeArray(path).entries()) {
+      if (point?.cumulativeContributions !== series?.[index]?.cumulativeContributions) {
+        issues.push(`${pathLabel}_contribution_alignment_invalid:${index}`);
+      }
+    }
+  }
+}
+
+function validateShockEvents(result, issues, { requireBetaProvenance = false, pathMonthIndexes = [] } = {}) {
   const events = safeArray(result.shockEvents);
   if (events.length === 0) issues.push("shockEvents_missing");
+  if (isV2ProductionResult(result) && events.length !== 1) issues.push("production_shockEvent_count_invalid");
   let previous = 0;
   for (const [index, event] of events.entries()) {
     if (!Number.isInteger(event?.monthIndex) || event.monthIndex <= 0) issues.push(`shockEvent_monthIndex_invalid:${index}`);
     if (event.monthIndex <= previous) issues.push(`shockEvent_monthIndex_not_strict_ascending:${index}`);
+    if (isV2ProductionResult(result) && !pathMonthIndexes.includes(event.monthIndex)) {
+      issues.push(`shockEvent_monthIndex_out_of_path:${index}`);
+    }
     previous = event.monthIndex;
     if (event.shockMode !== result.shockMode) issues.push(`shockEvent_mode_mismatch:${index}`);
     const shocks = event.assetShockReturns;
@@ -275,15 +366,37 @@ function validateShockEvents(result, issues) {
       if (!isFiniteNumber(event.marketFactorShock) || event.marketFactorShock <= -1) {
         issues.push(`shockEvent_marketFactorShock_invalid:${index}`);
       }
+      const expectedFactor = result.scenarioId === "market_drawdown_moderate"
+        ? -0.2
+        : result.scenarioId === "market_drawdown_severe" ? -0.35 : null;
+      if (isV2ProductionResult(result) && expectedFactor === null) issues.push("production_scenarioId_unsupported");
+      if (expectedFactor !== null && event.marketFactorShock !== expectedFactor) {
+        issues.push(`production_marketFactorShock_mismatch:${index}`);
+      }
+      const expectedMonth = Math.min(12, pathMonthIndexes.at(-1) || 0);
+      if (isV2ProductionResult(result) && event.monthIndex !== expectedMonth) {
+        issues.push(`production_shockMonth_mismatch:${index}`);
+      }
       const betas = event.assetBetas;
       const provenance = event.betaProvenance;
       if (!isPlainObject(betas) || Object.keys(betas).length === 0) issues.push(`shockEvent_assetBetas_missing:${index}`);
-      if (!isPlainObject(provenance) || Object.keys(provenance).length === 0) issues.push(`shockEvent_betaProvenance_missing:${index}`);
+      if (requireBetaProvenance && (!isPlainObject(provenance) || Object.keys(provenance).length === 0)) {
+        issues.push(`shockEvent_betaProvenance_missing:${index}`);
+      }
+      const betaKeys = Object.keys(betas || {}).sort();
+      const shockKeys = Object.keys(shocks || {}).sort();
+      if (!sameStableValue(betaKeys, shockKeys)) issues.push(`shockEvent_beta_shock_coverage_invalid:${index}`);
       for (const key of Object.keys(betas || {})) {
         if (!isFiniteNumber(betas[key])) issues.push(`shockEvent_beta_invalid:${index}:${key}`);
-        const row = provenance?.[key];
-        for (const field of ["sourceHash", "sourceName", "asOfDate", "betaWindow", "methodVersion"]) {
-          if (!String(row?.[field] || "").trim()) issues.push(`shockEvent_betaProvenance_${field}_missing:${index}:${key}`);
+        if (isFiniteNumber(betas[key]) && isFiniteNumber(event.marketFactorShock) && isFiniteNumber(shocks?.[key]) &&
+          Math.abs(betas[key] * event.marketFactorShock - shocks[key]) > 1e-9) {
+          issues.push(`shockEvent_market_beta_reconciliation_invalid:${index}:${key}`);
+        }
+        if (requireBetaProvenance) {
+          const row = provenance?.[key];
+          for (const field of ["sourceHash", "sourceName", "asOfDate", "betaWindow", "methodVersion"]) {
+            if (!String(row?.[field] || "").trim()) issues.push(`shockEvent_betaProvenance_${field}_missing:${index}:${key}`);
+          }
         }
       }
     }
@@ -295,7 +408,7 @@ function validateSummary(summary, issues) {
     issues.push("summary_missing");
     return;
   }
-  for (const field of ["baselineTerminalValue", "stressedTerminalValue", "terminalDeltaValue", "baselineMdd", "stressedMdd", "incrementalMdd"]) {
+  for (const field of ["baselineTerminalValue", "stressedTerminalValue", "terminalDeltaValue", "terminalDeltaRate", "baselineMdd", "stressedMdd", "incrementalMdd"]) {
     if (!isFiniteNumber(summary[field])) issues.push(`summary_${field}_invalid`);
   }
   for (const field of ["baselineMdd", "stressedMdd"]) {
@@ -340,8 +453,17 @@ function validateAssetImpact(result, issues) {
   let deltaSum = 0;
   for (const [index, impact] of impacts.entries()) {
     if (!normalizeMarket(impact) || !normalizeTicker(impact)) issues.push(`assetImpact_identity_missing:${index}`);
-    for (const field of ["baselineTerminalValue", "stressedTerminalValue", "deltaValue"]) {
+    for (const field of ["baselineTerminalValue", "stressedTerminalValue", "deltaValue", "deltaRate"]) {
       if (!isFiniteNumber(impact[field])) issues.push(`assetImpact_${field}_invalid:${index}`);
+    }
+    if (isFiniteNumber(impact.baselineTerminalValue) && isFiniteNumber(impact.stressedTerminalValue) &&
+      isFiniteNumber(impact.deltaValue) &&
+      Math.abs(impact.stressedTerminalValue - impact.baselineTerminalValue - impact.deltaValue) > 1e-5) {
+      issues.push(`assetImpact_delta_invalid:${index}`);
+    }
+    if (impact.baselineTerminalValue > 0 && isFiniteNumber(impact.deltaValue) && isFiniteNumber(impact.deltaRate) &&
+      Math.abs(impact.deltaValue / impact.baselineTerminalValue - impact.deltaRate) > 1e-9) {
+      issues.push(`assetImpact_deltaRate_invalid:${index}`);
     }
     deltaSum += isFiniteNumber(impact.deltaValue) ? impact.deltaValue : 0;
   }
@@ -373,7 +495,7 @@ function validateFixtureContext({ result, fixtureContext, fingerprint, expectedI
   if (fixtureContext.payloadSignature !== expectedSignature) issues.push("fixture_payload_signature_mismatch");
 }
 
-function validateReadyResult(result, issues) {
+function validateReadyResult(result, issues, { strictAudit = false } = {}) {
   if (result.dataQuality?.status !== "ready") issues.push("dataQuality_not_ready");
   const baselineIndexes = validatePath(result.baselinePath, "baselinePath", issues);
   const stressedIndexes = validatePath(result.stressedPath, "stressedPath", issues);
@@ -382,7 +504,14 @@ function validateReadyResult(result, issues) {
     issues.push("baseline_stressed_path_alignment_invalid");
   }
   validateContributionSeries(result.contributionSeries, baselineIndexes, issues);
-  validateShockEvents(result, issues);
+  validatePathContributionAlignment([
+    ["baselinePath", result.baselinePath],
+    ["stressedPath", result.stressedPath],
+  ], result.contributionSeries, issues);
+  validateShockEvents(result, issues, {
+    requireBetaProvenance: strictAudit,
+    pathMonthIndexes: baselineIndexes,
+  });
   validateSummary(result.summary, issues);
   validateTopLevelSummaryAliases(result, issues);
   validateAssetImpact(result, issues);
@@ -410,40 +539,20 @@ function normalizeBaselineReference({ baselineResult, result, fingerprint }) {
 }
 
 function createStatusViewModel({ status, reasons = [], selectedPortfolioName, fixtureContext = null }) {
-  const copy = {
-    idle: {
-      title: "외부충격분석 대기",
-      message: "검증된 외부충격 분석 데이터가 연결된 경우에만 결과를 표시합니다.",
-    },
-    insufficient_data: {
-      title: "데이터 기간 부족",
-      message: "충격 분석 경로를 만들 수 있는 월별 기준 수익률이 부족합니다.",
-    },
-    blocked: {
-      title: "외부충격분석 사용 불가",
-      message: "검증 조건을 통과하지 못해 충격 분석 숫자를 표시하지 않습니다.",
-    },
-    stale: {
-      title: "이전 외부충격분석 결과",
-      message: "현재 포트폴리오 또는 설정과 기존 결과가 일치하지 않습니다.",
-    },
-    error: {
-      title: "외부충격분석 오류",
-      message: "결과를 안전하게 표시할 수 없습니다.",
-    },
-  }[status] || {
-    title: "외부충격분석 사용 불가",
-    message: "검증 조건을 통과하지 못해 충격 분석 숫자를 표시하지 않습니다.",
-  };
+  const normalizedStatus = normalizeStatus(status);
+  const copy = getExternalShockStatusCopy(normalizedStatus);
+  const publicReason = normalizedStatus === "blocked"
+    ? formatExternalShockBlockReason(reasons[0])
+    : copy.message;
 
   return {
     uiVersion: EXTERNAL_SHOCK_UI_VERSION,
-    status,
+    status: normalizedStatus,
     selectedPortfolioName,
     fixtureContext,
     title: copy.title,
     message: copy.message,
-    userGuidance: copy.message,
+    userGuidance: publicReason,
     auditReasons: reasons,
   };
 }
@@ -495,9 +604,20 @@ function formatShockMode(value) {
 }
 
 function formatScenarioLabel(result = {}) {
+  const productionCopy = PRODUCTION_SCENARIO_COPY[result.scenarioId];
+  if (productionCopy) return productionCopy.label;
   const label = String(result.scenarioLabel || "").trim();
   if (label && !/fixture|synthetic|review-only|internal|hash/i.test(label)) return label;
   return result.shockMode === "market_beta" ? "시장 민감도 충격" : "자산별 직접 충격";
+}
+
+function formatScenarioAssumption(result = {}) {
+  const productionCopy = PRODUCTION_SCENARIO_COPY[result.scenarioId];
+  if (productionCopy) return productionCopy.assumptionLabel;
+  const factor = result.shockEvents?.[0]?.marketFactorShock;
+  return result.shockMode === "market_beta" && isFiniteNumber(factor)
+    ? `시장 충격 ${formatPercent(factor)}`
+    : formatShockMode(result.shockMode);
 }
 
 function compactSourceHash(value) {
@@ -596,15 +716,20 @@ function validateScenarioComparisonBaselineIdentity(results, issues) {
 }
 
 function createMethodology(result = {}) {
+  const shockEvent = result.shockEvents?.[0] || {};
   return [
     { label: "시나리오", value: formatScenarioLabel(result) },
     { label: "충격 방식", value: formatShockMode(result.shockMode) },
+    { label: "시장 충격률", value: isFiniteNumber(shockEvent.marketFactorShock) ? formatPercent(shockEvent.marketFactorShock) : "-" },
+    { label: "충격 시점", value: Number.isInteger(shockEvent.monthIndex) ? `${shockEvent.monthIndex}개월` : "-" },
+    { label: "기준 경로", value: "과거 월간수익률 기반" },
     { label: "수익률 기준", value: result.returnBasis === "total_return" ? "총수익률" : result.returnBasis === "price_return" ? "가격수익률" : "-" },
     { label: "비중 조정 주기", value: result.rebalanceFrequency === "monthly" ? "월간" : result.rebalanceFrequency || "-" },
     { label: "물가상승률", value: result.inflationRate === null || result.inflationRate === undefined ? "-" : String(result.inflationRate) },
     { label: "통화 기준", value: result.currencyMode || "-" },
     { label: "데이터 시작", value: result.dataStartDate || "-" },
     { label: "데이터 종료", value: result.dataEndDate || "-" },
+    { label: "발생확률", value: "미적용" },
   ];
 }
 
@@ -617,13 +742,22 @@ function createReadyViewModel({
   expectedInputHash,
   expectedOutputHash,
   validatedResults = null,
+  scenarioCandidates = null,
   providerApprovalEvidence = null,
 }) {
   const comparisonResults = validatedResults || [result];
-  const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
+  const candidates = scenarioCandidates || comparisonResults;
+  const productionResult = isV2ProductionResult(result);
+  const approvalEvidence = productionResult
+    ? null
+    : normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
+  const readyCopy = getExternalShockStatusCopy("ready");
   return {
     uiVersion: EXTERNAL_SHOCK_UI_VERSION,
     status: "ready",
+    title: readyCopy.title,
+    message: readyCopy.message,
+    userGuidance: readyCopy.message,
     selectedPortfolioName,
     portfolioFingerprint: fingerprint,
     expectedInputHash: expectedInputHash || result.inputHash,
@@ -631,8 +765,8 @@ function createReadyViewModel({
     resultInputHash: result.inputHash,
     baselineIdentityHash: result.baselineIdentityHash,
     resultOutputHash: result.outputHash,
-    fixtureOnly: approvalEvidence ? false : true,
-    productionPublishReady: Boolean(approvalEvidence?.productionPublishReady),
+    fixtureOnly: productionResult ? false : !approvalEvidence,
+    productionPublishReady: productionResult || Boolean(approvalEvidence?.productionPublishReady),
     appExportApproved: Boolean(approvalEvidence?.appExportApproved),
     providerApprovalEvidence: approvalEvidence,
     fixtureContext: result.fixtureContext,
@@ -642,10 +776,15 @@ function createReadyViewModel({
     scenarioId: result.scenarioId,
     scenarioLabel: result.scenarioLabel,
     shockMode: result.shockMode,
-    scenarioOptions: comparisonResults.map((item) => ({
+    scenarioOptions: candidates.map((item) => ({
       scenarioId: item.scenarioId,
       label: formatScenarioLabel(item),
       mode: formatShockMode(item.shockMode),
+      assumptionLabel: formatScenarioAssumption(item),
+      enabled: item.status === "ready",
+      disabledReason: item.status === "ready"
+        ? null
+        : formatExternalShockBlockReason(safeArray(item.dataQuality?.blockReasons)[0]),
       selected: item.scenarioId === result.scenarioId,
     })),
     scenarioComparisonRows: createScenarioComparisonRows(comparisonResults),
@@ -689,6 +828,8 @@ function createReadyViewModel({
 export function buildExternalShockScenarioViewModel({
   result,
   scenarioResults = null,
+  scenarioLoadStatus = null,
+  scenarioLoadError = null,
   selectedScenarioId = null,
   activePortfolio,
   assets = [],
@@ -710,24 +851,36 @@ export function buildExternalShockScenarioViewModel({
     : (result ? [result] : []);
 
   if (candidateResults.length === 0) {
+    const status = scenarioLoadStatus === "ready"
+      ? "error"
+      : normalizeStatus(scenarioLoadStatus || "idle");
     return createStatusViewModel({
-      status: "idle",
+      status,
       selectedPortfolioName,
-      reasons: ["precomputed_result_missing"],
+      reasons: [scenarioLoadError || "precomputed_result_missing"],
     });
   }
 
   const issues = [];
   const validatedResults = [];
+  const optionResults = [];
   const seenScenarioIds = new Set();
   for (const candidate of candidateResults) {
     const status = normalizeStatus(candidate.status);
+    const v1Fixture = isV1FixtureResult(candidate);
+    const v2Production = isV2ProductionResult(candidate);
     const hasFixtureContext = isPlainObject(candidate.fixtureContext);
-    const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, candidate, fingerprint);
-    validateContractHeader(candidate, issues);
+    const approvalEvidence = v1Fixture
+      ? normalizeProviderApprovalEvidence(providerApprovalEvidence, candidate, fingerprint)
+      : null;
     if (seenScenarioIds.has(candidate.scenarioId)) issues.push(`duplicate_scenarioId:${candidate.scenarioId}`);
     seenScenarioIds.add(candidate.scenarioId);
     if (status !== "ready") {
+      if (v2Production) {
+        optionResults.push(candidate);
+        continue;
+      }
+      validateContractHeader(candidate, issues, { strictAudit: true });
       if (!hasFixtureContext || !enableFixtureReview) {
         return createStatusViewModel({
           status: "blocked",
@@ -763,7 +916,10 @@ export function buildExternalShockScenarioViewModel({
       issues.push(`scenario_not_ready:${candidate.scenarioId || "unknown"}`);
       continue;
     }
-    if (hasFixtureContext) {
+
+    const candidateIssues = [];
+    validateContractHeader(candidate, candidateIssues, { strictAudit: v1Fixture });
+    if (v1Fixture && hasFixtureContext) {
       if (!enableFixtureReview) {
         return createStatusViewModel({
           status: "idle",
@@ -778,13 +934,23 @@ export function buildExternalShockScenarioViewModel({
         fingerprint,
         expectedInputHash,
         expectedOutputHash,
-        issues,
+        issues: candidateIssues,
       });
-    } else if (!approvalEvidence) {
-      issues.push("providerApprovalEvidence_invalid");
+    } else if (v1Fixture && !approvalEvidence) {
+      candidateIssues.push("providerApprovalEvidence_invalid");
     }
-    validateReadyResult(candidate, issues);
+    validateReadyResult(candidate, candidateIssues, { strictAudit: v1Fixture });
+    if (v2Production && candidateIssues.length > 0) {
+      optionResults.push({
+        ...candidate,
+        status: "blocked",
+        dataQuality: { status: "blocked", blockReasons: candidateIssues },
+      });
+      continue;
+    }
+    issues.push(...candidateIssues);
     validatedResults.push(candidate);
+    optionResults.push(candidate);
   }
 
   if (issues.includes("portfolioFingerprint_mismatch") ||
@@ -816,6 +982,21 @@ export function buildExternalShockScenarioViewModel({
     });
   }
 
+  if (validatedResults.length === 0) {
+    const blockReasons = optionResults.flatMap((candidate) => safeArray(candidate?.dataQuality?.blockReasons));
+    const loadStatus = normalizeStatus(scenarioLoadStatus || "blocked");
+    const insufficient = blockReasons.some((reason) =>
+      /insufficient_data|missing_asset_month|missing_monthly_identity|baselineReturnMatrix:must_be_non_empty_array/i.test(String(reason || ""))
+    );
+    return createStatusViewModel({
+      status: ["idle", "loading", "error", "stale", "insufficient_data"].includes(loadStatus)
+        ? loadStatus
+        : insufficient ? "insufficient_data" : "blocked",
+      selectedPortfolioName,
+      reasons: blockReasons.length > 0 ? blockReasons : [scenarioLoadError || "scenario_result_not_ready"],
+    });
+  }
+
   validateScenarioComparisonBaselineIdentity(validatedResults, issues);
 
   if (issues.includes("scenario_baseline_identity_mismatch")) {
@@ -838,6 +1019,7 @@ export function buildExternalShockScenarioViewModel({
     expectedInputHash,
     expectedOutputHash,
     validatedResults,
+    scenarioCandidates: optionResults,
     providerApprovalEvidence: selectedResult.fixtureContext ? null : providerApprovalEvidence,
   });
 }

@@ -20,10 +20,13 @@ import {
 } from "../fixtures/externalShockScenarioResultFixture.js";
 import {
   EXTERNAL_SHOCK_UI_VERSION,
+  SUPPORTED_PRODUCTION_EXTERNAL_SHOCK_SCENARIO_VERSION,
   buildExternalShockScenarioViewModel,
   checksumExternalShockFixturePayload,
   createExternalShockFixturePayloadForIntegrity,
   getExternalShockPortfolioFingerprint,
+  getExternalShockStatusCopy,
+  formatExternalShockBlockReason,
   isExternalShockViewModelReady,
 } from "./externalShockScenarioAdapter.js";
 import { SIMULATOR_TAB_ITEMS } from "./simulatorNavigation.js";
@@ -35,6 +38,28 @@ function clone(value) {
 function refreshFixtureSignature(result) {
   result.fixtureContext.payloadSignature = checksumExternalShockFixturePayload(
     createExternalShockFixturePayloadForIntegrity(result),
+  );
+  return result;
+}
+
+function productionResult(scenarioId = "market_drawdown_moderate") {
+  const result = clone(STEP114_2H_MARKET_BETA_FIXTURE_RESULT);
+  const factor = scenarioId === "market_drawdown_severe" ? -0.35 : -0.2;
+  result.scenarioVersion = SUPPORTED_PRODUCTION_EXTERNAL_SHOCK_SCENARIO_VERSION;
+  result.scenarioId = scenarioId;
+  result.scenarioLabel = scenarioId;
+  result.sourceHashes = [];
+  result.normalizationVersion = null;
+  result.calculationPolicyVersion = null;
+  result.pipelineVersion = null;
+  delete result.fixtureContext;
+  result.shockEvents[0].monthIndex = Math.min(12, result.baselinePath.at(-1).monthIndex);
+  result.shockEvents[0].marketFactorShock = factor;
+  result.shockEvents[0].assetShockReturns = Object.fromEntries(
+    Object.entries(result.shockEvents[0].assetBetas).map(([key, beta]) => [key, beta * factor]),
+  );
+  result.shockEvents[0].betaProvenance = Object.fromEntries(
+    Object.keys(result.shockEvents[0].assetBetas).map((key) => [key, null]),
   );
   return result;
 }
@@ -76,6 +101,107 @@ test("public default state does not expose synthetic external shock numbers", ()
 
   const panelSource = fs.readFileSync("src/components/portfolio/components/ExternalShockAnalysisPanel.jsx", "utf8");
   assert.doesNotMatch(panelSource, /STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT/);
+});
+
+test("Production v2 accepts optional audit metadata and exposes Korean preset copy", () => {
+  const moderate = productionResult();
+  const severe = productionResult("market_drawdown_severe");
+  const viewModel = buildExternalShockScenarioViewModel({
+    scenarioResults: [moderate, severe],
+    selectedScenarioId: severe.scenarioId,
+    scenarioLoadStatus: "ready",
+    activePortfolio: { id: "production", name: "현재 포트폴리오" },
+    assets: STEP114_2H_FIXTURE_REVIEW_ASSETS,
+    settings: STEP114_2H_FIXTURE_REVIEW_SETTINGS,
+  });
+  assert.equal(viewModel.status, "ready");
+  assert.equal(viewModel.scenarioId, "market_drawdown_severe");
+  assert.equal(viewModel.fixtureOnly, false);
+  assert.equal(viewModel.productionPublishReady, true);
+  assert.deepEqual(viewModel.scenarioOptions.map(({ label, assumptionLabel, enabled }) => ({ label, assumptionLabel, enabled })), [
+    { label: "주식시장 급락 · 중간", assumptionLabel: "시장 충격 -20%", enabled: true },
+    { label: "주식시장 급락 · 강함", assumptionLabel: "시장 충격 -35%", enabled: true },
+  ]);
+  assert.equal(viewModel.methodology.find((item) => item.label === "기준 경로").value, "과거 월간수익률 기반");
+  assert.equal(viewModel.methodology.find((item) => item.label === "발생확률").value, "미적용");
+});
+
+test("load states use public copy and never surface raw errors", () => {
+  const expected = {
+    idle: "외부충격분석을 준비합니다.",
+    loading: "포트폴리오의 월간 데이터를 불러오고 있습니다.",
+    insufficient_data: "선택 자산의 공통 월간 이력이 투자기간보다 짧아 분석할 수 없습니다.",
+    blocked: "필수 분석값을 확인할 수 없어 결과를 계산하지 못했습니다.",
+    stale: "포트폴리오가 변경되어 결과를 다시 계산하고 있습니다.",
+    error: "외부충격분석을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  };
+  for (const [status, message] of Object.entries(expected)) {
+    const viewModel = buildExternalShockScenarioViewModel({
+      scenarioLoadStatus: status,
+      scenarioLoadError: "sourceHash:raw_internal_error",
+    });
+    assert.equal(viewModel.status, status);
+    assert.equal(viewModel.userGuidance, message);
+    assert.doesNotMatch(viewModel.userGuidance, /sourceHash|raw_internal_error/);
+    assert.equal(getExternalShockStatusCopy(status).message, message);
+  }
+});
+
+test("partial Production results keep ready scenarios and disable blocked options without numbers", () => {
+  const moderate = productionResult();
+  const severe = productionResult("market_drawdown_severe");
+  severe.status = "blocked";
+  severe.dataQuality = {
+    status: "blocked",
+    blockReasons: ["market_beta_shock_less_than_or_equal_minus_100:KR:005930:12"],
+  };
+  const viewModel = buildExternalShockScenarioViewModel({
+    scenarioResults: [moderate, severe],
+    selectedScenarioId: severe.scenarioId,
+    scenarioLoadStatus: "ready",
+  });
+  assert.equal(viewModel.status, "ready");
+  assert.equal(viewModel.scenarioId, moderate.scenarioId);
+  assert.equal(viewModel.scenarioComparisonRows.length, 1);
+  assert.equal(viewModel.scenarioComparisonRows[0].scenarioId, moderate.scenarioId);
+  assert.deepEqual(viewModel.scenarioOptions.map((option) => option.enabled), [true, false]);
+  assert.match(viewModel.scenarioOptions[1].disabledReason, /-100% 이하/);
+  assert.equal(Object.hasOwn(viewModel.scenarioOptions[1], "terminalDeltaRate"), false);
+});
+
+test("all blocked Production results stay non-numeric and map coverage shortage", () => {
+  const results = [productionResult(), productionResult("market_drawdown_severe")].map((result) => ({
+    ...result,
+    status: "blocked",
+    dataQuality: { status: "blocked", blockReasons: ["baselineReturnMatrix:must_be_non_empty_array"] },
+  }));
+  const viewModel = buildExternalShockScenarioViewModel({
+    scenarioResults: results,
+    scenarioLoadStatus: "blocked",
+  });
+  assert.equal(viewModel.status, "insufficient_data");
+  assert.equal(viewModel.summaryCards, undefined);
+  assert.equal(viewModel.scenarioComparisonRows, undefined);
+  assert.equal(formatExternalShockBlockReason("missing_monthly_identity:KR:005930"), "선택 자산의 공통 월간 이력이 부족합니다.");
+});
+
+test("Production v2 malformed hashes, paths, and shock assumptions fail closed", () => {
+  const cases = [
+    (result) => { result.outputHash = "bad"; },
+    (result) => { result.stressedPath[1].portfolioValue = null; },
+    (result) => { result.shockEvents[0].assetShockReturns["KR:005930"] += 0.01; },
+    (result) => { result.shockEvents[0].monthIndex = 1; },
+  ];
+  for (const mutate of cases) {
+    const result = productionResult();
+    mutate(result);
+    const viewModel = buildExternalShockScenarioViewModel({
+      result,
+      scenarioLoadStatus: "ready",
+    });
+    assert.equal(viewModel.status, "blocked");
+    assert.equal(isExternalShockViewModelReady(viewModel), false);
+  }
 });
 
 test("ready direct shock fixture exposes deterministic comparison without probability labels", () => {
@@ -366,6 +492,13 @@ test("panel source includes user-facing scenario selector, comparison table, and
   assert.match(panelSource, /externalShockTableScroll/);
   assert.doesNotMatch(panelSource, /sourceName|betaWindow|sourceHash|fixture-safe|deterministic/);
   assert.match(panelSource, /예측|보장|투자 권유|investment advice/i);
+  assert.match(panelSource, /현재 포트폴리오에 사전에 정의된 시장 급락 충격/);
+  assert.match(panelSource, /과거 월간수익률 기반 경로/);
+  assert.match(panelSource, /실시간 시세 조회, 외부 공급자 호출, 주문 또는 AI 해석/);
+  assert.doesNotMatch(panelSource, /검증 데이터 연결|분석 대기|데이터 연결 필요|review-only|internal preview|app-export approval|source hash|pipeline version/i);
+  assert.match(panelSource, /aria-busy=\{viewModel\.status === "loading"\}/);
+  assert.match(panelSource, /aria-pressed=/);
+  assert.match(panelSource, /disabled=\{!option\.enabled\}/);
   assert.match(chartSource, /formatShockAssumptions/);
   assert.match(chartSource, /marketFactorShock/);
   assert.doesNotMatch(chartSource, /sourceName|sourceHash/);
@@ -373,6 +506,28 @@ test("panel source includes user-facing scenario selector, comparison table, and
   const styleSource = fs.readFileSync("src/App.css", "utf8");
   assert.match(styleSource, /externalShockTableScroll/);
   assert.match(styleSource, /externalShockAssumptionPanel/);
+  assert.match(styleSource, /\.externalShockAnalysisPanel > \* \{\s*min-width: 0;/);
+  assert.match(styleSource, /\.externalShockScenarioSelector button:disabled/);
+  assert.match(styleSource, /@media \(max-width: 640px\)[\s\S]*\.externalShockScenarioSelector/);
+});
+
+test("PortfolioSimulator wires all four Step 5 fields while the Free entitlement branch stays locked", () => {
+  const source = fs.readFileSync("src/components/PortfolioSimulator.jsx", "utf8");
+  for (const field of [
+    "step5ScenarioResult",
+    "step5ScenarioResults",
+    "step5ScenarioStatus",
+    "step5ScenarioError",
+  ]) assert.match(source, new RegExp(field));
+  assert.match(source, /scenarioResult=\{step5ScenarioResult\}/);
+  assert.match(source, /scenarioResults=\{step5ScenarioResults\}/);
+  assert.match(source, /scenarioLoadStatus=\{step5ScenarioStatus\}/);
+  assert.match(source, /scenarioLoadError=\{step5ScenarioError\}/);
+  assert.match(source, /planFeatures\.externalShockAnalysis \? <ExternalShockAnalysisPanel/);
+  assert.match(source, /<AdvancedAnalysisLockedPanel capability="externalShockAnalysis"/);
+
+  const hookSource = fs.readFileSync("src/components/portfolio/hooks/usePortfolioSimulator.js", "utf8");
+  assert.match(hookSource, /\["unavailable", "unconfigured"\][\s\S]*\? "error"/);
 });
 
 test("browser UI does not import Node engine, scenario API, provider, loader, or Step 4 probability fixture", () => {

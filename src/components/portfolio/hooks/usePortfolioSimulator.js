@@ -411,9 +411,11 @@ export default function usePortfolioSimulator({
       return { result: null, results: [], status: "idle", error: null };
     }
     if (monthlyScenarioArtifactState.status !== "ready") {
-      const status = ["unavailable", "unconfigured", "cash_only"].includes(monthlyScenarioArtifactState.status)
+      const status = monthlyScenarioArtifactState.status === "cash_only"
         ? "insufficient_data"
-        : monthlyScenarioArtifactState.status;
+        : ["unavailable", "unconfigured"].includes(monthlyScenarioArtifactState.status)
+          ? "error"
+          : monthlyScenarioArtifactState.status;
       return { result: null, results: [], status, error: monthlyScenarioArtifactState.error };
     }
     return buildStep5ProductionScenarioState({
