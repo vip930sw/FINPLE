@@ -8774,7 +8774,11 @@ nav {
   gap: 18px;
 }
 
-.externalShockFixtureBadge,
+.externalShockAnalysisPanel > * {
+  min-width: 0;
+}
+
+.externalShockStateBadge,
 .externalShockStatusPanel,
 .externalShockPortfolioContext,
 .externalShockReadyNotice,
@@ -8792,12 +8796,12 @@ nav {
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
 }
 
-.externalShockFixtureBadge {
+.externalShockStateBadge {
   min-width: 190px;
   padding: 14px 16px;
 }
 
-.externalShockFixtureBadge span,
+.externalShockStateBadge span,
 .externalShockSummaryCard span,
 .externalShockPortfolioContext span {
   display: block;
@@ -8808,7 +8812,7 @@ nav {
   text-transform: uppercase;
 }
 
-.externalShockFixtureBadge strong,
+.externalShockStateBadge strong,
 .externalShockPortfolioContext strong {
   display: block;
   margin-top: 4px;
@@ -8865,6 +8869,18 @@ nav {
   color: #1d4ed8;
 }
 
+.externalShockScenarioSelector button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.externalShockScenarioSelector button:disabled {
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #64748b;
+  opacity: 0.8;
+}
+
 .externalShockScenarioSelector span {
   display: block;
   font-size: 11px;
@@ -8877,6 +8893,14 @@ nav {
   display: block;
   margin-top: 5px;
   font-size: 15px;
+}
+
+.externalShockScenarioSelector small {
+  display: block;
+  margin-top: 6px;
+  color: #9a3412;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .externalShockChartCard {
@@ -9123,6 +9147,7 @@ nav {
 @media (max-width: 640px) {
   .externalShockPortfolioContext,
   .externalShockSummaryGrid,
+  .externalShockScenarioSelector,
   .externalShockMethodologyGrid,
   .externalShockAuditDetails dl {
     grid-template-columns: 1fr;

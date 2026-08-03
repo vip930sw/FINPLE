@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Activity, Info, ShieldCheck } from "lucide-react";
 
 import {
@@ -37,6 +37,7 @@ function ExternalShockStatusPanel({ viewModel }) {
     <section
       className={`externalShockStatusPanel externalShockStatus-${viewModel.status}`}
       aria-live="polite"
+      aria-busy={viewModel.status === "loading"}
       aria-label="외부충격분석 상태"
     >
       <div className="externalShockStatusIcon" aria-hidden="true">
@@ -72,10 +73,15 @@ function ScenarioSelector({ options = [], selectedScenarioId, onSelectScenario }
           key={option.scenarioId}
           type="button"
           className={option.scenarioId === selectedScenarioId ? "active" : ""}
+          aria-pressed={option.scenarioId === selectedScenarioId}
+          aria-label={`${option.label}, ${option.assumptionLabel}${option.enabled ? "" : `, 선택 불가: ${option.disabledReason}`}`}
+          title={option.enabled ? undefined : option.disabledReason}
+          disabled={!option.enabled}
           onClick={() => onSelectScenario(option.scenarioId)}
         >
-          <span>{option.mode}</span>
+          <span>{option.assumptionLabel}</span>
           <strong>{option.label}</strong>
+          {!option.enabled ? <small>{option.disabledReason}</small> : null}
         </button>
       ))}
     </section>
@@ -240,6 +246,8 @@ export default function ExternalShockAnalysisPanel({
   isEmptyAssetRow,
   scenarioResult = null,
   scenarioResults = null,
+  scenarioLoadStatus = "idle",
+  scenarioLoadError = null,
   selectedScenarioId = null,
   expectedInputHash = null,
   expectedOutputHash = null,
@@ -251,6 +259,8 @@ export default function ExternalShockAnalysisPanel({
   const viewModel = buildExternalShockScenarioViewModel({
     result: scenarioResult,
     scenarioResults,
+    scenarioLoadStatus,
+    scenarioLoadError,
     selectedScenarioId: activeScenarioId || selectedScenarioId,
     activePortfolio,
     assets: activeAssets,
@@ -263,6 +273,11 @@ export default function ExternalShockAnalysisPanel({
   const isReady = isExternalShockViewModelReady(viewModel);
   const selectedViewScenarioId = viewModel.scenarioId || activeScenarioId || selectedScenarioId;
 
+  useEffect(() => {
+    const nextScenarioId = isReady ? viewModel.scenarioId : null;
+    if (activeScenarioId !== nextScenarioId) setActiveScenarioId(nextScenarioId);
+  }, [activeScenarioId, isReady, viewModel.scenarioId]);
+
   return (
     <div className="simulatorTabPanel externalShockAnalysisPanel">
       <div className="tabSectionHeader tabSectionHeaderRow">
@@ -270,13 +285,12 @@ export default function ExternalShockAnalysisPanel({
           <p className="sectionLabel">Step 5. External Shock</p>
           <h3>외부충격분석</h3>
           <p>
-            검증된 외부충격 분석 결과가 있을 때만 기준 경로와 충격 경로를 비교합니다.
-            일반 화면에서는 별도 검증 데이터와 실제 포트폴리오 값을 자동 결합하지 않습니다.
+            현재 포트폴리오에 사전에 정의된 시장 급락 충격을 적용해 기준 경로와 충격 경로를 비교합니다.
           </p>
         </div>
-        <div className="externalShockFixtureBadge">
-          <span>{enableFixtureReview ? "검증 데이터 연결" : "분석 대기"}</span>
-          <strong>{enableFixtureReview ? "결과 확인 가능" : "데이터 연결 필요"}</strong>
+        <div className="externalShockStateBadge" aria-live="polite">
+          <span>외부충격분석</span>
+          <strong>{viewModel.title}</strong>
         </div>
       </div>
 
@@ -306,7 +320,7 @@ export default function ExternalShockAnalysisPanel({
         )}
         <div>
           <span>상태</span>
-          <strong>{viewModel.status}</strong>
+          <strong aria-live="polite">{viewModel.title}</strong>
         </div>
       </section>
 
@@ -320,13 +334,12 @@ export default function ExternalShockAnalysisPanel({
             onSelectScenario={setActiveScenarioId}
           />
 
-          <section className="externalShockReadyNotice" aria-label="외부충격분석 검증 상태">
+          <section className="externalShockReadyNotice" aria-label="외부충격분석 설명">
             <Activity size={20} aria-hidden="true" />
             <div>
-              <strong>검증된 외부충격 경로</strong>
+              <strong>과거 월간수익률 기반 스트레스 테스트</strong>
               <p>
-                충격은 사전에 검증된 입력으로만 계산되며, 예측·보장·투자 권유가 아닙니다.
-                Step 4 확률분석의 분위수 의미와 분리된 동일 조건 비교입니다.
+                과거 월간수익률 기반 경로에 가상의 시장 충격을 한 차례 적용한 결정론적 스트레스 테스트입니다.
               </p>
             </div>
           </section>
@@ -339,14 +352,13 @@ export default function ExternalShockAnalysisPanel({
         </>
       ) : null}
 
-      <MethodologyPanel viewModel={viewModel} />
+      {isReady ? <MethodologyPanel viewModel={viewModel} /> : null}
 
       <section className="externalShockDisclaimer" aria-label="외부충격분석 고지">
         <strong>투자 유의사항</strong>
         <p>
-          이 외부충격분석은 사전에 검증된 시나리오 기반의 비교입니다.
           충격의 발생 확률이나 미래 수익률을 예측하지 않으며 투자 권유가 아닙니다.
-          실제 시장 데이터 호출, 실시간 공급자 호출, 주문 또는 AI 해석을 수행하지 않습니다.
+          실시간 시세 조회, 외부 공급자 호출, 주문 또는 AI 해석을 수행하지 않습니다.
         </p>
       </section>
     </div>

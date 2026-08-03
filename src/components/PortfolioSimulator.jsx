@@ -49,6 +49,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     previewScenarioResult,
     previewScenarioStatus,
     previewScenarioError,
+    step5ScenarioResult,
+    step5ScenarioResults,
+    step5ScenarioStatus,
+    step5ScenarioError,
     isPortfolioDropdownOpen,
     setIsPortfolioDropdownOpen,
     isNewPortfolioMenuOpen,
@@ -374,6 +378,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             result={result}
             settings={settings}
             isEmptyAssetRow={isEmptyAssetRow}
+            scenarioResult={step5ScenarioResult}
+            scenarioResults={step5ScenarioResults}
+            scenarioLoadStatus={step5ScenarioStatus}
+            scenarioLoadError={step5ScenarioError}
           /> : <AdvancedAnalysisLockedPanel capability="externalShockAnalysis" />}
         </div>
       )}
