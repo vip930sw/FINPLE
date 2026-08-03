@@ -84,8 +84,14 @@ import { getPortfolioAddDecision } from "../../../data/tickers/portfolioEligibil
 import { createManualCashAsset, isManualCashAsset } from "../../../data/tickers/manualCashAsset";
 import {
   buildAppExportScenarioResult,
+  getAppExportScenarioErrorMessage,
   resolveAppExportScenarioState,
 } from "../utils/appPreviewScenarioService";
+import {
+  buildStep5ProductionScenarioState,
+  getStep5MonthlyArtifactIdentities,
+  getStep5MonthlyArtifactIdentityFingerprint,
+} from "../utils/step5ProductionScenarioService.js";
 
 import {
   getPlanLimitMessage,
@@ -124,7 +130,10 @@ function hydrateLoadedPortfolioState(portfolioState = {}) {
   };
 }
 
-export default function usePortfolioSimulator({ probabilityAnalysisAllowed = false } = {}) {
+export default function usePortfolioSimulator({
+  probabilityAnalysisAllowed = false,
+  externalShockAnalysisAllowed = false,
+} = {}) {
   const [initialPortfolioState] = useState(() => hydrateLoadedPortfolioState(
     loadPortfolioState(),
   ));
@@ -153,6 +162,7 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
     status: "idle",
     result: null,
     error: null,
+    identityFingerprint: "",
   });
   const backupFileInputRef = useRef(null);
 
@@ -214,6 +224,15 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
     () => ({ ...settings, startValue: simulationStartValue }),
     [settings, simulationStartValue],
   );
+  const scenarioAssets = useMemo(() => getStep4ScenarioAssets(assets), [assets]);
+  const monthlyArtifactIdentities = useMemo(
+    () => getStep5MonthlyArtifactIdentities(scenarioAssets),
+    [scenarioAssets],
+  );
+  const monthlyArtifactIdentityFingerprint = useMemo(
+    () => getStep5MonthlyArtifactIdentityFingerprint(scenarioAssets),
+    [scenarioAssets],
+  );
   const step4BaselineBlockMessage = result.status !== "ready"
     ? [
         ...formatUserFacingBaselineBlockReasons(result.blockReasons),
@@ -243,10 +262,16 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
 
   useEffect(() => {
     if (activeSimulatorTab === "probability" && !probabilityAnalysisAllowed) {
+      setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null, identityFingerprint: "" });
       return undefined;
     }
-    if (activeSimulatorTab !== "probability") {
-      setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null });
+    if (activeSimulatorTab === "shock" && !externalShockAnalysisAllowed) {
+      setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null, identityFingerprint: "" });
+      return undefined;
+    }
+    const monthlyArtifactAllowed = ["probability", "shock"].includes(activeSimulatorTab);
+    if (!monthlyArtifactAllowed) {
+      setMonthlyScenarioArtifactState({ status: "idle", result: null, error: null, identityFingerprint: "" });
       return undefined;
     }
     if (step4BaselineBlockMessage) {
@@ -254,10 +279,10 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
         status: "blocked",
         result: null,
         error: step4BaselineBlockMessage,
+        identityFingerprint: monthlyArtifactIdentityFingerprint,
       });
       return undefined;
     }
-    const scenarioAssets = getStep4ScenarioAssets(assets);
     const unknownCash = scenarioAssets.find(
       (asset) => normalizeTicker(asset?.ticker) === "CASH" && !isManualCashAsset(asset),
     );
@@ -266,11 +291,12 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
         status: "blocked",
         result: null,
         error: "CASH: 포트폴리오에 사용할 수 없는 자산입니다.",
+        identityFingerprint: monthlyArtifactIdentityFingerprint,
       });
       return undefined;
     }
     if (scenarioAssets.length > 0 && scenarioAssets.every(isManualCashAsset)) {
-      setMonthlyScenarioArtifactState({ status: "cash_only", result: null, error: null });
+      setMonthlyScenarioArtifactState({ status: "cash_only", result: null, error: null, identityFingerprint: monthlyArtifactIdentityFingerprint });
       return undefined;
     }
     const internalPreviewMode =
@@ -281,49 +307,30 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
         status: "unconfigured",
         result: null,
         error: "검증된 월간 수익률 데이터가 연결되지 않았습니다.",
+        identityFingerprint: monthlyArtifactIdentityFingerprint,
       });
       return undefined;
     }
-    const identities = [...new Set(
-      scenarioAssets
-        .filter((asset) => normalizeTicker(asset?.ticker) !== "CASH")
-        .map((asset) => `${String(asset.market || "").toUpperCase()}:${normalizeTicker(asset.ticker)}`)
-        .filter((identity) => !identity.startsWith(":"))
-    )];
+    const identities = monthlyArtifactIdentities;
     if (identities.length === 0) {
       setMonthlyScenarioArtifactState({
         status: "unavailable",
         result: null,
         error: "월수익률을 조회할 자산이 없습니다.",
+        identityFingerprint: monthlyArtifactIdentityFingerprint,
       });
       return undefined;
     }
     let cancelled = false;
-    setMonthlyScenarioArtifactState({ status: "loading", result: null, error: null });
+    setMonthlyScenarioArtifactState({ status: "loading", result: null, error: null, identityFingerprint: monthlyArtifactIdentityFingerprint });
     const monthlyLoader = productionMode
       ? loadProductionMonthlyReturnsForIdentities
       : loadMonthlyReturnsForIdentities;
-    const monthlyRuntimeMode = productionMode
-      ? "production_app_export_ready"
-      : "internal_preview_review_only";
     resolveAppExportScenarioState({
       identities,
       loadMonthlyReturns: monthlyLoader,
       isCancelled: () => cancelled,
-      buildScenario: (monthlyReturns) => buildAppExportScenarioResult({
-          activePortfolio,
-          assets: scenarioAssets,
-          settings: effectiveStep4Settings,
-          rowsByIdentity: monthlyReturns.rowsByIdentity,
-          manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
-          release: monthlyReturns.release || null,
-          monthlyRowContract: monthlyReturns.monthlyRowContract || "proxy_aware_v2",
-          legacyProductionBindingVerified:
-            monthlyReturns.legacyProductionBindingVerified === true,
-          catalogPolicyByIdentity:
-            monthlyReturns.catalogPolicyByIdentity || null,
-          runtimeMode: monthlyRuntimeMode,
-        }),
+      buildScenario: (monthlyReturns) => monthlyReturns,
     })
       .then((scenarioState) => {
         if (cancelled || scenarioState.status === "cancelled") return;
@@ -331,6 +338,7 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
           status: scenarioState.status,
           result: scenarioState.result,
           error: scenarioState.error,
+          identityFingerprint: monthlyArtifactIdentityFingerprint,
         });
       })
       .catch(() => {
@@ -339,6 +347,7 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
           status: "unavailable",
           result: null,
           error: "확률분석 시나리오를 계산하지 못했습니다.",
+          identityFingerprint: monthlyArtifactIdentityFingerprint,
         });
       });
     return () => {
@@ -348,10 +357,78 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
     activePortfolio,
     activeSimulatorTab,
     assets,
+    externalShockAnalysisAllowed,
     probabilityAnalysisAllowed,
     screenerCandidateSnapshot.preview.status,
     effectiveStep4Settings,
+    monthlyArtifactIdentities,
+    monthlyArtifactIdentityFingerprint,
+    scenarioAssets,
     step4BaselineBlockMessage,
+  ]);
+
+  const previewScenarioState = useMemo(() => {
+    if (activeSimulatorTab !== "probability" || monthlyScenarioArtifactState.status !== "ready") {
+      return {
+        status: activeSimulatorTab === "probability" ? monthlyScenarioArtifactState.status : "idle",
+        result: null,
+        error: activeSimulatorTab === "probability" ? monthlyScenarioArtifactState.error : null,
+      };
+    }
+    const monthlyReturns = monthlyScenarioArtifactState.result;
+    try {
+      return {
+        status: "ready",
+        result: buildAppExportScenarioResult({
+          activePortfolio,
+          assets: scenarioAssets,
+          settings: effectiveStep4Settings,
+          rowsByIdentity: monthlyReturns.rowsByIdentity,
+          manifest: monthlyReturns.sourceManifest || monthlyReturns.manifest,
+          release: monthlyReturns.release || null,
+          monthlyRowContract: monthlyReturns.monthlyRowContract || "proxy_aware_v2",
+          legacyProductionBindingVerified: monthlyReturns.legacyProductionBindingVerified === true,
+          catalogPolicyByIdentity: monthlyReturns.catalogPolicyByIdentity || null,
+          runtimeMode: monthlyReturns.release
+            ? "production_app_export_ready"
+            : "internal_preview_review_only",
+        }),
+        error: null,
+      };
+    } catch (error) {
+      return { status: "unavailable", result: null, error: getAppExportScenarioErrorMessage(error) };
+    }
+  }, [
+    activePortfolio,
+    activeSimulatorTab,
+    effectiveStep4Settings,
+    monthlyScenarioArtifactState,
+    scenarioAssets,
+  ]);
+
+  const step5ScenarioState = useMemo(() => {
+    if (activeSimulatorTab !== "shock") {
+      return { result: null, results: [], status: "idle", error: null };
+    }
+    if (monthlyScenarioArtifactState.status !== "ready") {
+      const status = ["unavailable", "unconfigured", "cash_only"].includes(monthlyScenarioArtifactState.status)
+        ? "insufficient_data"
+        : monthlyScenarioArtifactState.status;
+      return { result: null, results: [], status, error: monthlyScenarioArtifactState.error };
+    }
+    return buildStep5ProductionScenarioState({
+      activePortfolio,
+      assets: scenarioAssets,
+      settings: effectiveStep4Settings,
+      monthlyReturns: monthlyScenarioArtifactState.result,
+      monthlyArtifactIdentityFingerprint: monthlyScenarioArtifactState.identityFingerprint,
+    });
+  }, [
+    activePortfolio,
+    activeSimulatorTab,
+    effectiveStep4Settings,
+    monthlyScenarioArtifactState,
+    scenarioAssets,
   ]);
 
   function getAssetDraftKey(asset, index) { return asset?.id || `${normalizeTicker(asset?.ticker) || "asset"}-${index}`; }
@@ -893,5 +970,5 @@ export default function usePortfolioSimulator({ probabilityAnalysisAllowed = fal
   function reportPdfFileName() { return `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.pdf`; }
   function copyReportSummary() { navigator.clipboard?.writeText(createReportSummaryText({ activePortfolio, detailReport, settings, result, assets })); }
 
-  return { portfolioList, activePortfolioId, activePortfolio, settings, effectiveStep4Settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: monthlyScenarioArtifactState.result, previewScenarioStatus: monthlyScenarioArtifactState.status, previewScenarioError: monthlyScenarioArtifactState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, resolveTickerCandidate, addAsset, addCashAsset, addAssetFromTickerCandidate, moveAsset, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isEmptyAssetRow };
+  return { portfolioList, activePortfolioId, activePortfolio, settings, effectiveStep4Settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupSummary, recentlyAddedAssetId, portfolioAddDialog, confirmPortfolioAssetAdd, closePortfolioAddDialog, viewPortfolioAddAssetDetails, dataManagementSummary, activeSimulatorTab, screenerCandidateSnapshot, previewScenarioResult: previewScenarioState.result, previewScenarioStatus: previewScenarioState.status, previewScenarioError: previewScenarioState.error, step5ScenarioResult: step5ScenarioState.result, step5ScenarioResults: step5ScenarioState.results, step5ScenarioStatus: step5ScenarioState.status, step5ScenarioError: step5ScenarioState.error, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, portfolioCreationEvent, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, resolveTickerCandidate, addAsset, addCashAsset, addAssetFromTickerCandidate, moveAsset, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, hydratePortfolioFromActiveCatalog, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isEmptyAssetRow };
 }

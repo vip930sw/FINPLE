@@ -1,8 +1,8 @@
-import crypto from "node:crypto";
+import { sha256Hex } from "../../../../src/utils/sha256.js";
 
-export const EXTERNAL_SHOCK_SCENARIO_VERSION = "external-shock-scenario-v1-step114-2h";
+export const EXTERNAL_SHOCK_SCENARIO_VERSION = "external-shock-scenario-v2-step5a";
 export const EXTERNAL_SHOCK_METHOD = "deterministic_external_shock";
-export const EXTERNAL_SHOCK_ENGINE_VERSION = "external-shock-engine-v1-step114-2h";
+export const EXTERNAL_SHOCK_ENGINE_VERSION = "external-shock-engine-v2-step5a";
 
 const EPSILON = 1e-9;
 const MONTH_PATTERN = /^\d{4}-\d{2}(-\d{2})?$/;
@@ -36,7 +36,7 @@ export function stableSerializeExternalShockValue(value) {
 }
 
 export function sha256ExternalShockValue(value) {
-  return crypto.createHash("sha256").update(stableSerializeExternalShockValue(value)).digest("hex");
+  return sha256Hex(stableSerializeExternalShockValue(value));
 }
 
 function canonicalMonth(value, label = "month") {
@@ -99,23 +99,25 @@ function toPositiveInteger(value, label) {
 function normalizeWeight(value, label) {
   const number = toFiniteNumber(value, label);
   if (number < 0) throw new RangeError(`${label}:must_be_nonnegative`);
-  return number > 1 ? number / 100 : number;
+  return number;
 }
 
 function normalizeInflationRate(value) {
-  if (value === null || value === undefined || String(value).trim() === "") return null;
+  if (value === null || value === undefined || String(value).trim() === "") {
+    throw new TypeError("settings.inflationRate:must_be_finite_number");
+  }
   const number = toFiniteNumber(value, "settings.inflationRate");
   if (number <= -1) throw new RangeError("settings.inflationRate:must_be_greater_than_minus_100_percent");
   return roundNumber(number);
 }
 
 function normalizeBetaProvenance(value, label) {
-  if (!isPlainObject(value)) throw new TypeError(`${label}:provenance_required`);
-  return Object.fromEntries(REQUIRED_BETA_PROVENANCE_FIELDS.map((field) => {
+  if (!isPlainObject(value)) return null;
+  const entries = REQUIRED_BETA_PROVENANCE_FIELDS.flatMap((field) => {
     const normalized = String(value[field] || "").trim();
-    if (!normalized) throw new TypeError(`${label}.${field}:required`);
-    return [field, normalized];
-  }));
+    return normalized ? [[field, normalized]] : [];
+  });
+  return entries.length > 0 ? Object.fromEntries(entries) : null;
 }
 
 function collectEffectiveSourceHashes(metadataSourceHashes = [], rows = []) {
@@ -147,18 +149,25 @@ function normalizeAssets(assets) {
         ? null
         : roundNumber(toFiniteNumber(asset.beta, `assets[${index}].beta`)),
     };
-  }).sort((left, right) => left.key.localeCompare(right.key));
+  });
 
   const seen = new Set();
   for (const asset of normalized) {
     if (seen.has(asset.key)) throw new RangeError(`duplicate_asset:${asset.key}`);
     seen.add(asset.key);
   }
-  const weightSum = normalized.reduce((sum, asset) => sum + asset.targetWeight, 0);
-  if (Math.abs(weightSum - 1) > EPSILON) {
-    throw new RangeError(`asset_weight_sum_invalid:${roundNumber(weightSum)}`);
+  const rawWeightSum = normalized.reduce((sum, asset) => sum + asset.targetWeight, 0);
+  const weightDivisor = Math.abs(rawWeightSum - 1) <= EPSILON
+    ? 1
+    : Math.abs(rawWeightSum - 100) <= EPSILON
+      ? 100
+      : null;
+  if (weightDivisor === null) {
+    throw new RangeError(`asset_weight_sum_invalid:${roundNumber(rawWeightSum)}`);
   }
-  return normalized;
+  return normalized
+    .map((asset) => ({ ...asset, targetWeight: asset.targetWeight / weightDivisor }))
+    .sort((left, right) => left.key.localeCompare(right.key));
 }
 
 function normalizeSettings(settings = {}) {
@@ -168,10 +177,10 @@ function normalizeSettings(settings = {}) {
     "settings.initialInvestment",
   );
   const monthlyContribution = toFiniteNumber(
-    settings.monthlyContribution ?? settings.monthlyCashFlow ?? 0,
+    settings.monthlyContribution ?? settings.monthlyCashFlow,
     "settings.monthlyContribution",
   );
-  if (initialInvestment < 0) throw new RangeError("settings.initialInvestment:must_be_nonnegative");
+  if (initialInvestment <= 0) throw new RangeError("settings.initialInvestment:must_be_positive");
   if (monthlyContribution < 0) throw new RangeError("settings.monthlyContribution:must_be_nonnegative");
   const investmentMonths = toPositiveInteger(
     settings.investmentMonths ?? (settings.years ? Number(settings.years) * 12 : null),
@@ -193,22 +202,23 @@ function normalizeSettings(settings = {}) {
 
 function normalizeMetadata(metadata = {}, rows = []) {
   if (!isPlainObject(metadata)) throw new TypeError("metadata:must_be_object");
-  const returnBasis = String(metadata.returnBasis || "").trim();
-  const currencyMode = String(metadata.currencyMode || "").trim().toUpperCase();
+  const firstRow = Array.isArray(rows) ? rows[0] : null;
+  const returnBasis = String(
+    metadata.returnBasis || firstRow?.returnBasis || "price_return",
+  ).trim();
+  const currencyMode = String(
+    metadata.currencyMode || firstRow?.currencyMode || firstRow?.currency || "MIXED",
+  ).trim().toUpperCase();
   if (!SUPPORTED_RETURN_BASIS.has(returnBasis)) throw new TypeError("metadata.returnBasis:unsupported");
   if (!currencyMode) throw new TypeError("metadata.currencyMode:required");
   const sourceHashes = collectEffectiveSourceHashes(metadata.sourceHashes, rows);
-  if (sourceHashes.length === 0) throw new TypeError("sourceHashes:required");
-  for (const field of ["normalizationVersion", "calculationPolicyVersion", "pipelineVersion"]) {
-    if (!String(metadata[field] || "").trim()) throw new TypeError(`metadata.${field}:required`);
-  }
   return {
     returnBasis,
     currencyMode,
     sourceHashes,
-    normalizationVersion: String(metadata.normalizationVersion).trim(),
-    calculationPolicyVersion: String(metadata.calculationPolicyVersion).trim(),
-    pipelineVersion: String(metadata.pipelineVersion).trim(),
+    normalizationVersion: String(metadata.normalizationVersion || "").trim() || null,
+    calculationPolicyVersion: String(metadata.calculationPolicyVersion || "").trim() || null,
+    pipelineVersion: String(metadata.pipelineVersion || "").trim() || null,
   };
 }
 
@@ -242,8 +252,7 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
     const currencyMode = String(row.currencyMode || metadata.currencyMode).trim().toUpperCase();
     if (returnBasis !== metadata.returnBasis) throw new TypeError(`mixed_return_basis:${key}:${month}`);
     if (currencyMode !== metadata.currencyMode) throw new TypeError(`mixed_currency_mode:${key}:${month}`);
-    const sourceHash = String(row.sourceHash || "").trim();
-    if (!sourceHash) throw new TypeError(`row_sourceHash_required:${key}:${month}`);
+    const sourceHash = String(row.sourceHash || "").trim() || null;
     if (!byMonth.has(month)) byMonth.set(month, {});
     byMonth.get(month)[key] = {
       baselineReturn: roundNumber(readBaselineReturn(row, `baselineReturnMatrix[${index}].baselineReturn`)),

@@ -104,7 +104,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     toNumber,
     isAutoAsset,
     isEmptyAssetRow
-  } = usePortfolioSimulator({ probabilityAnalysisAllowed: planFeatures.probabilityAnalysis });
+  } = usePortfolioSimulator({
+    probabilityAnalysisAllowed: planFeatures.probabilityAnalysis,
+    externalShockAnalysisAllowed: planFeatures.externalShockAnalysis,
+  });
 
   const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
   const isProductionCatalogLoading =

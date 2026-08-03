@@ -194,10 +194,12 @@ test("row source hash reassignment changes deterministic input and output hashes
   assert.notDeepEqual(first.rowSourceLineage[0].rowSourceHashes, second.rowSourceLineage[0].rowSourceHashes);
 });
 
-test("beta provenance is required and affects hashes", () => {
+test("beta provenance is optional audit metadata and affects hashes when present", () => {
   const missing = baseInput("marketBeta");
   delete missing.scenario.assetBetas[0].provenance;
-  assertBlocked(buildExternalShockScenario(missing), /provenance_required/);
+  const withoutProvenance = buildExternalShockScenario(missing);
+  assertReady(withoutProvenance);
+  assert.equal(withoutProvenance.shockEvents[0].betaProvenance["KR:005930"], null);
 
   const first = buildExternalShockScenario(baseInput("marketBeta"));
   const changed = baseInput("marketBeta");
@@ -222,11 +224,32 @@ test("unsorted asset and row inputs normalize deterministically", () => {
   assert.equal(stableSerializeExternalShockValue(sorted), stableSerializeExternalShockValue(unsorted));
 });
 
-test("missing source lineage fails closed", () => {
+test("source and release audit metadata are optional calculation inputs", () => {
   const input = baseInput();
   input.metadata.sourceHashes = [];
+  delete input.metadata.normalizationVersion;
+  delete input.metadata.calculationPolicyVersion;
+  delete input.metadata.pipelineVersion;
   input.baselineReturnMatrix = input.baselineReturnMatrix.map((row) => ({ ...row, sourceHash: "" }));
-  assertBlocked(buildExternalShockScenario(input), /sourceHashes:required|row_sourceHash_required/);
+  const result = buildExternalShockScenario(input);
+  assertReady(result);
+  assert.deepEqual(result.sourceHashes, []);
+  assert.equal(result.normalizationVersion, null);
+  assert.equal(result.rowSourceLineage[0].rowSourceHashes["KR:005930"], null);
+});
+
+test("target weights use one whole-input scale for percent or fraction contracts", () => {
+  const percent = baseInput();
+  percent.assets[0].targetWeight = 1;
+  percent.assets[1].targetWeight = 99;
+  const fraction = baseInput();
+  fraction.assets[0].targetWeight = 0.01;
+  fraction.assets[1].targetWeight = 0.99;
+  const percentResult = buildExternalShockScenario(percent);
+  const fractionResult = buildExternalShockScenario(fraction);
+  assertReady(percentResult);
+  assertReady(fractionResult);
+  assert.deepEqual(percentResult.assets, fractionResult.assets);
 });
 
 test("same calendar month duplicate fails closed even if day differs", () => {
@@ -277,6 +300,14 @@ test("missing beta, mixed shock payload and shock <= -100% fail closed", () => {
   const invalidDirect = baseInput();
   invalidDirect.scenario.shockEvents[0].assetShocks[0].shockReturn = -1;
   assertBlocked(buildExternalShockScenario(invalidDirect), /less_than_or_equal_minus_100/);
+
+  const nonFiniteBeta = baseInput("marketBeta");
+  nonFiniteBeta.scenario.assetBetas[0].beta = Number.NaN;
+  assertBlocked(buildExternalShockScenario(nonFiniteBeta), /must_be_finite_number/);
+
+  const invalidComputedShock = baseInput("marketBeta");
+  invalidComputedShock.scenario.assetBetas[0].beta = 9;
+  assertBlocked(buildExternalShockScenario(invalidComputedShock), /market_beta_shock_less_than_or_equal_minus_100/);
 });
 
 test("duplicate direct shock and beta identities fail closed deterministically", () => {
