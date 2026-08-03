@@ -52,6 +52,15 @@ function productionResult(scenarioId = "market_drawdown_moderate") {
   result.normalizationVersion = null;
   result.calculationPolicyVersion = null;
   result.pipelineVersion = null;
+  result.sourceHistoryMonths = 60;
+  result.pathMonths = result.baselinePath.length - 1;
+  result.pathReplayApplied = false;
+  result.sourceDataStartMonth = result.dataStartDate;
+  result.sourceDataEndMonth = result.dataEndDate;
+  result.rowSourceLineage = result.rowSourceLineage.map((row) => ({
+    ...row,
+    sourceMonth: row.month,
+  }));
   delete result.fixtureContext;
   result.shockEvents[0].monthIndex = Math.min(12, result.baselinePath.at(-1).monthIndex);
   result.shockEvents[0].marketFactorShock = factor;
@@ -130,7 +139,7 @@ test("load states use public copy and never surface raw errors", () => {
   const expected = {
     idle: "외부충격분석을 준비합니다.",
     loading: "포트폴리오의 월간 데이터를 불러오고 있습니다.",
-    insufficient_data: "선택 자산의 공통 월간 이력이 투자기간보다 짧아 분석할 수 없습니다.",
+    insufficient_data: "선택 자산의 공통 월간 이력이 60개월 미만이라 분석할 수 없습니다.",
     blocked: "필수 분석값을 확인할 수 없어 결과를 계산하지 못했습니다.",
     stale: "포트폴리오가 변경되어 결과를 다시 계산하고 있습니다.",
     error: "외부충격분석을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -183,6 +192,26 @@ test("all blocked Production results stay non-numeric and map coverage shortage"
   assert.equal(viewModel.summaryCards, undefined);
   assert.equal(viewModel.scenarioComparisonRows, undefined);
   assert.equal(formatExternalShockBlockReason("missing_monthly_identity:KR:005930"), "선택 자산의 공통 월간 이력이 부족합니다.");
+  assert.equal(
+    formatExternalShockBlockReason("missing_metric_lineage:monthly_return_proxy_status:US:VNQ"),
+    "월수익률 출처 또는 정책 적격성을 확인할 수 없어 외부충격분석을 제공할 수 없습니다.",
+  );
+});
+
+test("Production path metadata exposes source period and replay without treating repeated source months as invalid", () => {
+  const result = productionResult();
+  result.sourceHistoryMonths = 84;
+  result.pathReplayApplied = true;
+  result.rowSourceLineage[6].sourceMonth = result.rowSourceLineage[0].sourceMonth;
+  const viewModel = buildExternalShockScenarioViewModel({
+    result,
+    scenarioLoadStatus: "ready",
+  });
+  assert.equal(viewModel.status, "ready");
+  assert.equal(viewModel.methodology.find((item) => item.label === "데이터 시작").value, result.sourceDataStartMonth);
+  assert.equal(viewModel.methodology.find((item) => item.label === "원본 공통 이력").value, "84개월");
+  assert.equal(viewModel.methodology.find((item) => item.label === "계산 경로").value, `${result.pathMonths}개월`);
+  assert.equal(viewModel.methodology.find((item) => item.label === "경로 반복").value, "적용");
 });
 
 test("Production v2 malformed hashes, paths, and shock assumptions fail closed", () => {

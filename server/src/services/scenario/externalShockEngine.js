@@ -212,6 +212,38 @@ function normalizeMetadata(metadata = {}, rows = []) {
   if (!SUPPORTED_RETURN_BASIS.has(returnBasis)) throw new TypeError("metadata.returnBasis:unsupported");
   if (!currencyMode) throw new TypeError("metadata.currencyMode:required");
   const sourceHashes = collectEffectiveSourceHashes(metadata.sourceHashes, rows);
+  const pathFields = [
+    "sourceHistoryMonths",
+    "pathMonths",
+    "pathReplayApplied",
+    "sourceDataStartMonth",
+    "sourceDataEndMonth",
+  ];
+  const hasPathMetadata = pathFields.some((field) =>
+    Object.prototype.hasOwnProperty.call(metadata, field)
+  );
+  if (hasPathMetadata && !pathFields.every((field) =>
+    Object.prototype.hasOwnProperty.call(metadata, field)
+  )) throw new TypeError("metadata.historyPath:incomplete");
+  const sourceHistoryMonths = hasPathMetadata
+    ? toPositiveInteger(metadata.sourceHistoryMonths, "metadata.sourceHistoryMonths")
+    : null;
+  const pathMonths = hasPathMetadata
+    ? toPositiveInteger(metadata.pathMonths, "metadata.pathMonths")
+    : null;
+  const pathReplayApplied = hasPathMetadata ? metadata.pathReplayApplied : null;
+  if (hasPathMetadata && typeof pathReplayApplied !== "boolean") {
+    throw new TypeError("metadata.pathReplayApplied:must_be_boolean");
+  }
+  const sourceDataStartMonth = hasPathMetadata
+    ? canonicalMonth(metadata.sourceDataStartMonth, "metadata.sourceDataStartMonth")
+    : null;
+  const sourceDataEndMonth = hasPathMetadata
+    ? canonicalMonth(metadata.sourceDataEndMonth, "metadata.sourceDataEndMonth")
+    : null;
+  if (hasPathMetadata && monthOrdinal(sourceDataStartMonth) > monthOrdinal(sourceDataEndMonth)) {
+    throw new RangeError("metadata.sourceDataPeriod:invalid");
+  }
   return {
     returnBasis,
     currencyMode,
@@ -219,6 +251,11 @@ function normalizeMetadata(metadata = {}, rows = []) {
     normalizationVersion: String(metadata.normalizationVersion || "").trim() || null,
     calculationPolicyVersion: String(metadata.calculationPolicyVersion || "").trim() || null,
     pipelineVersion: String(metadata.pipelineVersion || "").trim() || null,
+    sourceHistoryMonths,
+    pathMonths,
+    pathReplayApplied,
+    sourceDataStartMonth,
+    sourceDataEndMonth,
   };
 }
 
@@ -233,6 +270,9 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
   if (!Array.isArray(rows) || rows.length === 0) throw new TypeError("baselineReturnMatrix:must_be_non_empty_array");
   const assetKeys = new Set(assets.map((asset) => asset.key));
   const expectedMonthCount = settings.investmentMonths;
+  if (metadata.pathMonths !== null && metadata.pathMonths !== expectedMonthCount) {
+    throw new RangeError("metadata.pathMonths:must_match_investmentMonths");
+  }
   const byMonth = new Map();
   const seenAssetMonths = new Set();
 
@@ -243,6 +283,10 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
     const key = `${market}:${ticker}`;
     if (!assetKeys.has(key)) continue;
     const month = canonicalMonth(row.month, `baselineReturnMatrix[${index}].month`);
+    const sourceMonth = canonicalMonth(
+      row.sourceMonth || row.month,
+      `baselineReturnMatrix[${index}].sourceMonth`,
+    );
     const duplicateKey = `${key}:${month}`;
     if (seenAssetMonths.has(duplicateKey)) {
       throw new RangeError(`same_calendar_month_duplicate:${duplicateKey}`);
@@ -257,6 +301,7 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
     byMonth.get(month)[key] = {
       baselineReturn: roundNumber(readBaselineReturn(row, `baselineReturnMatrix[${index}].baselineReturn`)),
       sourceHash,
+      sourceMonth,
     };
   }
 
@@ -278,10 +323,14 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
         throw new RangeError(`missing_asset_month:${asset.key}:${month}`);
       }
     }
+    if (new Set(assets.map((asset) => assetReturns[asset.key].sourceMonth)).size !== 1) {
+      throw new RangeError(`source_month_alignment_invalid:${month}`);
+    }
   }
 
   return selectedMonths.map((month, index) => ({
     month,
+    sourceMonth: byMonth.get(month)[assets[0].key].sourceMonth,
     monthIndex: index + 1,
     assetReturns: Object.fromEntries(
       assets.map((asset) => [asset.key, byMonth.get(month)[asset.key].baselineReturn]),
@@ -535,6 +584,7 @@ function simulatePaths({ assets, settings, baselineRows, events }) {
     trace.push({
       monthIndex: row.monthIndex,
       month: row.month,
+      sourceMonth: row.sourceMonth,
       shockApplied: Boolean(event),
       rowSourceHashes: row.rowSourceHashes,
       baselineReturns: row.assetReturns,
@@ -603,6 +653,7 @@ function buildAssetImpactSummary({ assets, baselineTerminalSleeves, stressedTerm
 function buildRowSourceLineage(baselineRows) {
   return baselineRows.map((row) => ({
     month: row.month,
+    sourceMonth: row.sourceMonth,
     monthIndex: row.monthIndex,
     rowSourceHashes: row.rowSourceHashes,
   }));
@@ -623,8 +674,13 @@ function buildBaselineIdentityPayload({ portfolioId, assets, settings, baselineR
     returnBasis: metadata.returnBasis,
     currencyMode: metadata.currencyMode,
     sourceHashes: metadata.sourceHashes,
-    dataStartDate: baselineRows[0]?.month || null,
-    dataEndDate: baselineRows.at(-1)?.month || null,
+    dataStartDate: metadata.sourceDataStartMonth || baselineRows[0]?.month || null,
+    dataEndDate: metadata.sourceDataEndMonth || baselineRows.at(-1)?.month || null,
+    sourceHistoryMonths: metadata.sourceHistoryMonths,
+    pathMonths: metadata.pathMonths,
+    pathReplayApplied: metadata.pathReplayApplied,
+    sourceDataStartMonth: metadata.sourceDataStartMonth,
+    sourceDataEndMonth: metadata.sourceDataEndMonth,
     normalizationVersion: metadata.normalizationVersion,
     calculationPolicyVersion: metadata.calculationPolicyVersion,
     pipelineVersion: metadata.pipelineVersion,
@@ -655,8 +711,13 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
     rebalanceFrequency: input?.settings?.rebalanceFrequency || null,
     returnBasis: input?.metadata?.returnBasis || null,
     currencyMode: input?.metadata?.currencyMode || null,
-    dataStartDate: null,
-    dataEndDate: null,
+    dataStartDate: input?.metadata?.sourceDataStartMonth || null,
+    dataEndDate: input?.metadata?.sourceDataEndMonth || null,
+    sourceHistoryMonths: input?.metadata?.sourceHistoryMonths ?? null,
+    pathMonths: input?.metadata?.pathMonths ?? null,
+    pathReplayApplied: input?.metadata?.pathReplayApplied ?? null,
+    sourceDataStartMonth: input?.metadata?.sourceDataStartMonth || null,
+    sourceDataEndMonth: input?.metadata?.sourceDataEndMonth || null,
     sourceHashes,
     normalizationVersion: input?.metadata?.normalizationVersion || null,
     calculationPolicyVersion: input?.metadata?.calculationPolicyVersion || null,
@@ -755,8 +816,13 @@ export function buildExternalShockScenario(input = {}) {
       inflationRate: settings.inflationRate,
       returnBasis: metadata.returnBasis,
       currencyMode: metadata.currencyMode,
-      dataStartDate: baselineRows[0].month,
-      dataEndDate: baselineRows.at(-1).month,
+      dataStartDate: metadata.sourceDataStartMonth || baselineRows[0].month,
+      dataEndDate: metadata.sourceDataEndMonth || baselineRows.at(-1).month,
+      sourceHistoryMonths: metadata.sourceHistoryMonths,
+      pathMonths: metadata.pathMonths,
+      pathReplayApplied: metadata.pathReplayApplied,
+      sourceDataStartMonth: metadata.sourceDataStartMonth,
+      sourceDataEndMonth: metadata.sourceDataEndMonth,
       sourceHashes: metadata.sourceHashes,
       normalizationVersion: metadata.normalizationVersion,
       calculationPolicyVersion: metadata.calculationPolicyVersion,

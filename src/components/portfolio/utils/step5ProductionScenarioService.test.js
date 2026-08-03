@@ -14,14 +14,58 @@ function month(index) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function rows(market, ticker, count = 12) {
+function rows(market, ticker, count = 60) {
   return Array.from({ length: count }, (_, index) => ({
     month: month(index),
     market,
     ticker,
-    priceReturn: index === 11 ? -0.08 : index % 2 ? -0.01 : 0.02,
+    priceReturn: index === count - 1 ? -0.08 : index % 2 ? -0.01 : 0.02,
     currency: market === "KR" ? "KRW" : "USD",
+    dataStatus: "ready",
+    isProxy: false,
+    proxyTicker: "",
+    proxyLineageStatus: "verified_non_proxy",
   }));
+}
+
+function proxyAwareRows(market, ticker, count) {
+  return rows(market, ticker, count).map((row) => ({
+    ...row,
+    dataStatus: "ready",
+    isProxy: false,
+    proxyTicker: "",
+    proxyLineageStatus: "verified_non_proxy",
+  }));
+}
+
+function blockedLegacyMonthlyReturns(identity, count) {
+  const [market, ticker] = identity.split(":");
+  return {
+    release: { releaseId: "pinned-production" },
+    monthlyRowContract: "legacy_v1",
+    legacyProductionBindingVerified: true,
+    catalogPolicyByIdentity: Object.freeze({
+      [identity]: Object.freeze({
+        identity,
+        policyEvidenceValid: true,
+        ordinaryDistribution: true,
+        ordinaryLegacyEligible: true,
+        dataStatus: "review_required",
+        metricsStatus: "ready",
+        reviewFlag: "review_required",
+        reviewApprovalStatus: "none",
+      }),
+    }),
+    rowsByIdentity: {
+      [identity]: rows(market, ticker, count).map((row) => ({
+        ...row,
+        dataStatus: "ready",
+        isProxy: null,
+        proxyTicker: null,
+        proxyLineageStatus: "legacy_unproven",
+      })),
+    },
+  };
 }
 
 function assets() {
@@ -124,7 +168,7 @@ test("missing or malformed required monthly numbers never become zero", () => {
   assert.ok(missing.results.every((result) => result.baselinePath.length === 0));
 
   const malformedRows = rows("KR", "005930");
-  malformedRows[0].priceReturn = Number.NaN;
+  malformedRows.at(-1).priceReturn = Number.NaN;
   const malformed = state({
     monthlyReturns: {
       rowsByIdentity: {
@@ -199,4 +243,53 @@ test("the hook owns one shared probability/shock loader and exposes separate Ste
     "step5ScenarioStatus",
     "step5ScenarioError",
   ]) assert.match(source, new RegExp(field));
+});
+
+test("Step 5 characterization: policy-allowed history at the horizon is ready without replay", () => {
+  const result = state({
+    assets: [{ market: "US", ticker: "QQQ", targetWeight: 100, beta: 1 }],
+    settings: { years: 10 },
+    monthlyReturns: {
+      rowsByIdentity: { "US:QQQ": proxyAwareRows("US", "QQQ", 120) },
+    },
+  });
+  assert.equal(result.status, "ready");
+  assert.equal(result.result.sourceHistoryMonths, 120);
+  assert.equal(result.result.pathMonths, 120);
+  assert.equal(result.result.pathReplayApplied, false);
+});
+
+test("Step 5 characterization: policy-allowed history from 60 months replays deterministically to the horizon", () => {
+  const input = {
+    assets: [{ market: "US", ticker: "QQQ", targetWeight: 100, beta: 1 }],
+    settings: { years: 10 },
+    monthlyReturns: {
+      rowsByIdentity: { "US:QQQ": proxyAwareRows("US", "QQQ", 84) },
+    },
+  };
+  const first = state(input);
+  const second = state(input);
+  assert.equal(first.status, "ready");
+  assert.deepEqual(first, second);
+  assert.equal(first.result.sourceHistoryMonths, 84);
+  assert.equal(first.result.pathMonths, 120);
+  assert.equal(first.result.pathReplayApplied, true);
+  assert.equal(first.result.rowSourceLineage[0].sourceMonth, month(0));
+  assert.equal(first.result.rowSourceLineage[84].sourceMonth, month(0));
+  assert.equal(new Set(first.result.rowSourceLineage.map((row) => row.month)).size, 120);
+});
+
+test("Step 5 characterization: pinned lineage policy blocks VNQ, BLOK, and KR:069500 before history adaptation", () => {
+  for (const [identity, count] of [["US:VNQ", 120], ["US:BLOK", 84], ["KR:069500", 59]]) {
+    const [market, ticker] = identity.split(":");
+    const result = state({
+      assets: [{ market, ticker, targetWeight: 100, beta: 1 }],
+      settings: { years: 10 },
+      monthlyReturns: blockedLegacyMonthlyReturns(identity, count),
+    });
+    assert.equal(result.status, "blocked");
+    assert.match(result.error, new RegExp(`missing_metric_lineage:monthly_return_proxy_status:${identity}`));
+    assert.doesNotMatch(result.error, /insufficient_data/);
+    assert.deepEqual(result.results, []);
+  }
 });

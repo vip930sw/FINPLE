@@ -262,6 +262,35 @@ test("same calendar month duplicate fails closed even if day differs", () => {
   assertBlocked(buildExternalShockScenario(input), /same_calendar_month_duplicate/);
 });
 
+test("repeated source months preserve lineage while calculation months stay unique", () => {
+  const plain = buildExternalShockScenario(baseInput());
+  const input = baseInput();
+  input.baselineReturnMatrix = input.baselineReturnMatrix.map((row, index) => ({
+    ...row,
+    sourceMonth: `2024-${String((Math.floor(index / 2) % 6) + 1).padStart(2, "0")}`,
+  }));
+  input.metadata = {
+    ...input.metadata,
+    sourceHistoryMonths: 6,
+    pathMonths: 12,
+    pathReplayApplied: true,
+    sourceDataStartMonth: "2024-01",
+    sourceDataEndMonth: "2024-06",
+  };
+  const result = buildExternalShockScenario(input);
+  assertReady(result);
+  assert.deepEqual(result.summary, plain.summary);
+  assert.equal(result.dataStartDate, "2024-01");
+  assert.equal(result.dataEndDate, "2024-06");
+  assert.equal(result.sourceHistoryMonths, 6);
+  assert.equal(result.pathMonths, 12);
+  assert.equal(result.pathReplayApplied, true);
+  assert.equal(result.rowSourceLineage[0].sourceMonth, "2024-01");
+  assert.equal(result.rowSourceLineage[6].sourceMonth, "2024-01");
+  assert.equal(new Set(result.rowSourceLineage.map((row) => row.month)).size, 12);
+  assert.equal(result.trace[6].sourceMonth, "2024-01");
+});
+
 test("invalid month and missing calendar month fail closed", () => {
   const invalid = baseInput();
   invalid.baselineReturnMatrix[0].month = "2024-13-31";

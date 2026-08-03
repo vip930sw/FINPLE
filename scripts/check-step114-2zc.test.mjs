@@ -88,15 +88,17 @@ test("fixed Production release bindings and exact counts are fail-closed", () =>
   assert.match(production, /source review gates changed/);
 });
 
-test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary stay unchanged", () => {
+test("Step 4 and deterministic Step 5 are Production-enabled while the Step 6 provider boundary stays unchanged", () => {
   const hook = read("src/components/portfolio/hooks/usePortfolioSimulator.js");
   const scenario = read("src/components/portfolio/utils/appPreviewScenarioService.js");
+  const lineagePolicy = read("src/components/portfolio/utils/monthlyScenarioLineagePolicy.js");
   const loader = read("src/data/tickers/screenerCandidateLoader.js");
   const identityMetadata = read(
     "src/data/tickers/portfolioAssetIdentityMetadata.js",
   );
   const simulator = read("src/components/PortfolioSimulator.jsx");
   const personal = read("src/components/PersonalPage.jsx");
+  const shockAdapter = read("src/components/portfolio/utils/externalShockScenarioAdapter.js");
   assert.match(hook, /loadProductionMonthlyReturnsForIdentities/);
   assert.match(hook, /isProductionMonthlyScenarioArtifactConfigured/);
   assert.match(hook, /monthlyScenarioArtifactState/);
@@ -108,7 +110,7 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
   assert.doesNotMatch(hook, /activateProductionAppExportFallback/);
   assert.doesNotMatch(scenario, /activateCatalogFallback/);
   assert.match(scenario, /failureDomain: identityUnavailable \? "identity_unavailable" : "scenario_loader"/);
-  assert.match(scenario, /production_monthly_identity_unavailable/);
+  assert.match(lineagePolicy, /production_monthly_identity_unavailable/);
   assert.match(hook, /reconcileIdentityScopedAssetMetadata/);
   assert.match(
     hook,
@@ -131,10 +133,9 @@ test("Step 4 is Production-enabled while Step 5 and Step 6 provider boundary sta
     sha256("src/components/portfolio/components/ExternalShockAnalysisPanel.jsx"),
     "3e9ad8e3021f97f959c1610a674dbfcb3268618dfd45289b9eda49fda2f41596",
   );
-  assert.equal(
-    sha256("src/components/portfolio/utils/externalShockScenarioAdapter.js"),
-    "41956f523e2be5857cee1138cc8e4e6616c1d2096032492581e3e20a70b485c2",
-  );
+  assert.match(shockAdapter, /sourceHistoryMonths/);
+  assert.match(shockAdapter, /pathReplayApplied/);
+  assert.match(shockAdapter, /monthly_return_proxy_status/);
   assert.equal(
     sha256("src/components/PersonalPage.jsx"),
     "2235dc9718080c01c4b763fbe615c8a60781129d4c94e6672144e6aed085fdd7",

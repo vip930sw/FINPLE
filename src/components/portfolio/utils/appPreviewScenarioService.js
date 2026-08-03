@@ -4,6 +4,16 @@ import {
   MANUAL_CASH_TOTAL_RETURN_PERCENT,
 } from "../../../data/tickers/manualCashAsset.js";
 import { getStep4ScenarioAssets } from "./portfolioFormatters.js";
+import {
+  APP_EXPORT_SCENARIO_ERROR_CODES,
+  AppExportScenarioPolicyError,
+  assertMonthlyScenarioLineage,
+} from "./monthlyScenarioLineagePolicy.js";
+
+export {
+  APP_EXPORT_SCENARIO_ERROR_CODES,
+  AppExportScenarioPolicyError,
+} from "./monthlyScenarioLineagePolicy.js";
 
 const MANUAL_CASH_MONTHLY_RETURN =
   (1 + MANUAL_CASH_TOTAL_RETURN_PERCENT / 100) ** (1 / 12) - 1;
@@ -82,32 +92,6 @@ function intersectMonths(seriesMaps) {
   );
 }
 
-const PROXY_STATUS_MARKER_PATTERN = /(?:^|[*:_\-\s])proxy(?:$|[*:_\-\s])/i;
-
-export const APP_EXPORT_SCENARIO_ERROR_CODES = Object.freeze({
-  PROXY_MONTHLY_RETURN: "unsupported_product_policy:proxy_monthly_return",
-  MISSING_PROXY_LINEAGE: "missing_metric_lineage:monthly_return_proxy_status",
-  IDENTITY_UNAVAILABLE: "production_monthly_identity_unavailable",
-});
-
-const APP_EXPORT_SCENARIO_POLICY_MESSAGES = Object.freeze({
-  [APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN]:
-    "Proxy-marked monthly-return rows are unavailable for scenario generation.",
-  [APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE]:
-    "Monthly-return proxy lineage is unavailable for scenario generation.",
-});
-
-export class AppExportScenarioPolicyError extends TypeError {
-  constructor({ code, identity }) {
-    super(APP_EXPORT_SCENARIO_POLICY_MESSAGES[code] || "Scenario policy rejected the input.");
-    this.name = "AppExportScenarioPolicyError";
-    this.code = code;
-    this.identity = identity;
-    this.domain = "scenario_policy";
-    this.catalogFallbackEligible = false;
-  }
-}
-
 export function getAppExportScenarioErrorMessage(error) {
   switch (error?.code) {
     case APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN:
@@ -118,111 +102,6 @@ export function getAppExportScenarioErrorMessage(error) {
       return "확률분석에 사용할 수 있는 월수익률이 없는 자산이 포함되어 있습니다.";
     default:
       return "확률분석 시나리오를 계산하지 못했습니다.";
-  }
-}
-
-function statusMarksProxy(value) {
-  return typeof value === "string" && PROXY_STATUS_MARKER_PATTERN.test(value.trim());
-}
-
-function catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity) {
-  if (
-    !catalogPolicyByIdentity ||
-    typeof catalogPolicyByIdentity !== "object" ||
-    Array.isArray(catalogPolicyByIdentity) ||
-    !Object.isFrozen(catalogPolicyByIdentity) ||
-    !Object.prototype.hasOwnProperty.call(catalogPolicyByIdentity, identity)
-  ) {
-    return false;
-  }
-  const record = catalogPolicyByIdentity[identity];
-  if (
-    !record ||
-    typeof record !== "object" ||
-    !Object.isFrozen(record)
-  ) {
-    return false;
-  }
-  return (
-    normalizeMarket(record.identity?.split(":", 1)[0]) ===
-      normalizeMarket(identity.split(":", 1)[0]) &&
-    normalizeTicker(record.identity?.split(":").slice(1).join(":")) ===
-      normalizeTicker(identity.split(":").slice(1).join(":")) &&
-    record.policyEvidenceValid === true &&
-    record.ordinaryDistribution === true &&
-    record.ordinaryLegacyEligible === true &&
-    String(record.dataStatus || "").trim().toLowerCase() === "ready" &&
-    String(record.metricsStatus || "").trim().toLowerCase() === "ready" &&
-    String(record.reviewFlag || "").trim().toLowerCase() === "none" &&
-    ["", "none"].includes(
-      String(record.reviewApprovalStatus || "").trim().toLowerCase(),
-    ) &&
-    !String(record.reviewApprovalPolicyVersion || "").trim() &&
-    !String(record.reviewPolicy || "").trim()
-  );
-}
-
-function assertNonProxyMonthlyLineage(
-  identity,
-  rows = [],
-  {
-    runtimeMode = "internal_preview_review_only",
-    monthlyRowContract = "proxy_aware_v2",
-    legacyProductionBindingVerified = false,
-    catalogPolicyByIdentity = null,
-  } = {},
-) {
-  const lineageStates = new Set();
-  for (const row of rows) {
-    if (typeof row?.dataStatus !== "string") {
-      throw new AppExportScenarioPolicyError({
-        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
-        identity,
-      });
-    }
-    const statusMarksMonthlyProxy = statusMarksProxy(row?.dataStatus);
-    const legacyUnproven =
-      row?.isProxy === null &&
-      row?.proxyTicker === null &&
-      row?.proxyLineageStatus === "legacy_unproven";
-    lineageStates.add(legacyUnproven ? "legacy_unproven" : "proxy_aware");
-    if (statusMarksMonthlyProxy ||
-        row?.isProxy === true ||
-        (typeof row?.proxyTicker === "string" && row.proxyTicker.trim())) {
-      throw new AppExportScenarioPolicyError({
-        code: APP_EXPORT_SCENARIO_ERROR_CODES.PROXY_MONTHLY_RETURN,
-        identity,
-      });
-    }
-    if (legacyUnproven) {
-      const legacyAllowed =
-        runtimeMode === "production_app_export_ready" &&
-        monthlyRowContract === "legacy_v1" &&
-        legacyProductionBindingVerified === true &&
-        catalogAllowsLegacyIdentity(identity, catalogPolicyByIdentity);
-      if (!legacyAllowed) {
-        throw new AppExportScenarioPolicyError({
-          code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
-          identity,
-        });
-      }
-      continue;
-    }
-    if (row?.isProxy !== false ||
-        typeof row?.proxyTicker !== "string" ||
-        row.proxyTicker.trim() ||
-        row?.proxyLineageStatus === "legacy_unproven") {
-      throw new AppExportScenarioPolicyError({
-        code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
-        identity,
-      });
-    }
-  }
-  if (lineageStates.size > 1) {
-    throw new AppExportScenarioPolicyError({
-      code: APP_EXPORT_SCENARIO_ERROR_CODES.MISSING_PROXY_LINEAGE,
-      identity,
-    });
   }
 }
 
@@ -320,7 +199,7 @@ export function buildAppExportScenarioResult({
   );
   const identities = artifactAssets.map(identityForAsset);
   identities.forEach((identity) => {
-    assertNonProxyMonthlyLineage(identity, rowsByIdentity[identity], {
+    assertMonthlyScenarioLineage(identity, rowsByIdentity[identity], {
       runtimeMode,
       monthlyRowContract,
       legacyProductionBindingVerified,
