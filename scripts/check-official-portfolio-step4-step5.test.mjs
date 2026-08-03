@@ -190,6 +190,8 @@ test("official portfolios and MBTI Step 4/5 matrix distinguishes ready from expe
           assert.doesNotMatch(step5.error, /insufficient_data/);
         } else {
           assert.deepEqual(step5.results.map((result) => result.status), ["ready", "ready"]);
+          assert.equal(step5.result.availableCommonHistoryMonths, commonHistory);
+          assert.equal(step5.result.sourceHistoryMonths, Math.min(commonHistory, years * 12));
           assert.equal(step5.result.pathReplayApplied, commonHistory < years * 12);
         }
         const state = expectedBlocked ? {

@@ -211,6 +211,7 @@ export function createExternalShockFixturePayloadForIntegrity(result) {
     currencyMode: result?.currencyMode,
     dataStartDate: result?.dataStartDate,
     dataEndDate: result?.dataEndDate,
+    availableCommonHistoryMonths: result?.availableCommonHistoryMonths,
     sourceHistoryMonths: result?.sourceHistoryMonths,
     pathMonths: result?.pathMonths,
     pathReplayApplied: result?.pathReplayApplied,
@@ -531,11 +532,18 @@ function validateReadyResult(result, issues, { strictAudit = false } = {}) {
     issues.push("rowSourceLineage_alignment_invalid");
   }
   if (isV2ProductionResult(result)) {
+    if (!Number.isInteger(result.availableCommonHistoryMonths) ||
+      result.availableCommonHistoryMonths < result.sourceHistoryMonths) {
+      issues.push("availableCommonHistoryMonths_invalid");
+    }
     if (!Number.isInteger(result.sourceHistoryMonths) || result.sourceHistoryMonths < 60) {
       issues.push("sourceHistoryMonths_invalid");
     }
     if (result.pathMonths !== baselineIndexes.length - 1) issues.push("pathMonths_invalid");
     if (typeof result.pathReplayApplied !== "boolean") issues.push("pathReplayApplied_invalid");
+    if (result.pathReplayApplied !== (result.sourceHistoryMonths < result.pathMonths)) {
+      issues.push("pathReplayApplied_inconsistent");
+    }
     if (!MONTH_PATTERN.test(String(result.sourceDataStartMonth || ""))) issues.push("sourceDataStartMonth_invalid");
     if (!MONTH_PATTERN.test(String(result.sourceDataEndMonth || ""))) issues.push("sourceDataEndMonth_invalid");
     if (result.dataStartDate !== result.sourceDataStartMonth) issues.push("dataStartDate_source_mismatch");
@@ -737,6 +745,7 @@ function validateScenarioComparisonBaselineIdentity(results, issues) {
       "currencyMode",
       "dataStartDate",
       "dataEndDate",
+      "availableCommonHistoryMonths",
       "sourceHistoryMonths",
       "pathMonths",
       "pathReplayApplied",
@@ -765,7 +774,8 @@ function createMethodology(result = {}) {
     { label: "통화 기준", value: result.currencyMode || "-" },
     { label: "데이터 시작", value: result.sourceDataStartMonth || result.dataStartDate || "-" },
     { label: "데이터 종료", value: result.sourceDataEndMonth || result.dataEndDate || "-" },
-    { label: "원본 공통 이력", value: Number.isInteger(result.sourceHistoryMonths) ? `${result.sourceHistoryMonths}개월` : "-" },
+    { label: "확보 공통 이력", value: Number.isInteger(result.availableCommonHistoryMonths) ? `${result.availableCommonHistoryMonths}개월` : "-" },
+    { label: "사용 원본 이력", value: Number.isInteger(result.sourceHistoryMonths) ? `${result.sourceHistoryMonths}개월` : "-" },
     { label: "계산 경로", value: Number.isInteger(result.pathMonths) ? `${result.pathMonths}개월` : "-" },
     { label: "경로 반복", value: result.pathReplayApplied === true ? "적용" : result.pathReplayApplied === false ? "미적용" : "-" },
     { label: "발생확률", value: "미적용" },

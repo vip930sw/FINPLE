@@ -213,6 +213,7 @@ function normalizeMetadata(metadata = {}, rows = []) {
   if (!currencyMode) throw new TypeError("metadata.currencyMode:required");
   const sourceHashes = collectEffectiveSourceHashes(metadata.sourceHashes, rows);
   const pathFields = [
+    "availableCommonHistoryMonths",
     "sourceHistoryMonths",
     "pathMonths",
     "pathReplayApplied",
@@ -225,6 +226,9 @@ function normalizeMetadata(metadata = {}, rows = []) {
   if (hasPathMetadata && !pathFields.every((field) =>
     Object.prototype.hasOwnProperty.call(metadata, field)
   )) throw new TypeError("metadata.historyPath:incomplete");
+  const availableCommonHistoryMonths = hasPathMetadata
+    ? toPositiveInteger(metadata.availableCommonHistoryMonths, "metadata.availableCommonHistoryMonths")
+    : null;
   const sourceHistoryMonths = hasPathMetadata
     ? toPositiveInteger(metadata.sourceHistoryMonths, "metadata.sourceHistoryMonths")
     : null;
@@ -244,6 +248,9 @@ function normalizeMetadata(metadata = {}, rows = []) {
   if (hasPathMetadata && monthOrdinal(sourceDataStartMonth) > monthOrdinal(sourceDataEndMonth)) {
     throw new RangeError("metadata.sourceDataPeriod:invalid");
   }
+  if (hasPathMetadata && sourceHistoryMonths > availableCommonHistoryMonths) {
+    throw new RangeError("metadata.sourceHistoryMonths:exceeds_availableCommonHistoryMonths");
+  }
   return {
     returnBasis,
     currencyMode,
@@ -251,6 +258,7 @@ function normalizeMetadata(metadata = {}, rows = []) {
     normalizationVersion: String(metadata.normalizationVersion || "").trim() || null,
     calculationPolicyVersion: String(metadata.calculationPolicyVersion || "").trim() || null,
     pipelineVersion: String(metadata.pipelineVersion || "").trim() || null,
+    availableCommonHistoryMonths,
     sourceHistoryMonths,
     pathMonths,
     pathReplayApplied,
@@ -676,6 +684,7 @@ function buildBaselineIdentityPayload({ portfolioId, assets, settings, baselineR
     sourceHashes: metadata.sourceHashes,
     dataStartDate: metadata.sourceDataStartMonth || baselineRows[0]?.month || null,
     dataEndDate: metadata.sourceDataEndMonth || baselineRows.at(-1)?.month || null,
+    availableCommonHistoryMonths: metadata.availableCommonHistoryMonths,
     sourceHistoryMonths: metadata.sourceHistoryMonths,
     pathMonths: metadata.pathMonths,
     pathReplayApplied: metadata.pathReplayApplied,
@@ -713,6 +722,7 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
     currencyMode: input?.metadata?.currencyMode || null,
     dataStartDate: input?.metadata?.sourceDataStartMonth || null,
     dataEndDate: input?.metadata?.sourceDataEndMonth || null,
+    availableCommonHistoryMonths: input?.metadata?.availableCommonHistoryMonths ?? null,
     sourceHistoryMonths: input?.metadata?.sourceHistoryMonths ?? null,
     pathMonths: input?.metadata?.pathMonths ?? null,
     pathReplayApplied: input?.metadata?.pathReplayApplied ?? null,
@@ -818,6 +828,7 @@ export function buildExternalShockScenario(input = {}) {
       currencyMode: metadata.currencyMode,
       dataStartDate: metadata.sourceDataStartMonth || baselineRows[0].month,
       dataEndDate: metadata.sourceDataEndMonth || baselineRows.at(-1).month,
+      availableCommonHistoryMonths: metadata.availableCommonHistoryMonths,
       sourceHistoryMonths: metadata.sourceHistoryMonths,
       pathMonths: metadata.pathMonths,
       pathReplayApplied: metadata.pathReplayApplied,

@@ -271,6 +271,7 @@ test("repeated source months preserve lineage while calculation months stay uniq
   }));
   input.metadata = {
     ...input.metadata,
+    availableCommonHistoryMonths: 6,
     sourceHistoryMonths: 6,
     pathMonths: 12,
     pathReplayApplied: true,
@@ -282,6 +283,7 @@ test("repeated source months preserve lineage while calculation months stay uniq
   assert.deepEqual(result.summary, plain.summary);
   assert.equal(result.dataStartDate, "2024-01");
   assert.equal(result.dataEndDate, "2024-06");
+  assert.equal(result.availableCommonHistoryMonths, 6);
   assert.equal(result.sourceHistoryMonths, 6);
   assert.equal(result.pathMonths, 12);
   assert.equal(result.pathReplayApplied, true);

@@ -52,6 +52,7 @@ function productionResult(scenarioId = "market_drawdown_moderate") {
   result.normalizationVersion = null;
   result.calculationPolicyVersion = null;
   result.pipelineVersion = null;
+  result.availableCommonHistoryMonths = 60;
   result.sourceHistoryMonths = 60;
   result.pathMonths = result.baselinePath.length - 1;
   result.pathReplayApplied = false;
@@ -198,10 +199,9 @@ test("all blocked Production results stay non-numeric and map coverage shortage"
   );
 });
 
-test("Production path metadata exposes source period and replay without treating repeated source months as invalid", () => {
+test("Production path metadata distinguishes available and selected source history", () => {
   const result = productionResult();
-  result.sourceHistoryMonths = 84;
-  result.pathReplayApplied = true;
+  result.availableCommonHistoryMonths = 176;
   result.rowSourceLineage[6].sourceMonth = result.rowSourceLineage[0].sourceMonth;
   const viewModel = buildExternalShockScenarioViewModel({
     result,
@@ -209,9 +209,10 @@ test("Production path metadata exposes source period and replay without treating
   });
   assert.equal(viewModel.status, "ready");
   assert.equal(viewModel.methodology.find((item) => item.label === "데이터 시작").value, result.sourceDataStartMonth);
-  assert.equal(viewModel.methodology.find((item) => item.label === "원본 공통 이력").value, "84개월");
+  assert.equal(viewModel.methodology.find((item) => item.label === "확보 공통 이력").value, "176개월");
+  assert.equal(viewModel.methodology.find((item) => item.label === "사용 원본 이력").value, "60개월");
   assert.equal(viewModel.methodology.find((item) => item.label === "계산 경로").value, `${result.pathMonths}개월`);
-  assert.equal(viewModel.methodology.find((item) => item.label === "경로 반복").value, "적용");
+  assert.equal(viewModel.methodology.find((item) => item.label === "경로 반복").value, "미적용");
 });
 
 test("Production v2 malformed hashes, paths, and shock assumptions fail closed", () => {

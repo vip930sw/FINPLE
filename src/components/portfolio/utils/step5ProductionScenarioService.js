@@ -89,7 +89,9 @@ function shiftMonth(month, offset) {
 }
 
 function buildHistoryPath(availableMonths, investmentMonths) {
-  if (!Number.isInteger(investmentMonths) || investmentMonths <= 0) return [];
+  if (!Number.isInteger(investmentMonths) || investmentMonths <= 0) {
+    return { entries: [], selectedSourceMonths: [], pathReplayApplied: false };
+  }
   if (availableMonths.length < MINIMUM_SOURCE_HISTORY_MONTHS) {
     const error = new RangeError(
       `insufficient_data:minimum_${MINIMUM_SOURCE_HISTORY_MONTHS}_months_got_${availableMonths.length}`,
@@ -97,17 +99,21 @@ function buildHistoryPath(availableMonths, investmentMonths) {
     error.status = "insufficient_data";
     throw error;
   }
-  const sourceMonths = availableMonths.length >= investmentMonths
+  const selectedSourceMonths = availableMonths.length >= investmentMonths
     ? availableMonths.slice(-investmentMonths)
     : availableMonths;
   const pathMonths = Array.from(
     { length: investmentMonths },
     (_, index) => shiftMonth(availableMonths.at(-1), index - investmentMonths + 1),
   );
-  return pathMonths.map((pathMonth, index) => ({
-    pathMonth,
-    sourceMonth: sourceMonths[index % sourceMonths.length],
-  }));
+  return {
+    entries: pathMonths.map((pathMonth, index) => ({
+      pathMonth,
+      sourceMonth: selectedSourceMonths[index % selectedSourceMonths.length],
+    })),
+    selectedSourceMonths,
+    pathReplayApplied: selectedSourceMonths.length < pathMonths.length,
+  };
 }
 
 function buildInputBase({ activePortfolio, assets, settings, monthlyReturns }) {
@@ -135,7 +141,7 @@ function buildInputBase({ activePortfolio, assets, settings, monthlyReturns }) {
   const investmentMonths = investmentMonthsForSettings(settings);
   const availableMonths = commonContiguousMonths(seriesMaps);
   const historyPath = buildHistoryPath(availableMonths, investmentMonths);
-  const monthlyReturnMatrix = historyPath.flatMap(({ pathMonth, sourceMonth }) =>
+  const monthlyReturnMatrix = historyPath.entries.flatMap(({ pathMonth, sourceMonth }) =>
     scenarioAssets.map((asset) => {
       const manualCash = isManualCashAsset(asset);
       const row = manualCash
@@ -172,11 +178,12 @@ function buildInputBase({ activePortfolio, assets, settings, monthlyReturns }) {
     metadata: {
       returnBasis: "price_return",
       currencyMode: "MIXED",
-      sourceHistoryMonths: availableMonths.length,
-      pathMonths: historyPath.length,
-      pathReplayApplied: availableMonths.length < investmentMonths,
-      sourceDataStartMonth: availableMonths[0] || null,
-      sourceDataEndMonth: availableMonths.at(-1) || null,
+      availableCommonHistoryMonths: availableMonths.length,
+      sourceHistoryMonths: historyPath.selectedSourceMonths.length,
+      pathMonths: historyPath.entries.length,
+      pathReplayApplied: historyPath.pathReplayApplied,
+      sourceDataStartMonth: historyPath.selectedSourceMonths[0] || null,
+      sourceDataEndMonth: historyPath.selectedSourceMonths.at(-1) || null,
     },
     scenarioAssets,
   };

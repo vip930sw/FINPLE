@@ -254,6 +254,7 @@ test("Step 5 characterization: policy-allowed history at the horizon is ready wi
     },
   });
   assert.equal(result.status, "ready");
+  assert.equal(result.result.availableCommonHistoryMonths, 120);
   assert.equal(result.result.sourceHistoryMonths, 120);
   assert.equal(result.result.pathMonths, 120);
   assert.equal(result.result.pathReplayApplied, false);
@@ -271,12 +272,38 @@ test("Step 5 characterization: policy-allowed history from 60 months replays det
   const second = state(input);
   assert.equal(first.status, "ready");
   assert.deepEqual(first, second);
+  assert.equal(first.result.availableCommonHistoryMonths, 84);
   assert.equal(first.result.sourceHistoryMonths, 84);
   assert.equal(first.result.pathMonths, 120);
   assert.equal(first.result.pathReplayApplied, true);
   assert.equal(first.result.rowSourceLineage[0].sourceMonth, month(0));
   assert.equal(first.result.rowSourceLineage[84].sourceMonth, month(0));
   assert.equal(new Set(first.result.rowSourceLineage.map((row) => row.month)).size, 120);
+});
+
+test("Step 5 metadata reports the selected source period separately from available common history", () => {
+  for (const [available, horizon, sourceHistory, sourceStartIndex, replay] of [
+    [176, 60, 60, 116, false],
+    [176, 120, 120, 56, false],
+    [84, 120, 84, 0, true],
+  ]) {
+    const result = state({
+      assets: [{ market: "US", ticker: "QQQ", targetWeight: 100, beta: 1 }],
+      settings: { investmentMonths: horizon },
+      monthlyReturns: {
+        rowsByIdentity: { "US:QQQ": proxyAwareRows("US", "QQQ", available) },
+      },
+    });
+    assert.equal(result.status, "ready");
+    assert.equal(result.result.availableCommonHistoryMonths, available);
+    assert.equal(result.result.sourceHistoryMonths, sourceHistory);
+    assert.equal(result.result.pathMonths, horizon);
+    assert.equal(result.result.pathReplayApplied, replay);
+    assert.equal(result.result.sourceDataStartMonth, month(sourceStartIndex));
+    assert.equal(result.result.sourceDataEndMonth, month(available - 1));
+    assert.equal(result.result.dataStartDate, month(sourceStartIndex));
+    assert.equal(result.result.dataEndDate, month(available - 1));
+  }
 });
 
 test("Step 5 characterization: pinned lineage policy blocks VNQ, BLOK, and KR:069500 before history adaptation", () => {
