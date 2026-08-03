@@ -10,6 +10,7 @@ import { SIMULATOR_TAB_ITEMS } from "../src/components/portfolio/utils/simulator
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const css = read("../src/App.css");
+const globalNavigationCss = read("../src/GlobalNavigation.css");
 const navSource = read("../src/components/portfolio/components/SimulatorTabNav.jsx");
 const simulatorSource = read("../src/components/PortfolioSimulator.jsx");
 
@@ -79,4 +80,11 @@ test("4. badge and title CSS preserve seven-step and mobile containment", () => 
   assert.match(css, /\.simulatorMobileAllSteps button > strong\s*\{[^}]*overflow-wrap:\s*normal !important;[^}]*word-break:\s*keep-all;/s);
   assert.match(css, /\.simulatorTabNav\.fourStepNav\.sevenStepNav\s*\{[^}]*repeat\(7, minmax\(132px, 1fr\)\)[^}]*overflow-x:\s*auto !important;/s);
   assert.match(css, /\.simulatorMobileAllSteps\.open\s*\{[^}]*overflow-x:\s*auto;/s);
+});
+
+test("5. compact desktop header contains all seven route steps before the mobile breakpoint", () => {
+  assert.match(
+    globalNavigationCss,
+    /@media \(max-width: 1360px\)[\s\S]*?\.finpleUnifiedHeader \.simulatorRouteSubNav\s*\{[^}]*justify-content:\s*flex-start;[^}]*gap:\s*10px;[^}]*overflow-x:\s*auto;[^}]*overscroll-behavior-inline:\s*contain;/s,
+  );
 });
