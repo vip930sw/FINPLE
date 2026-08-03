@@ -234,6 +234,17 @@
   padding-top: 56px !important;
 }
 
+@media (max-width: 1360px) {
+  .finpleUnifiedHeader .simulatorRouteSubNav {
+    justify-content: flex-start;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+}
+
 @media (max-width: 1180px) {
   .finpleUnifiedHeader {
     grid-template-columns: 210px minmax(120px, 1fr) auto !important;
