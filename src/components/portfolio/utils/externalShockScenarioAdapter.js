@@ -7,6 +7,7 @@ const SUPPORTED_STATUSES = new Set(["idle", "loading", "ready", "insufficient_da
 const SUPPORTED_SHOCK_MODES = new Set(["direct_asset", "market_beta"]);
 const SUPPORTED_RETURN_BASIS = new Set(["price_return", "total_return"]);
 const HASH_PATTERN = /^[a-f0-9]{64}$/i;
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const APPROVAL_EVIDENCE_VERSION = "scenario-provider-approval-evidence-v1-step114-2j";
 const PUBLIC_STATUS_COPY = Object.freeze({
   idle: {
@@ -23,7 +24,7 @@ const PUBLIC_STATUS_COPY = Object.freeze({
   },
   insufficient_data: {
     title: "공통 이력 부족",
-    message: "선택 자산의 공통 월간 이력이 투자기간보다 짧아 분석할 수 없습니다.",
+    message: "선택 자산의 공통 월간 이력이 60개월 미만이라 분석할 수 없습니다.",
   },
   blocked: {
     title: "필수값 확인 필요",
@@ -116,6 +117,12 @@ export function getExternalShockStatusCopy(status) {
 
 export function formatExternalShockBlockReason(reason = "") {
   const value = String(reason || "");
+  if (/unsupported_product_policy:proxy_monthly_return/i.test(value)) {
+    return "프록시 월수익률이 포함된 자산은 외부충격분석을 제공할 수 없습니다.";
+  }
+  if (/missing_metric_lineage:monthly_return_proxy_status/i.test(value)) {
+    return "월수익률 출처 또는 정책 적격성을 확인할 수 없어 외부충격분석을 제공할 수 없습니다.";
+  }
   if (/market_beta_coverage_invalid|assetBetas.*must_be_finite_number|beta.*must_be_finite_number/i.test(value)) {
     return "일부 자산의 Beta를 확인할 수 없습니다.";
   }
@@ -204,6 +211,12 @@ export function createExternalShockFixturePayloadForIntegrity(result) {
     currencyMode: result?.currencyMode,
     dataStartDate: result?.dataStartDate,
     dataEndDate: result?.dataEndDate,
+    availableCommonHistoryMonths: result?.availableCommonHistoryMonths,
+    sourceHistoryMonths: result?.sourceHistoryMonths,
+    pathMonths: result?.pathMonths,
+    pathReplayApplied: result?.pathReplayApplied,
+    sourceDataStartMonth: result?.sourceDataStartMonth,
+    sourceDataEndMonth: result?.sourceDataEndMonth,
     sourceHashes: result?.sourceHashes,
     normalizationVersion: result?.normalizationVersion,
     calculationPolicyVersion: result?.calculationPolicyVersion,
@@ -518,6 +531,32 @@ function validateReadyResult(result, issues, { strictAudit = false } = {}) {
   if (safeArray(result.rowSourceLineage).length !== baselineIndexes.length - 1) {
     issues.push("rowSourceLineage_alignment_invalid");
   }
+  if (isV2ProductionResult(result)) {
+    if (!Number.isInteger(result.availableCommonHistoryMonths) ||
+      result.availableCommonHistoryMonths < result.sourceHistoryMonths) {
+      issues.push("availableCommonHistoryMonths_invalid");
+    }
+    if (!Number.isInteger(result.sourceHistoryMonths) || result.sourceHistoryMonths < 60) {
+      issues.push("sourceHistoryMonths_invalid");
+    }
+    if (result.pathMonths !== baselineIndexes.length - 1) issues.push("pathMonths_invalid");
+    if (typeof result.pathReplayApplied !== "boolean") issues.push("pathReplayApplied_invalid");
+    if (result.pathReplayApplied !== (result.sourceHistoryMonths < result.pathMonths)) {
+      issues.push("pathReplayApplied_inconsistent");
+    }
+    if (!MONTH_PATTERN.test(String(result.sourceDataStartMonth || ""))) issues.push("sourceDataStartMonth_invalid");
+    if (!MONTH_PATTERN.test(String(result.sourceDataEndMonth || ""))) issues.push("sourceDataEndMonth_invalid");
+    if (result.dataStartDate !== result.sourceDataStartMonth) issues.push("dataStartDate_source_mismatch");
+    if (result.dataEndDate !== result.sourceDataEndMonth) issues.push("dataEndDate_source_mismatch");
+    for (const [index, row] of safeArray(result.rowSourceLineage).entries()) {
+      if (row?.monthIndex !== index + 1 || !MONTH_PATTERN.test(String(row?.month || ""))) {
+        issues.push(`rowSourceLineage_path_invalid:${index}`);
+      }
+      if (!MONTH_PATTERN.test(String(row?.sourceMonth || ""))) {
+        issues.push(`rowSourceLineage_sourceMonth_invalid:${index}`);
+      }
+    }
+  }
 }
 
 function baselineIdentityMatches({ baselineResult, result, fingerprint }) {
@@ -706,6 +745,12 @@ function validateScenarioComparisonBaselineIdentity(results, issues) {
       "currencyMode",
       "dataStartDate",
       "dataEndDate",
+      "availableCommonHistoryMonths",
+      "sourceHistoryMonths",
+      "pathMonths",
+      "pathReplayApplied",
+      "sourceDataStartMonth",
+      "sourceDataEndMonth",
       "normalizationVersion",
       "calculationPolicyVersion",
       "pipelineVersion",
@@ -727,8 +772,12 @@ function createMethodology(result = {}) {
     { label: "비중 조정 주기", value: result.rebalanceFrequency === "monthly" ? "월간" : result.rebalanceFrequency || "-" },
     { label: "물가상승률", value: result.inflationRate === null || result.inflationRate === undefined ? "-" : String(result.inflationRate) },
     { label: "통화 기준", value: result.currencyMode || "-" },
-    { label: "데이터 시작", value: result.dataStartDate || "-" },
-    { label: "데이터 종료", value: result.dataEndDate || "-" },
+    { label: "데이터 시작", value: result.sourceDataStartMonth || result.dataStartDate || "-" },
+    { label: "데이터 종료", value: result.sourceDataEndMonth || result.dataEndDate || "-" },
+    { label: "확보 공통 이력", value: Number.isInteger(result.availableCommonHistoryMonths) ? `${result.availableCommonHistoryMonths}개월` : "-" },
+    { label: "사용 원본 이력", value: Number.isInteger(result.sourceHistoryMonths) ? `${result.sourceHistoryMonths}개월` : "-" },
+    { label: "계산 경로", value: Number.isInteger(result.pathMonths) ? `${result.pathMonths}개월` : "-" },
+    { label: "경로 반복", value: result.pathReplayApplied === true ? "적용" : result.pathReplayApplied === false ? "미적용" : "-" },
     { label: "발생확률", value: "미적용" },
   ];
 }
