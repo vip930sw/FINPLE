@@ -3,6 +3,13 @@
   "outputDirectory": "dist",
   "routes": [
     {
+      "src": "/preview-api/(.*)",
+      "headers": {
+        "Cache-Control": "no-store, private, max-age=0"
+      },
+      "dest": "https://finple-api.onrender.com/api/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
