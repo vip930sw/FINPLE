@@ -26,6 +26,7 @@ import inquiryRoutes from "./routes/inquiryRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import aiPortfolioAnalysisRoutes from "./routes/aiPortfolioAnalysisRoutes.js";
 import adminTradingReadinessRoutes from "./routes/adminTradingReadinessRoutes.js";
+import adminTradingScalpingRoutes from "./routes/adminTradingScalpingRoutes.js";
 
 import {
   getAssetDataBatch,
@@ -100,6 +101,7 @@ app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/account/investment-mbti", investmentMbtiRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/trading-readiness", adminTradingScalpingRoutes);
 app.use("/api/admin/trading-readiness", adminTradingReadinessRoutes);
 app.use("/api/ai", aiPortfolioAnalysisRoutes);
 
