@@ -27,7 +27,8 @@ test("Admin scalping API is admin-only, draft-only, and mounted before the legac
   const legacyMount = index.lastIndexOf("adminTradingReadinessRoutes");
   assert.ok(newMount >= 0);
   assert.ok(legacyMount > newMount);
-  assert.doesNotMatch(route, /orders?|KIS_TRADING_APP_SECRET|appSecret/);
+  assert.doesNotMatch(route, /KIS_TRADING_APP_SECRET|appSecret|submitOrder|placeOrder|orderAdapter/);
+  assert.doesNotMatch(route, /router\.(post|patch|delete)\(/);
 });
 
 test("Dashboard contract exposes real TSC-1 controls and keeps missing performance null", async () => {
