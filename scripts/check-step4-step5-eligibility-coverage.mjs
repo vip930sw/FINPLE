@@ -9,7 +9,6 @@ const DATA_BASE_URL = "/app-data/finple-universe-v2-2026-07-24";
 const DATA_REPO_ROOT = `public${DATA_BASE_URL}`;
 const INVENTORY_PATH = "reports/portfolio-analysis/step4-step5-eligibility-inventory.json";
 const SUMMARY_PATH = "reports/portfolio-analysis/step4-step5-eligibility-summary.md";
-const REPORT_AS_OF = "2026-08-04";
 const EXPECTED_CATALOG_COUNT = 6029;
 const MINIMUM_HISTORY_MONTHS = 60;
 const START_VALUE = 50_000_000;
@@ -70,6 +69,21 @@ function percent(count, total) {
 
 function round(value, digits = 4) {
   return Number(Number(value || 0).toFixed(digits));
+}
+
+function isBlankValue(value) {
+  return value === null || value === undefined || String(value).trim() === "";
+}
+
+function isPresentFiniteNumber(value) {
+  return !isBlankValue(value) && Number.isFinite(Number(value));
+}
+
+function reportDateFromReleaseTimestamp(value) {
+  const timestamp = String(value || "").trim();
+  assert.match(timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, "pinned release timestamp is invalid");
+  assert.ok(Number.isFinite(Date.parse(timestamp)), "pinned release timestamp is invalid");
+  return timestamp.slice(0, 10);
 }
 
 function assertUniqueCatalog(candidates) {
@@ -143,11 +157,19 @@ function catalogReviewRequired(policy) {
   );
 }
 
-function remediationFor(state, policy) {
-  if (state !== "review_required") return REMEDIATION_BY_STATE[state];
+function remediationFor(state, policy, directLineageRecoveryFeasible) {
+  if (!["review_required", "legacy_unproven"].includes(state)) return REMEDIATION_BY_STATE[state];
   if (policy?.policyEvidenceValid !== true) return "needs_manual_audit";
   if (policy?.ordinaryDistribution !== true) return "unsupported_product_policy";
-  return "review_completion";
+  if (!directLineageRecoveryFeasible) return "needs_manual_audit";
+  return state === "review_required" ? "review_completion" : "direct_lineage_metadata_repair";
+}
+
+function isDirectLineageRecoveryFeasible(evidence, policy) {
+  return evidence.monthlyIdentityPresent && !evidence.identityMismatch && !evidence.proxyMarked &&
+    evidence.policyRejected && (evidence.reviewRequired || evidence.legacyRows) &&
+    policy?.policyEvidenceValid === true && policy?.ordinaryDistribution === true &&
+    evidence.contiguousHistoryMonths >= MINIMUM_HISTORY_MONTHS && evidence.step3Ready && evidence.betaValid;
 }
 
 function classifyEvidence(evidence) {
@@ -201,6 +223,29 @@ function runCharacterizationChecks() {
   assert.deepEqual([beta.primary, beta.step4State, beta.step5State], ["missing_or_invalid_beta", "ready", "expected_blocked"]);
   assert.equal(classifyEvidence({ ...base, policyRejected: true }).primary, "other_policy_block");
   assert.throws(() => assertUniqueCatalog([{ market: "US", ticker: "DUP" }, { market: "us", ticker: "dup" }]));
+  for (const value of [null, undefined, "", " \t ", "N/A", Number.NaN]) assert.equal(isPresentFiniteNumber(value), false);
+  for (const value of ["0", 0, "1.25"]) assert.equal(isPresentFiniteNumber(value), true);
+  assert.equal(reportDateFromReleaseTimestamp("2026-07-24T12:34:56.000Z"), "2026-07-24");
+  assert.throws(() => reportDateFromReleaseTimestamp("2026-07-24"));
+  assert.deepEqual(portfolioEligibilityFromStates(0, 0, 59, true), {
+    commonHistoryReady: false,
+    commonHistoryReasonCategory: "common_history_lt_60",
+    step4State: "expected_blocked",
+    step5State: "expected_blocked",
+  });
+  assert.equal(portfolioEligibilityFromStates(0, 0, 60, true).step5State, "ready");
+  assert.equal(portfolioEligibilityFromStates(0, 0, 0, true).step4State, "expected_blocked");
+  assert.equal(portfolioEligibilityFromStates(0, 0, null, false).step5State, "ready");
+  const repairEvidence = { ...base, policyRejected: true, reviewRequired: true };
+  const repairPolicy = { policyEvidenceValid: true, ordinaryDistribution: true };
+  assert.equal(isDirectLineageRecoveryFeasible(repairEvidence, repairPolicy), true);
+  for (const evidence of [
+    { ...repairEvidence, betaValid: false },
+    { ...repairEvidence, step3Ready: false },
+    { ...repairEvidence, contiguousHistoryMonths: 59 },
+    { ...repairEvidence, proxyMarked: true },
+  ]) assert.equal(isDirectLineageRecoveryFeasible(evidence, repairPolicy), false);
+  assert.equal(remediationFor("review_required", repairPolicy, false), "needs_manual_audit");
 }
 
 function step3Ready(candidate, baseline) {
@@ -238,13 +283,25 @@ function coverageTotals(assets) {
   };
 }
 
-function commonHistoryMonths(assets, inventoryByIdentity, rowsByIdentity, longestContiguousMonthSegment) {
+function commonHistoryMonths(assets, rowsByIdentity, longestContiguousMonthSegment) {
   const identities = assets.filter((asset) => !isCash(asset)).map(identityFor);
-  if (!identities.length || identities.some((item) => inventoryByIdentity.get(item)?.step4State !== "ready")) return null;
-  const common = rowsByIdentity[identities[0]].map((row) => row.month).filter((month) =>
-    identities.every((item) => rowsByIdentity[item].some((row) => row.month === month))
+  if (!identities.length) return null;
+  if (identities.some((identity) => !rowsByIdentity[identity]?.length)) return 0;
+  const monthSets = identities.map((identity) => new Set(rowsByIdentity[identity].map((row) => String(row.month).slice(0, 7))));
+  const common = [...monthSets[0]].filter((month) =>
+    monthSets.every((months) => months.has(month))
   );
   return longestContiguousMonthSegment(common).length;
+}
+
+function portfolioEligibilityFromStates(step4BlockedCount, step5BlockedCount, commonMonths, hasNonCashAssets) {
+  const commonHistoryReady = !hasNonCashAssets || commonMonths >= MINIMUM_HISTORY_MONTHS;
+  return {
+    commonHistoryReady,
+    commonHistoryReasonCategory: commonHistoryReady ? "ready" : "common_history_lt_60",
+    step4State: step4BlockedCount === 0 && commonHistoryReady ? "ready" : "expected_blocked",
+    step5State: step5BlockedCount === 0 && commonHistoryReady ? "ready" : "expected_blocked",
+  };
 }
 
 function portfolioCoverage(fixture, inventoryByIdentity, monthlyReturns, modules) {
@@ -267,12 +324,24 @@ function portfolioCoverage(fixture, inventoryByIdentity, monthlyReturns, modules
       eligibilityState: inventory.primaryEligibilityState,
       step4State: inventory.step4State,
       step5State: inventory.step5State,
+      directLineageRecoveryFeasible: inventory.directLineageRecoveryFeasible,
+      recommendedRemediationClass: inventory.recommendedRemediationClass,
     };
   });
   const totalWeight = assets.reduce((sum, asset) => sum + asset.targetWeight, 0);
   assert.ok(Math.abs(totalWeight - 100) < 0.0001, `${fixture.cohort}:${fixture.name} target weights do not total 100`);
   const step4Blocked = assets.filter((asset) => asset.step4State !== "ready");
   const step5Blocked = assets.filter((asset) => asset.step5State !== "ready");
+  const hasNonCashAssets = assets.some((asset) => asset.identity !== "CASH:CASH");
+  const commonMonths = commonHistoryMonths(
+    fixture.assets,
+    monthlyReturns.rowsByIdentity,
+    modules.step4.longestContiguousMonthSegment,
+  );
+  const eligibility = portfolioEligibilityFromStates(step4Blocked.length, step5Blocked.length, commonMonths, hasNonCashAssets);
+  const nonCashAssets = assets.filter((asset) => asset.identity !== "CASH:CASH");
+  const step4BlockedForPortfolio = eligibility.commonHistoryReady ? step4Blocked : nonCashAssets;
+  const step5BlockedForPortfolio = eligibility.commonHistoryReady ? step5Blocked : nonCashAssets;
   const step3 = modules.baseline.buildStep3MonthlyBaselineDetail({
     portfolio: { id: fixture.name },
     assets: fixture.assets,
@@ -280,37 +349,33 @@ function portfolioCoverage(fixture, inventoryByIdentity, monthlyReturns, modules
   });
   const blockedStates = [...new Set(step5Blocked.map((asset) => asset.eligibilityState))].sort();
   const remediationDependency = [...new Set(step5Blocked.map((asset) =>
-    REMEDIATION_BY_STATE[asset.eligibilityState]
+    asset.recommendedRemediationClass
   ))].filter(Boolean).sort();
   return {
     name: fixture.name,
     displayName: fixture.displayName,
     assets,
-    blockedIdentities: step5Blocked.map((asset) => asset.identity).sort(),
-    step4BlockedIdentities: step4Blocked.map((asset) => asset.identity).sort(),
-    step5BlockedIdentities: step5Blocked.map((asset) => asset.identity).sort(),
-    blockedTargetWeightPercent: round(step5Blocked.reduce((sum, asset) => sum + asset.targetWeight, 0)),
-    step4BlockedTargetWeightPercent: round(step4Blocked.reduce((sum, asset) => sum + asset.targetWeight, 0)),
-    step5BlockedTargetWeightPercent: round(step5Blocked.reduce((sum, asset) => sum + asset.targetWeight, 0)),
+    blockedIdentities: step5BlockedForPortfolio.map((asset) => asset.identity).sort(),
+    step4BlockedIdentities: step4BlockedForPortfolio.map((asset) => asset.identity).sort(),
+    step5BlockedIdentities: step5BlockedForPortfolio.map((asset) => asset.identity).sort(),
+    blockedTargetWeightPercent: round(step5BlockedForPortfolio.reduce((sum, asset) => sum + asset.targetWeight, 0)),
+    step4BlockedTargetWeightPercent: round(step4BlockedForPortfolio.reduce((sum, asset) => sum + asset.targetWeight, 0)),
+    step5BlockedTargetWeightPercent: round(step5BlockedForPortfolio.reduce((sum, asset) => sum + asset.targetWeight, 0)),
     step3State: step3.status === "ready" ? "ready" : "expected_blocked",
-    step4State: step4Blocked.length ? "expected_blocked" : "ready",
-    step5ModerateState: step5Blocked.length ? "expected_blocked" : "ready",
-    step5SevereState: step5Blocked.length ? "expected_blocked" : "ready",
-    primaryReasonCategory: blockedStates[0] || "ready",
-    commonHistoryMonths: commonHistoryMonths(
-      fixture.assets,
-      inventoryByIdentity,
-      monthlyReturns.rowsByIdentity,
-      modules.step4.longestContiguousMonthSegment,
-    ),
-    directLineageFeasible: remediationDependency.length > 0 && remediationDependency.every((item) =>
-      ["direct_lineage_metadata_repair", "review_completion"].includes(item)
-    ),
+    step4State: eligibility.step4State,
+    step5ModerateState: eligibility.step5State,
+    step5SevereState: eligibility.step5State,
+    primaryReasonCategory: blockedStates[0] || eligibility.commonHistoryReasonCategory,
+    commonHistoryMonths: commonMonths,
+    commonHistoryReady: eligibility.commonHistoryReady,
+    commonHistoryReasonCategory: eligibility.commonHistoryReasonCategory,
+    directLineageFeasible: eligibility.commonHistoryReady && step5Blocked.length > 0 &&
+      step5Blocked.every((asset) => asset.directLineageRecoveryFeasible),
     remediationDependency,
   };
 }
 
-function buildImpactRanking(inventory, portfolios) {
+function buildRecoveryCandidates(inventory, portfolios) {
   const weightByIdentity = new Map();
   for (const portfolio of portfolios) {
     for (const asset of portfolio.assets) {
@@ -318,7 +383,7 @@ function buildImpactRanking(inventory, portfolios) {
       weightByIdentity.set(asset.identity, (weightByIdentity.get(asset.identity) || 0) + asset.targetWeight);
     }
   }
-  return inventory.filter((asset) => asset.step5State !== "ready").map((asset) => {
+  const candidates = inventory.filter((asset) => asset.step5State !== "ready").map((asset) => {
     const officialCount = asset.officialPresetUsage.length;
     const mbtiCount = asset.usMbtiUsage.length + asset.krMbtiUsage.length;
     const blockedWeightSum = weightByIdentity.get(asset.identity) || 0;
@@ -334,9 +399,22 @@ function buildImpactRanking(inventory, portfolios) {
       monthlyIdentityPresent: asset.monthlyIdentityPresent,
       contiguousHistoryMonths: asset.contiguousHistoryMonths,
       directLineageRecoveryCandidate: repairFeasible,
-      impactScore: round(officialCount * 100 + mbtiCount * 10 + blockedWeightSum / 100 + (asset.monthlyIdentityPresent ? 1 : 0) + (repairFeasible ? 1 : 0) + asset.contiguousHistoryMonths / 10_000, 6),
+      productImpact: officialCount > 0 || mbtiCount > 0 || blockedWeightSum > 0,
     };
-  }).sort((a, b) => b.impactScore - a.impactScore || (a.identity < b.identity ? -1 : a.identity > b.identity ? 1 : 0));
+  });
+  const byIdentity = (a, b) => a.identity < b.identity ? -1 : a.identity > b.identity ? 1 : 0;
+  return {
+    productImpact: candidates.filter((item) => item.productImpact).sort((a, b) =>
+      Number(b.directLineageRecoveryCandidate) - Number(a.directLineageRecoveryCandidate) ||
+      b.officialPresetCount - a.officialPresetCount ||
+      (b.usMbtiCount + b.krMbtiCount) - (a.usMbtiCount + a.krMbtiCount) ||
+      b.blockedTargetWeightSum - a.blockedTargetWeightSum || byIdentity(a, b)
+    ),
+    catalogOnly: candidates.filter((item) => !item.productImpact).sort((a, b) =>
+      Number(b.directLineageRecoveryCandidate) - Number(a.directLineageRecoveryCandidate) ||
+      b.contiguousHistoryMonths - a.contiguousHistoryMonths || byIdentity(a, b)
+    ),
+  };
 }
 
 function markdownTable(rows) {
@@ -348,31 +426,32 @@ function buildMarkdown(report) {
     [state, value.count, `${value.percent}%`, report.coverage.byMarket.KR.primaryStates[state].count, report.coverage.byMarket.US.primaryStates[state].count]
   );
   const cohortTable = (items) => markdownTable([
-    ["Portfolio", "Step 3", "Step 4", "Step 5 moderate/severe", "Step 4 blocked weight", "Step 5 blocked weight", "Blocked identities"],
-    ["---", "---", "---", "---", "---:", "---:", "---"],
+    ["Portfolio", "Step 3", "Step 4", "Step 5 moderate/severe", "Common contiguous history", "Step 4 blocked weight", "Step 5 blocked weight", "Blocked identities"],
+    ["---", "---", "---", "---", "---:", "---:", "---:", "---"],
     ...items.map((item) => [
       item.displayName === item.name ? item.name : `${item.name} (${item.displayName})`,
       item.step3State,
       item.step4State,
       item.step5ModerateState,
+      item.commonHistoryMonths === null ? "cash-only" : `${item.commonHistoryMonths} months`,
       `${item.step4BlockedTargetWeightPercent}%`,
       `${item.step5BlockedTargetWeightPercent}%`,
       item.blockedIdentities.join(", ") || "none",
     ]),
   ]);
   const audits = report.specialAudits.map((asset) =>
-    `- \`${asset.identity}\`: **${asset.primaryEligibilityState}**; ${asset.availableHistoryMonths} rows / ${asset.contiguousHistoryMonths} contiguous months; Step 4 ${asset.step4State}, Step 5 ${asset.step5State}; secondary flags: ${asset.secondaryFlags.join(", ") || "none"}; remediation: \`${asset.recommendedRemediationClass}\`.`
+    `- \`${asset.identity}\`: **${asset.primaryEligibilityState}**; Beta valid: ${asset.betaValid}; ${asset.availableHistoryMonths} rows / ${asset.contiguousHistoryMonths} contiguous months; Step 4 ${asset.step4State}, Step 5 ${asset.step5State}; secondary flags: ${asset.secondaryFlags.join(", ") || "none"}; remediation: \`${asset.recommendedRemediationClass}\`; direct single-fix recovery: ${asset.directLineageRecoveryFeasible}.`
   ).join("\n");
-  const ranking = report.impactRanking.slice(0, 20).map((item, index) =>
-    `${index + 1}. \`${item.identity}\` — score ${item.impactScore}; ${item.primaryEligibilityState}; official ${item.officialPresetCount}, US MBTI ${item.usMbtiCount}, KR MBTI ${item.krMbtiCount}, summed blocked weight ${item.blockedTargetWeightSum}%.`
-  ).join("\n");
-  const remediation = report.directLineageRecoveryPriorities.slice(0, 20).map((item, index) =>
-    `${index + 1}. \`${item.identity}\` — ${item.primaryEligibilityState}; \`${item.recommendedRemediationClass}\`; impact score ${item.impactScore}.`
-  ).join("\n") || "No current direct-lineage recovery candidate.";
+  const productPriorities = report.productImpactRecoveryPriorities.slice(0, 20).map((item, index) =>
+    `${index + 1}. \`${item.identity}\` — ${item.primaryEligibilityState}; official ${item.officialPresetCount}, US MBTI ${item.usMbtiCount}, KR MBTI ${item.krMbtiCount}, summed blocked weight ${item.blockedTargetWeightSum}%; direct single-fix recovery: ${item.directLineageRecoveryCandidate}.`
+  ).join("\n") || "No current product-impact recovery candidate.";
+  const catalogCandidates = report.catalogOnlyRecoveryCandidates.slice(0, 20).map((item, index) =>
+    `${index + 1}. \`${item.identity}\` — ${item.primaryEligibilityState}; ${item.contiguousHistoryMonths} contiguous months; \`${item.recommendedRemediationClass}\`; direct single-fix recovery: ${item.directLineageRecoveryCandidate}.`
+  ).join("\n") || "No current catalog-only recovery candidate.";
 
   return `# Step 4/5 Eligibility and Coverage Inventory
 
-- Report as of: \`${report.reportAsOf}\`
+- Report as of: \`${report.reportAsOf}\` (derived from the pinned release timestamp)
 - Input release timestamp: \`${report.inputReleaseTimestamp}\` (source binding timestamp, not report generation time)
 - Runtime catalog: \`${report.inputBindings.runtimeCatalogPath}\` — ${report.coverage.overall.total.toLocaleString("en-US")} identities, excluding \`CASH:CASH\`
 - Monthly binding: \`${report.inputBindings.pinnedReleaseManifestPath}\`, \`${report.inputBindings.pinnedMonthlyIndexPath}\`, ${report.inputBindings.pinnedMonthlyShardCount} shards
@@ -391,6 +470,8 @@ An \`expected_blocked\` checker result is not numeric Step 4/5 availability.
 | Step 4 numeric ready | ${report.coverage.overall.step4NumericReady.count} | ${report.coverage.overall.step4NumericReady.percent}% |
 | Step 5 numeric ready | ${report.coverage.overall.step5NumericReady.count} | ${report.coverage.overall.step5NumericReady.percent}% |
 | Step 4 ready / Step 5 Beta blocked | ${report.coverage.overall.step4ReadyStep5BetaBlocked.count} | ${report.coverage.overall.step4ReadyStep5BetaBlocked.percent}% |
+| Blank Beta values | ${report.betaValidation.blankValueCount} | ${percent(report.betaValidation.blankValueCount, report.coverage.overall.total)}% |
+| Invalid Beta values | ${report.betaValidation.invalidValueCount} | ${percent(report.betaValidation.invalidValueCount, report.coverage.overall.total)}% |
 
 ## Primary states
 
@@ -416,20 +497,24 @@ ${cohortTable(report.portfolioCoverage.usMbti)}
 
 ${cohortTable(report.portfolioCoverage.krMbti)}
 
+Portfolio readiness additionally requires at least ${MINIMUM_HISTORY_MONTHS} common contiguous months across its non-cash assets. Common-history blocked portfolios: official ${report.portfolioCommonHistoryBlockedCounts.official}, US MBTI ${report.portfolioCommonHistoryBlockedCounts.usMbti}, KR MBTI ${report.portfolioCommonHistoryBlockedCounts.krMbti}.
+
 ## High-use and saved-portfolio dimensions
 
 - Popularity/high-use coverage: \`${report.highUseCoverageStatus}\`. No cohort membership or weights were inferred.
 - Saved-portfolio coverage: \`${report.savedPortfolioCoverageStatus}\`. No user DB or holdings were queried.
 
-## High-impact blocked identities
+## Product-impact recovery priorities
 
-Score = official preset count × 100 + total MBTI type count × 10 + summed blocked target weight ÷ 100 + monthly-identity-present bonus 1 + direct-lineage-repair-feasible bonus 1 + contiguous history months ÷ 10,000. Popularity and saved-portfolio dimensions are excluded because their approved aggregate sources are unavailable.
+Ordered deterministically by direct single-fix feasibility, official preset count, total MBTI count, summed blocked target weight, then identity. No arbitrary combined score is used. Popularity and saved-portfolio dimensions are excluded because their approved aggregate sources are unavailable.
 
-${ranking}
+${productPriorities}
 
-## Direct-lineage recovery priorities
+## Catalog-only recovery candidates
 
-${remediation}
+${report.catalogOnlyRecoveryCandidateCount} blocked identities have no official/MBTI portfolio usage. They are kept separate from product-impact priorities and ordered by direct single-fix feasibility, contiguous history, then identity. First 20:
+
+${catalogCandidates}
 
 ## Required individual audits
 
@@ -441,7 +526,7 @@ Step 1–3 availability does not imply numeric Step 4/5 availability. Product co
 
 ## Limitations and privacy
 
-This is a deterministic, read-only inventory of checked-in runtime definitions and the pinned monthly release. It does not call providers, query databases or individual holdings, infer popularity, change runtime eligibility, or modify canonical/public data and pinned artifacts. Remediation scores prioritize review; they do not authorize data repair or Production changes.
+This is a deterministic, read-only inventory of checked-in runtime definitions and the pinned monthly release. It does not call providers, query databases or individual holdings, infer popularity, change runtime eligibility, or modify canonical/public data and pinned artifacts. Recovery ordering prioritizes review; it does not authorize data repair or Production changes.
 `;
 }
 
@@ -454,6 +539,7 @@ function assertSafeObject(value, path = "report") {
 }
 
 function validateReport(report) {
+  assert.equal(report.reportAsOf, reportDateFromReleaseTimestamp(report.inputReleaseTimestamp));
   assert.equal(report.coverage.overall.total, EXPECTED_CATALOG_COUNT);
   assert.equal(report.assets.length, EXPECTED_CATALOG_COUNT);
   assert.equal(new Set(report.assets.map((asset) => asset.identity)).size, EXPECTED_CATALOG_COUNT);
@@ -475,6 +561,11 @@ function validateReport(report) {
     for (const cash of portfolio.assets.filter((asset) => asset.identity === "CASH:CASH")) {
       assert.deepEqual([cash.eligibilityState, cash.step4State, cash.step5State], ["native_manual_reference", "ready", "ready"]);
     }
+    if (portfolio.commonHistoryMonths !== null && portfolio.commonHistoryMonths < MINIMUM_HISTORY_MONTHS) {
+      assert.deepEqual([portfolio.step4State, portfolio.step5ModerateState, portfolio.step5SevereState], [
+        "expected_blocked", "expected_blocked", "expected_blocked",
+      ]);
+    }
   }
   assert.equal(report.coverage.overall.step4NumericReady.count, report.assets.filter((asset) => asset.step4State === "ready").length);
   assert.equal(report.coverage.overall.step5NumericReady.count, report.assets.filter((asset) => asset.step5State === "ready").length);
@@ -489,6 +580,25 @@ function validateReport(report) {
     assert.equal(audit.step5State, "expected_blocked");
   }
   assertSafeObject(report);
+}
+
+function serializeDeterministicJson(value, depth = 0) {
+  const indent = " ".repeat(depth);
+  if (Array.isArray(value)) {
+    if (!value.length) return "[]";
+    if (value.every((item) => item && typeof item === "object" && !Array.isArray(item))) {
+      return `[\n${value.map((item) => `${indent}  ${JSON.stringify(item)}`).join(",\n")}\n${indent}]`;
+    }
+    return JSON.stringify(value);
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value);
+    if (!entries.length) return "{}";
+    return `{\n${entries.map(([key, child]) =>
+      `${indent}  ${JSON.stringify(key)}: ${serializeDeterministicJson(child, depth + 2)}`
+    ).join(",\n")}\n${indent}}`;
+  }
+  return JSON.stringify(value);
 }
 
 async function buildReport(vite) {
@@ -533,8 +643,11 @@ async function buildReport(vite) {
     const indexRecord = productionCatalog.index.assets[identity] || null;
     const rows = monthlyReturns.rowsByIdentity[identity] || [];
     const policy = productionCatalog.catalogPolicyByIdentity[identity] || null;
-    const months = rows.map((row) => row.month);
-    const contiguous = step4.longestContiguousMonthSegment(months);
+    const months = rows.map((row) => String(row.month || "").slice(0, 7));
+    assert.ok(months.every((month) => /^\d{4}-\d{2}$/.test(month)), `${identity} has an invalid month`);
+    assert.equal(new Set(months).size, months.length, `${identity} has duplicate normalized months`);
+    const sortedMonths = [...months].sort();
+    const contiguous = step4.longestContiguousMonthSegment(sortedMonths);
     const monthlyIdentityPresent = Boolean(indexRecord && rows.length);
     const identityMismatch = Boolean(indexRecord && (
       `${normalize(indexRecord.market)}:${normalize(indexRecord.ticker)}` !== identity ||
@@ -557,14 +670,15 @@ async function buildReport(vite) {
         policyRejected = true;
       }
     }
-    const betaValid = Number.isFinite(Number(candidate.beta));
+    const betaValid = isPresentFiniteNumber(candidate.beta);
     const hasStep3 = step3Ready(candidate, baseline);
+    const reviewRequired = catalogReviewRequired(policy);
     const states = classifyEvidence({
       identityMismatch,
       monthlyIdentityPresent,
       proxyMarked,
       policyRejected,
-      reviewRequired: catalogReviewRequired(policy),
+      reviewRequired,
       legacyRows,
       contiguousHistoryMonths: contiguous.length,
       step3Ready: hasStep3,
@@ -581,9 +695,20 @@ async function buildReport(vite) {
             : "invalid_or_mixed";
     const reviewState = !policy
       ? "not_available"
-      : catalogReviewRequired(policy)
+      : reviewRequired
         ? String(policy.reviewFlag || policy.dataStatus || "review_required").trim().toLowerCase()
         : "none";
+    const directLineageRecoveryFeasible = isDirectLineageRecoveryFeasible({
+      monthlyIdentityPresent,
+      identityMismatch,
+      proxyMarked,
+      policyRejected,
+      reviewRequired,
+      legacyRows,
+      contiguousHistoryMonths: contiguous.length,
+      step3Ready: hasStep3,
+      betaValid,
+    }, policy);
     return {
       identity,
       market: normalize(candidate.market),
@@ -595,8 +720,10 @@ async function buildReport(vite) {
       monthlyIdentityPresent,
       availableHistoryMonths: rows.length,
       contiguousHistoryMonths: contiguous.length,
-      dataStartMonth: contiguous[0]?.slice(0, 7) || null,
-      dataEndMonth: contiguous.at(-1)?.slice(0, 7) || null,
+      dataStartMonth: sortedMonths[0] || null,
+      dataEndMonth: sortedMonths.at(-1) || null,
+      contiguousStartMonth: contiguous[0]?.slice(0, 7) || null,
+      contiguousEndMonth: contiguous.at(-1)?.slice(0, 7) || null,
       monthlyRowContract: monthlyIdentityPresent ? monthlyReturns.monthlyRowContract : null,
       proxyState: !monthlyIdentityPresent ? "not_available" : proxyMarked ? "proxy_marked" : legacyRows ? "not_proxy_marked_legacy" : "not_proxy_marked_direct",
       lineageState,
@@ -614,9 +741,8 @@ async function buildReport(vite) {
       usMbtiUsage: [...(usages.usMbti.get(identity) || [])].sort(),
       krMbtiUsage: [...(usages.krMbti.get(identity) || [])].sort(),
       highUseCohortMembership: null,
-      directLineageRecoveryFeasible: monthlyIdentityPresent && legacyRows && policyRejected &&
-        policy?.policyEvidenceValid === true && policy?.ordinaryDistribution === true,
-      recommendedRemediationClass: remediationFor(states.primary, policy),
+      directLineageRecoveryFeasible,
+      recommendedRemediationClass: remediationFor(states.primary, policy, directLineageRecoveryFeasible),
     };
   });
 
@@ -631,11 +757,11 @@ async function buildReport(vite) {
     krMbti: coveredPortfolios.filter((item) => item.cohort === "krMbti").map((item) => item.value),
   };
   const allPortfolios = Object.values(portfolioCoverageReport).flat();
-  const fullImpactRanking = buildImpactRanking(inventory, allPortfolios);
-  const directLineageRecoveryCandidates = fullImpactRanking.filter((item) => item.directLineageRecoveryCandidate);
+  const recoveryCandidates = buildRecoveryCandidates(inventory, allPortfolios);
+  const allRecoveryCandidates = [...recoveryCandidates.productImpact, ...recoveryCandidates.catalogOnly];
   const report = {
-    schemaVersion: "finple.step4-step5-eligibility-coverage.v1",
-    reportAsOf: REPORT_AS_OF,
+    schemaVersion: "finple.step4-step5-eligibility-coverage.v2",
+    reportAsOf: reportDateFromReleaseTimestamp(productionCatalog.release.approvedAt),
     inputReleaseTimestamp: productionCatalog.release.approvedAt,
     inputBindings: {
       runtimeCatalogPath: "src/data/tickers/finple_app_candidates_v2.csv",
@@ -670,13 +796,24 @@ async function buildReport(vite) {
         US: coverageTotals(inventory.filter((asset) => asset.market === "US")),
       },
     },
+    betaValidation: {
+      blankValueCount: candidates.filter((candidate) => isBlankValue(candidate.beta)).length,
+      invalidValueCount: candidates.filter((candidate) => !isPresentFiniteNumber(candidate.beta)).length,
+    },
     highUseCoverageStatus: "unavailable_no_canonical_source",
     savedPortfolioCoverageStatus: "not_available_no_privacy_safe_aggregate",
     portfolioCoverage: portfolioCoverageReport,
-    impactScoringFormula: "officialPresetCount*100 + totalMbtiCount*10 + blockedTargetWeightSum/100 + monthlyIdentityPresentBonus + directLineageRecoveryBonus + contiguousHistoryMonths/10000",
-    impactRanking: fullImpactRanking.slice(0, 100),
-    directLineageRecoveryCandidateCount: directLineageRecoveryCandidates.length,
-    directLineageRecoveryPriorities: directLineageRecoveryCandidates.slice(0, 100),
+    portfolioCommonHistoryBlockedCounts: Object.fromEntries(Object.entries(portfolioCoverageReport).map(([cohort, items]) => [
+      cohort,
+      items.filter((item) => !item.commonHistoryReady).length,
+    ])),
+    productImpactRecoveryPriorityOrder: "directSingleFix desc, officialPresetCount desc, totalMbtiCount desc, blockedTargetWeightSum desc, identity asc",
+    productImpactRecoveryPriorityCount: recoveryCandidates.productImpact.length,
+    productImpactRecoveryPriorities: recoveryCandidates.productImpact,
+    catalogOnlyRecoveryCandidateOrder: "directSingleFix desc, contiguousHistoryMonths desc, identity asc",
+    catalogOnlyRecoveryCandidateCount: recoveryCandidates.catalogOnly.length,
+    catalogOnlyRecoveryCandidates: recoveryCandidates.catalogOnly.slice(0, 100),
+    directLineageRecoveryCandidateCount: allRecoveryCandidates.filter((item) => item.directLineageRecoveryCandidate).length,
     specialAudits: ["KR:069500", "US:VNQ", "US:BLOK"].map((identity) => inventoryByIdentity.get(identity)),
     assets: inventory,
   };
@@ -695,7 +832,8 @@ async function main() {
   });
   try {
     const report = await buildReport(vite);
-    const inventoryText = `${JSON.stringify(report, null, 2)}\n`;
+    const inventoryText = `${serializeDeterministicJson(report)}\n`;
+    assert.deepEqual(JSON.parse(inventoryText), report);
     const summaryText = buildMarkdown(report);
     if (process.argv.includes("--write")) {
       await mkdir("reports/portfolio-analysis", { recursive: true });
