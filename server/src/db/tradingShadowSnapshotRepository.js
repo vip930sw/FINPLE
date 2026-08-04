@@ -229,11 +229,20 @@ export async function saveTradingShadowSnapshot(snapshot = {}, dependencies = {}
   }
 
   return transaction(async (tx) => {
+    const runLock = await tx(
+      `SELECT id FROM trading_shadow_runs WHERE id = $1 FOR UPDATE`,
+      [runId],
+    );
+    if (runLock.rowCount === 0) {
+      const error = new Error("Shadow snapshot 대상 run을 찾지 못했습니다.");
+      error.code = "SHADOW_RUN_NOT_FOUND";
+      error.statusCode = 404;
+      throw error;
+    }
     const sequenceResult = await tx(
       `SELECT COALESCE(MAX(sequence_number), -1) + 1 AS next_sequence
        FROM trading_shadow_snapshots
-       WHERE run_id = $1
-       FOR UPDATE`,
+       WHERE run_id = $1`,
       [runId],
     );
     const sequence = Number(sequenceResult.rows?.[0]?.next_sequence ?? 0);
