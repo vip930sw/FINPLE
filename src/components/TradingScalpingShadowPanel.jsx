@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  fetchTradingScalpingAdminDashboard,
   fetchTradingScalpingShadowStatus,
   startTradingScalpingShadowRuntime,
   stopTradingScalpingShadowRuntime,
@@ -34,8 +35,16 @@ function statusLabel(value) {
   }[value] || value || "미실행";
 }
 
+function approvedVersionsFromDashboard(dashboard) {
+  return (dashboard?.registry?.versions || [])
+    .filter((version) => version.status === "approved")
+    .sort((left, right) => Number(right.versionNumber) - Number(left.versionNumber));
+}
+
 function TradingScalpingShadowPanel() {
   const [status, setStatus] = useState(null);
+  const [approvedVersions, setApprovedVersions] = useState([]);
+  const [strategyVersionId, setStrategyVersionId] = useState("");
   const [initialCash, setInitialCash] = useState(100000);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +52,17 @@ function TradingScalpingShadowPanel() {
   const load = async () => {
     setError("");
     try {
-      setStatus(await fetchTradingScalpingShadowStatus());
+      const [nextStatus, dashboard] = await Promise.all([
+        fetchTradingScalpingShadowStatus(),
+        fetchTradingScalpingAdminDashboard(),
+      ]);
+      const versions = approvedVersionsFromDashboard(dashboard);
+      setStatus(nextStatus);
+      setApprovedVersions(versions);
+      setStrategyVersionId((current) => {
+        if (current && versions.some((version) => version.id === current)) return current;
+        return versions[0]?.id || "";
+      });
     } catch (loadError) {
       setError(loadError.message || "Shadow 상태를 불러오지 못했습니다.");
     }
@@ -57,7 +76,10 @@ function TradingScalpingShadowPanel() {
     setBusy(true);
     setError("");
     try {
-      setStatus(await startTradingScalpingShadowRuntime({ initialCash: Number(initialCash) }));
+      setStatus(await startTradingScalpingShadowRuntime({
+        initialCash: Number(initialCash),
+        strategyVersionId,
+      }));
     } catch (startError) {
       setError(startError.message || "Shadow runtime을 시작하지 못했습니다.");
     } finally {
@@ -81,6 +103,7 @@ function TradingScalpingShadowPanel() {
   const metrics = snapshot?.metrics || {};
   const promotion = snapshot?.promotion;
   const active = status?.active === true;
+  const selectedVersion = approvedVersions.find((version) => version.id === strategyVersionId);
 
   return (
     <section className="scalpingShadowPanel" aria-labelledby="scalping-shadow-title">
@@ -101,6 +124,23 @@ function TradingScalpingShadowPanel() {
 
       <div className="scalpingShadowControl">
         <label>
+          <span>승인 전략 버전</span>
+          <div>
+            <select
+              value={strategyVersionId}
+              disabled={active || busy}
+              onChange={(event) => setStrategyVersionId(event.target.value)}
+            >
+              {approvedVersions.length > 0 ? approvedVersions.map((version) => (
+                <option key={version.id} value={version.id}>
+                  v{version.versionNumber} · {String(version.checksum || "").slice(0, 10)}
+                </option>
+              )) : <option value="">승인 전략 없음</option>}
+            </select>
+          </div>
+          <small>{selectedVersion ? `승인 ${selectedVersion.approvedAt ? new Date(selectedVersion.approvedAt).toLocaleString("ko-KR") : "시각 미확인"}` : "먼저 전략 승인본을 생성해야 합니다."}</small>
+        </label>
+        <label>
           <span>가상 초기자산</span>
           <div>
             <input
@@ -114,8 +154,8 @@ function TradingScalpingShadowPanel() {
             <small>USD</small>
           </div>
         </label>
-        <button type="button" disabled={busy || active} onClick={() => void start()}>
-          {busy && !active ? "시작 중" : "승인 전략으로 시작"}
+        <button type="button" disabled={busy || active || !strategyVersionId} onClick={() => void start()}>
+          {busy && !active ? "시작 중" : "선택 전략으로 시작"}
         </button>
         <button type="button" className="isStop" disabled={busy || !active} onClick={() => void stop()}>
           {busy && active ? "정지 중" : "Shadow 정지"}
