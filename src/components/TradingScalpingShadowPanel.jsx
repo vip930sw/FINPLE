@@ -87,7 +87,7 @@ function TradingScalpingShadowPanel() {
       <header className="scalpingShadowHeader">
         <div>
           <span>TSC-4C PRIVATE SHADOW</span>
-          <h2 id="scalping-shadow-title">가상체결·성과 검증</h2>
+          <h2 id="scalping-shadow-title">Private Shadow Runtime · 가상체결·성과 검증</h2>
           <p>승인된 전략 버전으로만 신호와 가상체결을 누적합니다. 브로커 주문·실계좌·KIS 연결은 이 제어면에서 실행되지 않습니다.</p>
         </div>
         <div className="scalpingShadowBadges">
@@ -157,7 +157,7 @@ function TradingScalpingShadowPanel() {
             <tbody>
               {promotion?.gates?.length ? promotion.gates.map((gate) => (
                 <tr key={gate.label}>
-                  <td>{gate.label}</td>
+                  <td>{gate.label}{gate.blocking === false ? " · 상향목표" : ""}</td>
                   <td>{gate.actual === null ? "—" : number(gate.actual)}</td>
                   <td>{number(gate.target)}</td>
                   <td><span className={`gateStatus gateStatus--${gate.status}`}>{statusLabel(gate.status)}</span></td>
