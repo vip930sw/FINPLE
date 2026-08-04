@@ -48,21 +48,15 @@ The product-impact ranking identifies six direct single-fix candidates:
 
 If these six become validly `ready`, the expected product outcome is official 10/10, US MBTI 16/16, and KR MBTI 16/16. This is a target to verify, not permission to bypass policy.
 
-## 3. Critical uncertainty to resolve
+`Direct single-fix lineage/review candidate` is an eligibility-graph classification, not a provenance approval. It means that monthly identity, Step 3, Beta, contiguous-history, ordinary-distribution, and pinned-binding checks pass while the catalog review gate is the effective blocker. The current 1,338 ready identities also retain a `legacy_v1` evidence gap: they have no explicit row-level `isProxy=false` or repository-preserved per-identity collector/run receipt and are allowed by the exact pinned legacy binding plus frozen `ready / ready / none` catalog fields.
 
-The repository proves that provider collection and full-universe raw-price work used a user-operated Colab workflow, while Production eligibility is enforced later through pinned artifact, catalog-policy, and runtime lineage gates.
+## 3. Phase 432-A forensic finding
 
-It is **not yet proven** that all 1,338 ready assets and all 2,323 direct single-fix candidates were generated through byte-for-byte identical source and normalization paths. That is the first #432 question.
+The completed read-only investigation is recorded in `docs/portfolio-analysis/FINPLE_STEP4_STEP5_LINEAGE_FORENSICS_FINDINGS_2026_08_04.md`.
 
-The audit must distinguish among these possibilities:
+It proves that both groups share the same pinned candidate package, normalization version, metrics calculation, exporter, monthly index/shards, and release. The exact eligibility discriminator is the frozen `dataStatus`, `metricsStatus`, and `reviewFlag` tuple. It does **not** prove that every identity came from one identical raw Colab collection execution because the repository does not preserve the raw source audit, external candidate receipt, or per-identity collector/run receipt.
 
-1. both groups used the same collector and normalization path, and only review/policy metadata differs;
-2. both groups used related paths but differ by source, collection date, asset class, market, or normalization version;
-3. some candidate identities have incomplete or unavailable raw evidence despite apparently valid monthly rows;
-4. some candidates are incorrectly labeled single-fix because hidden dependencies are not represented in the current report;
-5. current-ready legacy assets themselves rely on policy inheritance that needs modernization before expansion.
-
-No remediation may proceed by assuming case 1 without evidence.
+The investigation also separates the existing 6,000 cohort from the 29-US-delta cohort and confirms that the current-ready legacy set itself needs evidence modernization. No remediation may treat package binding, numeric review approval, and direct-source lineage as the same decision.
 
 ## 4. Priority rationale
 
@@ -92,6 +86,13 @@ Expansion is third because a broad approval before the pilot contract is proven 
 ## 5. Target-state lineage model
 
 An approval must not belong only to one monthly CSV file. It should be anchored to a stable data-generation contract and inherited by a new release only when all material invariants remain compatible.
+
+Two contracts are required and must remain independent:
+
+1. **Monthly lineage-inheritance contract** — source, identity, collector, normalization, row contract, proxy state, previous-release delta, automatic inheritance, and exception routing.
+2. **Review-policy decision contract** — generic CAGR, MDD, Beta, dividend, 5Y-history, initial-gap, and split-evidence decisions with versioned audit results.
+
+Passing one contract must not bypass a failure in the other.
 
 The exact schema is an implementation decision, but the contract must represent at least:
 
@@ -233,6 +234,14 @@ Audit the six high-impact identities as a vertical slice through the new evidenc
 6. `KR:305720`.
 
 The audit order starts with `KR:069500` because #432 explicitly requires it, while implementation priority may consider the combined official/MBTI effect of `VNQ` and `BLOK`.
+
+The six identities form three review-policy groups, not one approval cohort:
+
+- initial calendar gap: `KR:069500`;
+- MDD threshold: `US:VNQ`;
+- 5Y/short history: `US:BLOK`, `KR:273130`, `KR:329200`, `KR:305720`.
+
+They must be evaluated through generic policy contracts rather than a core-six allowlist.
 
 ### Audit result per identity
 
@@ -422,6 +431,4 @@ Every artifact mutation, Production release, and deployment requires a separate 
 
 ## 11. Immediate next action
 
-Start only **Phase 432-A read-only provenance forensics**.
-
-The first response must report repository baselines, relevant policies and artifacts, the exact evidence available for the 1,338 and 2,323 groups, proposed comparison outputs, and whether any Colab action is actually required. Do not create an implementation branch or mutate data before that inventory is reviewed.
+Phase 432-A read-only provenance forensics is complete and documented. The next separately approved step is repository-only deterministic reporting and proposal work for the two contracts. Do not run Colab, change runtime/catalog state, regenerate artifacts, or begin recovery until that scope is explicitly approved.

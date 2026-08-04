@@ -4,6 +4,7 @@ Date: 2026-08-04
 Parent program: #429  
 Execution issue: #432  
 Planning document: `docs/portfolio-analysis/FINPLE_STEP4_STEP5_LINEAGE_RECOVERY_PLAN_2026_08_04.md`  
+Forensics findings: `docs/portfolio-analysis/FINPLE_STEP4_STEP5_LINEAGE_FORENSICS_FINDINGS_2026_08_04.md`
 Expected main at handoff creation: `a193c13790b54bf265a4cc51f72d1adbcec3cadb`  
 Expected production: `3b901468857fc3a659a0272061644ac25936c409`
 
@@ -20,6 +21,18 @@ The initial task is to determine:
 - how approved lineage should be inherited by future monthly releases.
 
 Colab is conditional. Use it only when Codex proves that repository and preserved artifact evidence is insufficient and identifies a bounded reproduction scope.
+
+### Approved Phase 432-A findings
+
+- The 1,338 ready identities and 2,323 direct candidates share one pinned candidate package and the same downstream normalization, calculation, exporter, monthly index/shards, and release.
+- The repository does not prove that all identities came from one raw Colab collection execution.
+- The direct-candidate discriminator is the frozen `dataStatus / metricsStatus / reviewFlag` tuple: 1,329 are `ready / ready / review_required`, 986 are `short_history / short_history / short_history`, and 8 are `review_required / review_required / review_required`.
+- `Direct single-fix candidate` is not provenance approval. It means the catalog review gate is the effective blocker in the current eligibility graph.
+- The 1,338 ready identities also use `legacy_v1` rows without explicit row-level `isProxy=false` or repository-preserved per-identity collector/run receipts. They are allowed by the exact pinned legacy binding and frozen `ready / ready / none` catalog fields.
+- The existing 6,000 cohort contributes 1,338 ready and 2,321 direct candidates. The separate 29-US-delta cohort contributes no ready identities and two direct candidates, `US:QYLG` and `US:XYLG`; the other 27 lack 60 contiguous months.
+- Core-six review groups are initial gap (`KR:069500`), MDD threshold (`US:VNQ`), and 5Y/short history (`US:BLOK`, `KR:273130`, `KR:329200`, `KR:305720`). They cannot use one approval rule.
+- Future design must separate a monthly lineage-inheritance contract from a generic review-policy decision contract.
+- The next step remains repository-only. Colab requires a separate bounded approval after preserved external evidence is exhausted.
 
 ## 2. Codex prompt — Phase 432-A read-only provenance forensics
 
@@ -183,7 +196,10 @@ Required outputs:
 - core-six evidence audit
 - explicit ready-versus-review_required discriminator report
 - proposed monthly lineage-inheritance contract
+- proposed generic review-policy decision contract for thresholds, 5Y history, initial gaps, and split evidence
 - focused checker that fails on unreconciled counts, duplicate identities, unknown evidence states, or stale report output
+
+Do not describe the 2,323 candidates as provenance-approved. Keep lineage inheritance and review-policy decisions as separate outputs and separate acceptance gates.
 
 This PR is read-only forensics and contract documentation.
 Do not change:
