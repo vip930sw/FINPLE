@@ -77,6 +77,7 @@ test("creates one synchronized Shadow cycle only after all selected bars complet
       approval: approval(),
       activeShadowRun: true,
       maximumCycleLagMs: 5_000,
+      maximumQuoteAgeMs: 60_000,
     },
     {
       feedFactory: harness.factory,
@@ -123,6 +124,7 @@ test("drops incomplete multi-symbol minutes instead of forward filling", async (
       approval: approval(),
       activeShadowRun: true,
       maximumCycleLagMs: 5_000,
+      maximumQuoteAgeMs: 60_000,
     },
     {
       feedFactory: harness.factory,
@@ -143,6 +145,35 @@ test("drops incomplete multi-symbol minutes instead of forward filling", async (
   assert.equal(status.incompleteCycleCount, 1);
   assert.deepEqual(status.lastIncompleteCycle.missingSymbols, ["SQQQ"]);
   assert.equal(status.lastIncompleteCycle.forwardFilled, false);
+});
+
+test("fails fail-closed when a completed bar quote is stale", async () => {
+  const harness = createFeedHarness();
+  let nowMs = Date.parse("2026-08-05T13:45:05Z");
+  const runner = createKisCompletedBarFeedRunner(
+    {
+      selectedSymbols: ["TQQQ"],
+      approval: approval(),
+      activeShadowRun: true,
+      maximumQuoteAgeMs: 20_000,
+    },
+    {
+      feedFactory: harness.factory,
+      ingestShadowCycle: async () => assert.fail("stale quote bar must not reach Shadow"),
+      now: () => nowMs,
+      setIntervalImpl: () => 1,
+      clearIntervalImpl: () => {},
+    },
+  );
+
+  await runner.start({ appKey: "key", appSecret: "secret" });
+  harness.event(quote("TQQQ", nowMs, 50, 50.02));
+  harness.event(trade("TQQQ", nowMs + 1_000, 50.01));
+  nowMs = Date.parse("2026-08-05T13:46:01Z");
+  const status = await runner.flush();
+
+  assert.equal(status.completedCycleCount, 0);
+  assert.equal(status.staleQuoteBarCount, 1);
 });
 
 test("fails closed when approval or active Shadow run is missing", () => {
