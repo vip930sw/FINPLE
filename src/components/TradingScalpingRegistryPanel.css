@@ -1,0 +1,158 @@
+.scalpingAdminRegistryCard {
+  border-color: #c4b5fd;
+  background: linear-gradient(180deg, #ffffff 0%, #faf8ff 100%);
+}
+
+.scalpingAdminRegistryNotice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scalpingAdminPairGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.scalpingAdminPairGrid > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.scalpingAdminPairGrid strong {
+  font-size: 11px;
+}
+
+.scalpingAdminPairGrid span,
+.scalpingAdminPairGrid small {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.scalpingAdminSubheader {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8edf3;
+}
+
+.scalpingAdminLifecycleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.scalpingAdminLifecycleActions button,
+.scalpingAdminTableAction {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scalpingAdminLifecycleActions button:nth-child(2) {
+  border-color: #6d28d9;
+  background: #6d28d9;
+  color: #fff;
+}
+
+.scalpingAdminLifecycleActions button:disabled,
+.scalpingAdminTableAction:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.scalpingAdminRetireReason {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scalpingAdminRetireReason input {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d7dee9;
+  border-radius: 9px;
+  color: #172033;
+  font: inherit;
+}
+
+.scalpingAdminAuditDetails {
+  padding: 14px 16px;
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.scalpingAdminAuditDetails summary {
+  cursor: pointer;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scalpingAdminAuditDetails ul {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scalpingAdminAuditDetails li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 11px;
+}
+
+.scalpingAdminAuditDetails li span {
+  color: #64748b;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .scalpingAdminPairGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .scalpingAdminPairGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scalpingAdminRetireReason {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scalpingAdminAuditDetails li {
+    flex-direction: column;
+  }
+
+  .scalpingAdminAuditDetails li span {
+    text-align: left;
+  }
+}
