@@ -3,9 +3,15 @@ import {
   DEFAULT_LEVERAGED_ETF_SCALPING_UNIVERSE,
   LEVERAGED_ETF_SCALPING_STRATEGY_VERSION,
 } from "./tradingLeveragedEtfScalpingStrategy.js";
+import {
+  DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS,
+  LEVERAGED_ETF_PAIR_GROUPS,
+  normalizeScalpingPortfolioConstraints,
+  validateScalpingPortfolioConstraints,
+} from "./tradingLeveragedEtfPortfolioCoordinator.js";
 
-export const TRADING_SCALPING_ADMIN_DASHBOARD_VERSION = "trading-scalping-admin-dashboard-v1";
-export const TRADING_SCALPING_DRAFT_VERSION = "leveraged-etf-scalping-admin-draft-v1";
+export const TRADING_SCALPING_ADMIN_DASHBOARD_VERSION = "trading-scalping-admin-dashboard-v2";
+export const TRADING_SCALPING_DRAFT_VERSION = "leveraged-etf-scalping-admin-draft-v2";
 
 const ALLOWED_SYMBOLS = new Set(DEFAULT_LEVERAGED_ETF_SCALPING_UNIVERSE);
 
@@ -47,6 +53,7 @@ const EDITABLE_STRATEGY_KEYS = Object.freeze([
 ]);
 
 const OBJECTIVE_KEYS = Object.freeze(Object.keys(DEFAULT_SCALPING_RESEARCH_OBJECTIVES));
+const PORTFOLIO_CONSTRAINT_KEYS = Object.freeze(Object.keys(DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS));
 
 function clean(value) {
   return String(value ?? "").trim();
@@ -120,9 +127,17 @@ function normalizeObjectives(input = {}) {
   return Object.fromEntries(OBJECTIVE_KEYS.map((key) => [key, finite(merged[key])]));
 }
 
+function normalizePortfolioConstraints(input = {}) {
+  return normalizeScalpingPortfolioConstraints(pick(input, PORTFOLIO_CONSTRAINT_KEYS));
+}
+
 export function validateScalpingAdminDraft(input = {}) {
   const strategy = normalizeStrategy(input.strategy ?? input);
   const objectives = normalizeObjectives(input.objectives ?? {});
+  const portfolioValidation = validateScalpingPortfolioConstraints(
+    normalizePortfolioConstraints(input.portfolioConstraints ?? {}),
+  );
+  const portfolioConstraints = portfolioValidation.constraints;
   const unknownSymbols = strategy.allowedSymbols.filter((symbol) => !ALLOWED_SYMBOLS.has(symbol));
   const reasons = unique([
     strategy.allowedSymbols.length > 0 ? null : "allowed_symbols_required",
@@ -170,6 +185,10 @@ export function validateScalpingAdminDraft(input = {}) {
       : "invalid_minimum_fill_rate_pct",
     nonNegative(objectives.maximumAverageSlippageBps) !== null ? null : "invalid_maximum_average_slippage_bps",
     integer(objectives.minimumTrades) !== null && objectives.minimumTrades > 0 ? null : "invalid_minimum_trades",
+    ...portfolioValidation.reasons,
+    portfolioConstraints.maxConcurrentPositions <= strategy.allowedSymbols.length
+      ? null
+      : "max_concurrent_positions_exceeds_selected_symbols",
   ]);
 
   return {
@@ -180,6 +199,7 @@ export function validateScalpingAdminDraft(input = {}) {
       strategyVersion: LEVERAGED_ETF_SCALPING_STRATEGY_VERSION,
       strategy,
       objectives,
+      portfolioConstraints,
     },
   };
 }
@@ -188,10 +208,12 @@ function createInitialDraft() {
   const validation = validateScalpingAdminDraft({
     strategy: defaultStrategy(),
     objectives: DEFAULT_SCALPING_RESEARCH_OBJECTIVES,
+    portfolioConstraints: DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS,
   });
   return {
     ...validation.draft,
     revision: 1,
+    lifecycleStatus: "draft",
     updatedAt: null,
     updatedBy: "system_default",
   };
@@ -202,6 +224,20 @@ let performanceState = null;
 
 export function readScalpingAdminDraft() {
   return clone(draftState);
+}
+
+export function replaceScalpingAdminDraftForRegistry(draft) {
+  if (!draft) return readScalpingAdminDraft();
+  const validation = validateScalpingAdminDraft(draft);
+  if (!validation.valid) return readScalpingAdminDraft();
+  draftState = {
+    ...validation.draft,
+    revision: integer(draft.revision) ?? draftState.revision,
+    lifecycleStatus: clean(draft.lifecycleStatus) || "draft",
+    updatedAt: draft.updatedAt || null,
+    updatedBy: clean(draft.updatedBy) || "strategy_registry",
+  };
+  return readScalpingAdminDraft();
 }
 
 export function updateScalpingAdminDraft(input = {}, options = {}) {
@@ -228,6 +264,7 @@ export function updateScalpingAdminDraft(input = {}, options = {}) {
   draftState = {
     ...validation.draft,
     revision: draftState.revision + 1,
+    lifecycleStatus: "draft",
     updatedAt: options.updatedAt || new Date().toISOString(),
     updatedBy: clean(options.updatedBy) || "admin_console",
   };
@@ -389,6 +426,7 @@ export function buildTradingScalpingAdminDashboard(options = {}) {
     ? options.performanceSnapshot
     : performanceState;
   const performance = buildScalpingPerformanceView(snapshot, draft.objectives);
+  const registry = options.registry ?? null;
   return {
     ok: true,
     dashboardVersion: TRADING_SCALPING_ADMIN_DASHBOARD_VERSION,
@@ -396,11 +434,23 @@ export function buildTradingScalpingAdminDashboard(options = {}) {
     title: "레버리지 ETF 스캘핑 전략",
     status: performance.status === "ready_replay_snapshot" ? "replay_snapshot_ready" : "strategy_draft_ready_performance_unavailable",
     draft,
+    registry,
+    multiAsset: {
+      multiSelectSupported: true,
+      selectedSymbolCount: draft.strategy.allowedSymbols.length,
+      maximumSelectableSymbols: DEFAULT_LEVERAGED_ETF_SCALPING_UNIVERSE.length,
+      selectedSymbols: [...draft.strategy.allowedSymbols],
+      pairGroups: clone(LEVERAGED_ETF_PAIR_GROUPS),
+      evaluationMode: "independent_per_symbol_then_portfolio_coordination",
+      simultaneousHoldingLimit: draft.portfolioConstraints.maxConcurrentPositions,
+      maximumNewIntentsPerCycle: draft.portfolioConstraints.maximumNewIntentsPerCycle,
+      opposingPairDefault: draft.portfolioConstraints.allowOpposingPairSimultaneously ? "explicitly_allowed" : "blocked",
+    },
     performance,
     controls: {
       editableInAdminConsole: true,
-      persistenceMode: "process_memory_draft",
-      survivesProcessRestart: false,
+      persistenceMode: registry?.status?.schemaReady ? "postgres_registry" : "process_memory_draft",
+      survivesProcessRestart: Boolean(registry?.status?.schemaReady),
       appliesToTradingRuntime: false,
       activationRequiresSeparateApproval: true,
       objectiveMeaning: "research_acceptance_threshold_not_return_guarantee",
@@ -410,7 +460,7 @@ export function buildTradingScalpingAdminDashboard(options = {}) {
       providerCallsAllowed: false,
       orderSubmissionAllowed: false,
       liveActivationAllowed: false,
-      databaseWriteUsed: false,
+      databaseWriteUsed: Boolean(registry?.status?.schemaReady),
       publicUiExposed: false,
     },
   };
