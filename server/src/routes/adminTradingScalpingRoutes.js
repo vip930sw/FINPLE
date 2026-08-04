@@ -9,7 +9,6 @@ import {
   saveScalpingStrategyAdminDraft,
 } from "../services/tradingScalpingStrategyRegistryService.js";
 import {
-  ingestScalpingShadowCycle,
   readScalpingShadowRuntimeStatus,
   startScalpingShadowRuntime,
   stopScalpingShadowRuntime,
@@ -102,14 +101,6 @@ router.post("/scalping-shadow/start", (request, response, next) => {
       { actor: adminActor(request) },
     )
       .then((result) => response.status(201).json({ ...result, safety: safety() }))
-      .catch(next);
-  });
-});
-
-router.post("/scalping-shadow/cycle", (request, response, next) => {
-  requireAdminAccess(request, response, () => {
-    ingestScalpingShadowCycle(request.body ?? {})
-      .then((result) => response.json({ ...result, safety: safety() }))
       .catch(next);
   });
 });
