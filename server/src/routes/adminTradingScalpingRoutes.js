@@ -122,11 +122,26 @@ router.post("/scalping-shadow/start", (request, response, next) => {
 
 router.post("/scalping-shadow/stop", (request, response, next) => {
   requireAdminAccess(request, response, () => {
-    stopScalpingShadowRuntime(
-      request.body ?? {},
-      { actor: adminActor(request) },
-    )
-      .then((result) => response.json({ ...result, safety: safety() }))
+    readKisShadowFeedRuntimeStatus()
+      .then((feedStatus) => {
+        if (feedStatus.active) {
+          response.status(409).json({
+            ok: false,
+            code: "KIS_SHADOW_FEED_ACTIVE",
+            message: "KIS Shadow feed를 먼저 정지해야 합니다.",
+            details: ["stop_scalping_shadow_feed_first"],
+            safety: safety(),
+          });
+          return null;
+        }
+        return stopScalpingShadowRuntime(
+          request.body ?? {},
+          { actor: adminActor(request) },
+        );
+      })
+      .then((result) => {
+        if (result) response.json({ ...result, safety: safety() });
+      })
       .catch(next);
   });
 });
