@@ -1,0 +1,55 @@
+name: FINPLE Trading Scalping Registry Check
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trading-scalping-registry-check.yml"
+      - "server/migrations/20260805_trading_strategy_registry.sql"
+      - "server/src/db/tradingStrategyRegistryRepository.js"
+      - "server/src/db/tradingStrategyRegistryRepository.test.js"
+      - "server/src/routes/adminTradingScalpingRoutes.js"
+      - "server/src/services/tradingLeveragedEtfPortfolioCoordinator.js"
+      - "server/src/services/tradingLeveragedEtfPortfolioCoordinator.test.js"
+      - "server/src/services/tradingScalpingAdminDashboard.js"
+      - "server/src/services/tradingScalpingAdminDashboard.test.js"
+      - "server/src/services/tradingScalpingStrategyRegistryService.js"
+      - "src/components/TradingAiMlPanelGroup.jsx"
+      - "src/components/TradingScalpingAdminPanel.jsx"
+      - "src/components/TradingScalpingRegistryPanel.css"
+      - "src/components/tradingScalpingAdminApi.js"
+      - "scripts/check-trading-scalping-admin-console.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run multi-asset and registry tests
+        run: >-
+          node --test
+          server/src/services/tradingLeveragedEtfPortfolioCoordinator.test.js
+          server/src/services/tradingScalpingAdminDashboard.test.js
+          server/src/db/tradingStrategyRegistryRepository.test.js
+          scripts/check-trading-scalping-admin-console.test.mjs
+
+      - name: Check backend syntax
+        run: node --check server/src/routes/adminTradingScalpingRoutes.js
+
+      - name: Build frontend
+        run: npm run build
