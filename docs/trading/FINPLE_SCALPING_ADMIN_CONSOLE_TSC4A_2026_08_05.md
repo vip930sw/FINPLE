@@ -188,6 +188,18 @@ scripts/check-trading-scalping-admin-console.test.mjs
 npm run build
 ```
 
+최종 결과:
+
+```text
+Admin dashboard service tests: 7/7 PASS
+Admin Console integration checks: 4/4 PASS
+Focused total: 11/11 PASS
+Frontend build: PASS
+Backend Auth Stability Check: PASS
+FINPLE Offline Data-Quality Report: PASS
+Vercel: PASS
+```
+
 검증 범위:
 
 - 실제 TSC-1 기본 설정 사용
