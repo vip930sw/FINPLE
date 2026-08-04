@@ -59,8 +59,8 @@ test("requires all three rolling windows before candidate status", () => {
   const result = assessScalpingShadowPromotion(candidateEvidence({
     rollingWindows: [{ netReturnPct: 1.2 }, { netReturnPct: 0.9 }],
   }));
-  assert.equal(result.status, "blocked");
-  assert.equal(result.gates.find((gate) => gate.label === "20일 rolling window 수").status, "missed");
+  assert.equal(result.status, "insufficient_evidence");
+  assert.equal(result.gates.find((gate) => gate.label === "20일 rolling window 수").status, "insufficient_evidence");
 });
 
 test("blocks concentrated performance even when headline return is positive", () => {
