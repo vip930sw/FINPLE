@@ -6,6 +6,7 @@ export const DEFAULT_SCALPING_PROMOTION_POLICY = Object.freeze({
   minimumPositiveRollingWindows: 2,
   rollingWindowSessions: 20,
   rollingWindowCount: 3,
+  referenceTargetNetReturnPct: 3,
   minimumProfitFactor: 1.25,
   maximumDrawdownPct: 5,
   minimumFillRatePct: 70,
@@ -36,6 +37,7 @@ function normalizePolicy(input = {}) {
     minimumPositiveRollingWindows: Math.max(1, Math.floor(finite(merged.minimumPositiveRollingWindows) ?? 0)),
     rollingWindowSessions: Math.max(5, Math.floor(finite(merged.rollingWindowSessions) ?? 0)),
     rollingWindowCount: Math.max(1, Math.floor(finite(merged.rollingWindowCount) ?? 0)),
+    referenceTargetNetReturnPct: Math.max(0, finite(merged.referenceTargetNetReturnPct) ?? 0),
     minimumProfitFactor: Math.max(0, finite(merged.minimumProfitFactor) ?? 0),
     maximumDrawdownPct: Math.max(0, finite(merged.maximumDrawdownPct) ?? 0),
     minimumFillRatePct: Math.max(0, finite(merged.minimumFillRatePct) ?? 0),
@@ -69,13 +71,18 @@ function gate(label, actual, target, comparator, blocking = true) {
     return { label, actual: null, target, status: "insufficient_evidence", blocking };
   }
   const numeric = Number(actual);
-  const met = comparator === "minimum" ? numeric >= target : numeric <= target;
+  const met = comparator === "minimum"
+    ? numeric >= target
+    : comparator === "positive"
+      ? numeric > 0
+      : numeric <= target;
   return { label, actual: numeric, target, status: met ? "met" : "missed", blocking };
 }
 
 export function assessScalpingShadowPromotion(input = {}) {
   const policy = normalizePolicy(input.policy);
   const metrics = input.metrics || {};
+  const rollingWindows = Array.isArray(input.rollingWindows) ? input.rollingWindows : [];
   const observationSessions = finite(input.observationSessions);
   const completedTrades = finite(metrics.trades ?? input.completedTrades);
   const netReturnPct = finite(metrics.totalReturnPct ?? input.netReturnPct);
@@ -84,13 +91,14 @@ export function assessScalpingShadowPromotion(input = {}) {
   const fillRatePct = finite(metrics.fillRatePct);
   const averageSlippageBps = finite(metrics.averageSlippageBps);
   const maxConsecutiveLosses = finite(metrics.maxConsecutiveLosses);
-  const rollingPositive = positiveRollingWindows(input.rollingWindows);
+  const rollingPositive = positiveRollingWindows(rollingWindows);
   const singleDayContribution = dailyContributionPct(input.dailyPnl);
   const profitableSymbolCount = profitableSymbols(input.breakdown?.bySymbol);
 
   const gates = [
     gate("관찰 거래일", observationSessions, policy.minimumObservationSessions, "minimum"),
     gate("완결 거래 수", completedTrades, policy.minimumCompletedTrades, "minimum"),
+    gate("20일 rolling window 수", rollingWindows.length, policy.rollingWindowCount, "minimum"),
     gate("양수 20일 창", rollingPositive, policy.minimumPositiveRollingWindows, "minimum"),
     gate("Profit Factor", profitFactor, policy.minimumProfitFactor, "minimum"),
     gate("최대 낙폭", maxDrawdownPct, policy.maximumDrawdownPct, "maximum"),
@@ -99,7 +107,8 @@ export function assessScalpingShadowPromotion(input = {}) {
     gate("단일일 수익기여도", singleDayContribution, policy.maximumSingleDayPnlContributionPct, "maximum"),
     gate("최대 연속손실", maxConsecutiveLosses, policy.maximumConsecutiveLosses, "maximum"),
     gate("수익 종목 수", profitableSymbolCount, policy.minimumProfitableSymbols, "minimum"),
-    ...(policy.requirePositiveNetReturn ? [gate("누적 순수익률", netReturnPct, 0, "minimum")] : []),
+    ...(policy.requirePositiveNetReturn ? [gate("누적 순수익률 양수", netReturnPct, 0, "positive")] : []),
+    gate("20일 3% 상향 목표", netReturnPct, policy.referenceTargetNetReturnPct, "minimum", false),
   ];
 
   const insufficient = gates.some((item) => item.status === "insufficient_evidence" && item.blocking);
@@ -115,7 +124,13 @@ export function assessScalpingShadowPromotion(input = {}) {
       met: gates.filter((item) => item.status === "met").length,
       missed: gates.filter((item) => item.status === "missed").length,
       insufficient: gates.filter((item) => item.status === "insufficient_evidence").length,
+      blockingMissed: gates.filter((item) => item.status === "missed" && item.blocking).length,
       total: gates.length,
+    },
+    targetInterpretation: {
+      referenceTargetNetReturnPct: policy.referenceTargetNetReturnPct,
+      referenceTargetBlocking: false,
+      meaning: "stretch_target_not_live_promotion_requirement",
     },
     automaticLiveActivationAllowed: false,
     manualReviewRequired: true,
