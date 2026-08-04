@@ -30,28 +30,57 @@ async function readJson(response) {
     const error = new Error(body?.message || body?.code || `요청 실패 (${response.status})`);
     error.status = response.status;
     error.code = body?.code || "ADMIN_SCALPING_REQUEST_FAILED";
-    error.reasons = Array.isArray(body?.reasons) ? body.reasons : [];
+    error.reasons = Array.isArray(body?.reasons)
+      ? body.reasons
+      : Array.isArray(body?.details)
+        ? body.details
+        : [];
     error.body = body;
     throw error;
   }
   return body;
 }
 
-export async function fetchTradingScalpingAdminDashboard() {
-  const response = await fetch(buildUrl("/admin/trading-readiness/scalping-dashboard"), {
-    method: "GET",
+async function requestJson(path, options = {}) {
+  const response = await fetch(buildUrl(path), {
     credentials: "include",
-    headers: adminHeaders(),
+    ...options,
+    headers: adminHeaders({
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {}),
+    }),
   });
   return readJson(response);
 }
 
+export async function fetchTradingScalpingAdminDashboard() {
+  return requestJson("/admin/trading-readiness/scalping-dashboard", { method: "GET" });
+}
+
 export async function saveTradingScalpingAdminDraft(payload) {
-  const response = await fetch(buildUrl("/admin/trading-readiness/scalping-strategy-draft"), {
+  return requestJson("/admin/trading-readiness/scalping-strategy-draft", {
     method: "PUT",
-    credentials: "include",
-    headers: adminHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
-  return readJson(response);
+}
+
+export async function requestTradingScalpingStrategyReview(expectedRevision) {
+  return requestJson("/admin/trading-readiness/scalping-strategy-draft/review-request", {
+    method: "POST",
+    body: JSON.stringify({ expectedRevision }),
+  });
+}
+
+export async function approveTradingScalpingStrategyDraft(expectedRevision) {
+  return requestJson("/admin/trading-readiness/scalping-strategy-draft/approve", {
+    method: "POST",
+    body: JSON.stringify({ expectedRevision }),
+  });
+}
+
+export async function retireTradingScalpingStrategyVersion(versionId, reason) {
+  return requestJson(`/admin/trading-readiness/scalping-strategy-versions/${encodeURIComponent(versionId)}/retire`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
 }
