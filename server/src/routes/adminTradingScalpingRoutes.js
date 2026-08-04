@@ -2,6 +2,11 @@ import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
+  readKisShadowFeedRuntimeStatus,
+  startKisShadowFeedRuntime,
+  stopKisShadowFeedRuntime,
+} from "../services/tradingKisShadowFeedRuntimeService.js";
+import {
   approveScalpingStrategyAdminDraft,
   readScalpingStrategyAdminDashboard,
   requestScalpingStrategyAdminReview,
@@ -28,6 +33,16 @@ function safety() {
     brokerOrderAdapterPresent: false,
     orderSubmissionAllowed: false,
     liveActivationAllowed: false,
+  };
+}
+
+function feedStartInput(body = {}) {
+  return {
+    maximumCycleLagMs: body.maximumCycleLagMs,
+    maximumQuoteAgeMs: body.maximumQuoteAgeMs,
+    flushIntervalMs: body.flushIntervalMs,
+    maxReconnectAttempts: body.maxReconnectAttempts,
+    reconnectPolicy: body.reconnectPolicy,
   };
 }
 
@@ -112,6 +127,39 @@ router.post("/scalping-shadow/stop", (request, response, next) => {
       { actor: adminActor(request) },
     )
       .then((result) => response.json({ ...result, safety: safety() }))
+      .catch(next);
+  });
+});
+
+router.get("/scalping-shadow-feed", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    readKisShadowFeedRuntimeStatus()
+      .then((result) => {
+        response.setHeader("Cache-Control", "no-store, max-age=0");
+        response.json(result);
+      })
+      .catch(next);
+  });
+});
+
+router.post("/scalping-shadow-feed/start", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    startKisShadowFeedRuntime(
+      feedStartInput(request.body),
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.status(201).json(result))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-shadow-feed/stop", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    stopKisShadowFeedRuntime(
+      { reason: request.body?.reason || "admin_console_operator_stop" },
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.json(result))
       .catch(next);
   });
 });
