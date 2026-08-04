@@ -71,7 +71,10 @@ function gate(label, actual, target, comparator, blocking = true) {
     return { label, actual: null, target, status: "insufficient_evidence", blocking };
   }
   const numeric = Number(actual);
-  const met = comparator === "minimum"
+  if (comparator === "evidence_minimum" && numeric < target) {
+    return { label, actual: numeric, target, status: "insufficient_evidence", blocking };
+  }
+  const met = comparator === "minimum" || comparator === "evidence_minimum"
     ? numeric >= target
     : comparator === "positive"
       ? numeric > 0
@@ -96,9 +99,9 @@ export function assessScalpingShadowPromotion(input = {}) {
   const profitableSymbolCount = profitableSymbols(input.breakdown?.bySymbol);
 
   const gates = [
-    gate("관찰 거래일", observationSessions, policy.minimumObservationSessions, "minimum"),
-    gate("완결 거래 수", completedTrades, policy.minimumCompletedTrades, "minimum"),
-    gate("20일 rolling window 수", rollingWindows.length, policy.rollingWindowCount, "minimum"),
+    gate("관찰 거래일", observationSessions, policy.minimumObservationSessions, "evidence_minimum"),
+    gate("완결 거래 수", completedTrades, policy.minimumCompletedTrades, "evidence_minimum"),
+    gate("20일 rolling window 수", rollingWindows.length, policy.rollingWindowCount, "evidence_minimum"),
     gate("양수 20일 창", rollingPositive, policy.minimumPositiveRollingWindows, "minimum"),
     gate("Profit Factor", profitFactor, policy.minimumProfitFactor, "minimum"),
     gate("최대 낙폭", maxDrawdownPct, policy.maximumDrawdownPct, "maximum"),
