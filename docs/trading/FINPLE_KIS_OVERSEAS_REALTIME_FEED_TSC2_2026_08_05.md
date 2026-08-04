@@ -42,7 +42,7 @@ D + 시장코드 + 티커
 ```text
 DNASAAPL
 DNASTQQQ
-DAMSURPO
+DAMSUPRO
 ```
 
 시장코드:
