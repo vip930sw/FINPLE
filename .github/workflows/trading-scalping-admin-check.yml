@@ -1,0 +1,45 @@
+name: FINPLE Trading Scalping Admin Check
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trading-scalping-admin-check.yml"
+      - "server/src/index.js"
+      - "server/src/routes/adminTradingScalpingRoutes.js"
+      - "server/src/services/tradingScalpingAdminDashboard.js"
+      - "server/src/services/tradingScalpingAdminDashboard.test.js"
+      - "src/components/TradingAiMlPanelGroup.jsx"
+      - "src/components/TradingScalpingAdminPanel.jsx"
+      - "src/components/TradingScalpingAdminPanel.css"
+      - "src/components/tradingScalpingAdminApi.js"
+      - "scripts/check-trading-scalping-admin-console.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scalping-admin-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scalping admin contract tests
+        run: >-
+          node --test
+          server/src/services/tradingScalpingAdminDashboard.test.js
+          scripts/check-trading-scalping-admin-console.test.mjs
+
+      - name: Build frontend
+        run: npm run build
