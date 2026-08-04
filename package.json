@@ -16,6 +16,7 @@
     "check:official-portfolio-baseline": "node --test scripts/check-official-portfolio-baseline.test.mjs",
     "check:official-portfolio-step4-step5": "node --test scripts/check-official-portfolio-step4-step5.test.mjs",
     "check:step4-step5-eligibility-coverage": "node scripts/check-step4-step5-eligibility-coverage.mjs",
+    "check:step4-step5-lineage-forensics": "node scripts/check-step4-step5-lineage-forensics.mjs --check",
     "check:step2-step3-integrated-qa": "node --test scripts/check-step2-step3-integrated-qa.test.mjs",
     "check:p2a-public-simulator-policy": "node --test scripts/check-p2a-public-simulator-policy.test.mjs",
     "check:p3-step4-monthly-artifact": "node --test scripts/check-p3-step4-monthly-artifact.test.mjs",
