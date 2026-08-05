@@ -120,3 +120,14 @@ export async function stopTradingScalpingKisFeed(reason = "operator_stop") {
     body: JSON.stringify({ reason }),
   });
 }
+
+export async function fetchTradingScalpingModelSignalStatus() {
+  return requestJson("/admin/trading-readiness/scalping-model-signal", { method: "GET" });
+}
+
+export async function acknowledgeTradingScalpingModelSignalCircuitBreaker() {
+  return requestJson("/admin/trading-readiness/scalping-model-signal/acknowledge", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
