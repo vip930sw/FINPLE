@@ -185,6 +185,8 @@ export function buildKisHistoricalSessionRevision(input = {}) {
     completeMinuteCount === new Set(rows.map((row) => row.minuteStart).filter(Boolean)).size
       ? null
       : "incomplete_symbol_minutes_present",
+    persistenceDurable ? null : "durable_persistence_required",
+    coverageRatio >= minimumCoverageRatio ? null : "coverage_below_threshold",
   ].filter(Boolean);
 
   const sortedRows = rows
@@ -224,9 +226,7 @@ export function buildKisHistoricalSessionRevision(input = {}) {
     calendarVersion: calendarVersions[0] || null,
     rows: sortedRows,
   });
-  const readyForModelResearch = reasons.length === 0
-    && persistenceDurable
-    && coverageRatio >= minimumCoverageRatio;
+  const readyForModelResearch = reasons.length === 0;
 
   return {
     valid: reasons.length === 0,
