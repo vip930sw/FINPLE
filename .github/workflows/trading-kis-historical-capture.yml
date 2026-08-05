@@ -1,0 +1,53 @@
+name: Trading KIS Historical Capture
+
+on:
+  pull_request:
+    paths:
+      - "server/src/services/tradingKisConnectionLease.js"
+      - "server/src/services/tradingKisHistoricalCapture.js"
+      - "server/src/services/tradingKisHistoricalCapture.test.js"
+      - "server/src/services/tradingKisHistoricalCaptureRunner.js"
+      - "server/src/services/tradingKisHistoricalCaptureRunner.test.js"
+      - "server/src/services/tradingKisHistoricalCaptureRuntimeService.js"
+      - "server/src/db/tradingKisHistoricalCaptureRepository.js"
+      - "server/src/db/tradingKisHistoricalCaptureRepository.test.js"
+      - "server/src/routes/adminTradingScalpingRoutes.js"
+      - "server/migrations/20260805_trading_kis_historical_capture.sql"
+      - "src/components/TradingScalpingKisCapturePanel.jsx"
+      - "src/components/TradingScalpingKisCapturePanel.css"
+      - "src/components/TradingAiMlPanelGroup.jsx"
+      - "src/components/tradingScalpingAdminApi.js"
+      - "docs/trading/FINPLE_KIS_HISTORICAL_CAPTURE_TSC4H2_2026_08_05.md"
+      - "scripts/check-trading-kis-historical-capture.test.mjs"
+      - ".github/workflows/trading-kis-historical-capture.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Test KIS historical capture contracts
+        run: >-
+          node --test
+          server/src/services/tradingKisHistoricalCapture.test.js
+          server/src/services/tradingKisHistoricalCaptureRunner.test.js
+          server/src/db/tradingKisHistoricalCaptureRepository.test.js
+          scripts/check-trading-kis-historical-capture.test.mjs
+      - name: Check backend syntax
+        run: >-
+          node --check server/src/services/tradingKisHistoricalCapture.js
+          && node --check server/src/services/tradingKisHistoricalCaptureRunner.js
+          && node --check server/src/services/tradingKisHistoricalCaptureRuntimeService.js
+          && node --check server/src/db/tradingKisHistoricalCaptureRepository.js
+          && node --check server/src/routes/adminTradingScalpingRoutes.js
+      - name: Build frontend
+        run: npm run build
