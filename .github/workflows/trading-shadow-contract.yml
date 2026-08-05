@@ -1,0 +1,46 @@
+name: Trading Shadow Contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trading-shadow-contract.yml"
+      - "server/migrations/20260805_trading_shadow_runtime.sql"
+      - "server/src/db/tradingShadowSnapshotRepository*"
+      - "server/src/routes/adminTradingScalpingRoutes.js"
+      - "server/src/services/tradingLeveragedEtfShadowWorker*"
+      - "server/src/services/tradingScalpingPromotionPolicy*"
+      - "server/src/services/tradingScalpingShadowRuntimeService*"
+      - "src/components/TradingAiMlPanelGroup.jsx"
+      - "src/components/TradingScalpingShadowPanel*"
+      - "src/components/tradingScalpingAdminApi.js"
+      - "scripts/check-trading-scalping-shadow-runtime.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Test Shadow contracts
+        run: |
+          node --test \
+            server/src/services/tradingScalpingPromotionPolicy.test.js \
+            server/src/services/tradingLeveragedEtfShadowWorker.test.js \
+            server/src/db/tradingShadowSnapshotRepository.test.js \
+            server/src/services/tradingScalpingShadowRuntimeService.test.js \
+            scripts/check-trading-scalping-shadow-runtime.test.mjs
+      - name: Check server syntax
+        run: |
+          node --check server/src/routes/adminTradingScalpingRoutes.js
+          node --check server/src/services/tradingScalpingShadowRuntimeService.js
+          node --check server/src/db/tradingShadowSnapshotRepository.js
+      - run: npm run build

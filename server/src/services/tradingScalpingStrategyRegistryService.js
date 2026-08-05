@@ -1,3 +1,4 @@
+import { getLatestTradingShadowSnapshot } from "../db/tradingShadowSnapshotRepository.js";
 import {
   approveTradingStrategyDraft,
   getTradingStrategyRegistrySnapshot,
@@ -29,6 +30,40 @@ function actor(options = {}) {
   return clean(options.actor) || "admin_console";
 }
 
+function shadowToPerformanceSnapshot(snapshot) {
+  if (!snapshot?.ok || snapshot.mode !== "shadow" || !snapshot.metrics || !snapshot.ledger) return null;
+  const metrics = snapshot.metrics;
+  return {
+    ok: true,
+    mode: "shadow",
+    asOf: snapshot.asOf,
+    version: snapshot.version || "leveraged-etf-shadow-worker-v1",
+    metrics: {
+      initialEquity: metrics.initialEquity,
+      endingEquity: metrics.endingEquity,
+      netPnl: metrics.netPnl,
+      totalReturn: metrics.totalReturnPct === null ? null : Number(metrics.totalReturnPct) / 100,
+      maxDrawdown: metrics.maxDrawdownPct === null ? null : -Math.abs(Number(metrics.maxDrawdownPct)) / 100,
+      profitFactor: metrics.profitFactor,
+      fillRate: metrics.fillRatePct === null ? null : Number(metrics.fillRatePct) / 100,
+      averageSlippageBps: metrics.averageSlippageBps,
+      trades: metrics.trades,
+      wins: metrics.wins,
+      losses: metrics.losses,
+      totalFees: metrics.totalFees,
+      turnover: null,
+      breakdown: snapshot.ledger.breakdown || { bySymbol: {}, byRegime: {}, byEntryHour: {} },
+    },
+    ledger: {
+      equityCurve: snapshot.ledger.equityCurve || [],
+      trades: snapshot.ledger.trades || [],
+    },
+    promotion: snapshot.promotion || null,
+    observationSessions: snapshot.observationSessions || 0,
+    runId: snapshot.runId || null,
+  };
+}
+
 export async function readScalpingStrategyAdminDashboard(options = {}, dependencies = {}) {
   const snapshot = await getTradingStrategyRegistrySnapshot(
     { strategyKey: SCALPING_STRATEGY_REGISTRY_KEY },
@@ -37,12 +72,30 @@ export async function readScalpingStrategyAdminDashboard(options = {}, dependenc
   const draft = snapshot.draft
     ? replaceScalpingAdminDraftForRegistry(snapshot.draft)
     : readScalpingAdminDraft();
-  return buildTradingScalpingAdminDashboard({
+  let performanceSnapshot = options.performanceSnapshot;
+  let shadow = null;
+  if (performanceSnapshot === undefined) {
+    const latestShadow = await (dependencies.getLatestShadowSnapshot ?? getLatestTradingShadowSnapshot)({}, dependencies);
+    shadow = latestShadow;
+    performanceSnapshot = shadowToPerformanceSnapshot(latestShadow.snapshot);
+  }
+  const dashboard = buildTradingScalpingAdminDashboard({
     draft,
-    performanceSnapshot: options.performanceSnapshot,
+    performanceSnapshot,
     registry: registryEnvelope(snapshot),
     checkedAt: options.checkedAt,
   });
+  return {
+    ...dashboard,
+    shadow: {
+      status: shadow?.persistence || null,
+      latestSnapshot: shadow?.snapshot || null,
+      promotion: shadow?.snapshot?.promotion || null,
+      observationSessions: shadow?.snapshot?.observationSessions || 0,
+      orderSubmissionAllowed: false,
+      providerCallsAllowed: false,
+    },
+  };
 }
 
 export async function saveScalpingStrategyAdminDraft(input = {}, options = {}, dependencies = {}) {

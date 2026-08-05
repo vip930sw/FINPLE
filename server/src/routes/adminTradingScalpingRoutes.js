@@ -8,6 +8,11 @@ import {
   retireScalpingStrategyAdminVersion,
   saveScalpingStrategyAdminDraft,
 } from "../services/tradingScalpingStrategyRegistryService.js";
+import {
+  readScalpingShadowRuntimeStatus,
+  startScalpingShadowRuntime,
+  stopScalpingShadowRuntime,
+} from "../services/tradingScalpingShadowRuntimeService.js";
 
 const router = express.Router();
 
@@ -19,6 +24,8 @@ function safety() {
   return {
     appliesToTradingRuntime: false,
     providerCallsAllowed: false,
+    providerConnectionStarted: false,
+    brokerOrderAdapterPresent: false,
     orderSubmissionAllowed: false,
     liveActivationAllowed: false,
   };
@@ -68,6 +75,39 @@ router.post("/scalping-strategy-versions/:versionId/retire", (request, response,
   requireAdminAccess(request, response, () => {
     retireScalpingStrategyAdminVersion(
       request.params.versionId,
+      request.body ?? {},
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.json({ ...result, safety: safety() }))
+      .catch(next);
+  });
+});
+
+router.get("/scalping-shadow", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    readScalpingShadowRuntimeStatus()
+      .then((result) => {
+        response.setHeader("Cache-Control", "no-store, max-age=0");
+        response.json(result);
+      })
+      .catch(next);
+  });
+});
+
+router.post("/scalping-shadow/start", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    startScalpingShadowRuntime(
+      request.body ?? {},
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.status(201).json({ ...result, safety: safety() }))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-shadow/stop", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    stopScalpingShadowRuntime(
       request.body ?? {},
       { actor: adminActor(request) },
     )

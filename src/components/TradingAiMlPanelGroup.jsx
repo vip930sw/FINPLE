@@ -1,4 +1,5 @@
 import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
+import TradingScalpingShadowPanel from "./TradingScalpingShadowPanel.jsx";
 import "./TradingScalpingRegistryPanel.css";
 
 function TradingAiMlPanelGroup({
@@ -19,7 +20,12 @@ function TradingAiMlPanelGroup({
 
   return (
     <>
-      {showScalpingAdminPanel ? <TradingScalpingAdminPanel /> : null}
+      {showScalpingAdminPanel ? (
+        <>
+          <TradingScalpingAdminPanel />
+          <TradingScalpingShadowPanel />
+        </>
+      ) : null}
       <details
         className="tradingAiMlPanelGroup"
         data-admin-panel-group-key={groupKey}

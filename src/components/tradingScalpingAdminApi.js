@@ -84,3 +84,21 @@ export async function retireTradingScalpingStrategyVersion(versionId, reason) {
     body: JSON.stringify({ reason }),
   });
 }
+
+export async function fetchTradingScalpingShadowStatus() {
+  return requestJson("/admin/trading-readiness/scalping-shadow", { method: "GET" });
+}
+
+export async function startTradingScalpingShadowRuntime(payload) {
+  return requestJson("/admin/trading-readiness/scalping-shadow/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function stopTradingScalpingShadowRuntime(reason = "operator_stop") {
+  return requestJson("/admin/trading-readiness/scalping-shadow/stop", {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
