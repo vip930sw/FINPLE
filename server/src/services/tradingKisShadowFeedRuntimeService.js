@@ -44,6 +44,7 @@ function publicEnvelope(input = {}) {
   return {
     ok: true,
     active: input.active === true,
+    acknowledgementRequired: input.acknowledgementRequired === true,
     runner: input.runner || null,
     operations: input.operations || null,
     recovery: input.recovery || null,
@@ -110,6 +111,8 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
       approvedVersion.strategy?.requireModelSignal !== true || typeof dependencies.modelSignalProvider === "function",
   } : null;
   const operations = activeFeedRuntime?.supervisor.status() || null;
+  const runtimeActive = operations?.active === true;
+  const acknowledgementRequired = Boolean(activeFeedRuntime) && !runtimeActive;
   const recoveryResult = operations
     ? { recovery: null, persistence: operations.checkpoint?.persistence || null }
     : await (dependencies.readRecoveryState ?? readKisFeedRecoveryState)(
@@ -118,8 +121,9 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
       );
 
   return publicEnvelope({
-    active: Boolean(activeFeedRuntime),
-    runner: operations?.runner || recoveryResult.recovery?.runner || null,
+    active: runtimeActive,
+    acknowledgementRequired,
+    runner: operations?.runner || null,
     operations: operations || {
       active: false,
       guard: null,
@@ -137,13 +141,15 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
         nonStartReasons.length === 0 &&
         shadow.active === true &&
         Boolean(approvedVersion) &&
-        marketStartEligible,
+        marketStartEligible &&
+        !acknowledgementRequired,
       blockingReasons: [
         ...nonStartReasons,
         shadow.active === true ? null : "active_shadow_run_required",
         approvedVersion ? null : "active_shadow_strategy_version_not_approved",
         marketSession.calendarSupported ? null : "calendar_unsupported",
         marketStartEligible ? null : "market_session_not_open_for_feed_start",
+        acknowledgementRequired ? "circuit_breaker_acknowledgement_required" : null,
       ].filter(Boolean),
     },
     shadow: {
@@ -158,7 +164,7 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
 
 export async function startKisShadowFeedRuntime(input = {}, options = {}, dependencies = {}) {
   if (activeFeedRuntime) {
-    throw runtimeError("KIS_SHADOW_FEED_ALREADY_ACTIVE", "이미 실행 중인 KIS Shadow feed가 있습니다.");
+    throw runtimeError("KIS_SHADOW_FEED_ALREADY_ACTIVE", "기존 KIS Shadow feed 상태를 먼저 정지 또는 확인 해제해야 합니다.");
   }
   const env = options.env ?? dependencies.env ?? process.env;
   const nowMs = resolveNowMs(options, dependencies);
@@ -265,7 +271,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
 
 export async function stopKisShadowFeedRuntime(input = {}, options = {}, dependencies = {}) {
   if (!activeFeedRuntime) {
-    throw runtimeError("KIS_SHADOW_FEED_NOT_ACTIVE", "실행 중인 KIS Shadow feed가 없습니다.");
+    throw runtimeError("KIS_SHADOW_FEED_NOT_ACTIVE", "확인 또는 정지할 KIS Shadow feed 상태가 없습니다.");
   }
   const current = activeFeedRuntime;
   const operationalStatus = await current.supervisor.stop(
@@ -285,5 +291,6 @@ export async function stopKisShadowFeedRuntime(input = {}, options = {}, depende
     operations: operationalStatus,
     runner: operationalStatus.runner,
     active: false,
+    acknowledgementRequired: false,
   };
 }
