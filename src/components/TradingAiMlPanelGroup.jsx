@@ -1,4 +1,5 @@
 import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
+import "./TradingScalpingRegistryPanel.css";
 
 function TradingAiMlPanelGroup({
   groupKey,

@@ -10,6 +10,7 @@ import {
   updateScalpingAdminDraft,
   validateScalpingAdminDraft,
 } from "./tradingScalpingAdminDashboard.js";
+import { DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS } from "./tradingLeveragedEtfPortfolioCoordinator.js";
 
 function sampleReplaySnapshot() {
   return {
@@ -57,16 +58,17 @@ test.beforeEach(() => {
   resetScalpingAdminDraftForTest();
 });
 
-test("default admin draft uses the real TSC-1 universe and research objectives", () => {
+test("default admin draft supports all eight symbols and fail-closed portfolio limits", () => {
   const draft = readScalpingAdminDraft();
   assert.deepEqual(draft.strategy.allowedSymbols, ["TQQQ", "SQQQ", "SOXL", "SOXS", "UPRO", "SPXU", "TNA", "TZA"]);
   assert.equal(draft.strategy.fastEmaPeriod, 5);
   assert.equal(draft.strategy.slowEmaPeriod, 20);
   assert.deepEqual(draft.objectives, DEFAULT_SCALPING_RESEARCH_OBJECTIVES);
+  assert.deepEqual(draft.portfolioConstraints, DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS);
   assert.equal(draft.revision, 1);
 });
 
-test("rejects invalid EMA order, unsupported symbols, and excessive risk fraction", () => {
+test("rejects invalid EMA order, unsupported symbols, excessive risk, and invalid portfolio limits", () => {
   const result = validateScalpingAdminDraft({
     strategy: {
       ...readScalpingAdminDraft().strategy,
@@ -76,20 +78,38 @@ test("rejects invalid EMA order, unsupported symbols, and excessive risk fractio
       riskPerTradeFraction: 0.25,
     },
     objectives: DEFAULT_SCALPING_RESEARCH_OBJECTIVES,
+    portfolioConstraints: {
+      ...DEFAULT_SCALPING_PORTFOLIO_CONSTRAINTS,
+      maxConcurrentPositions: 9,
+      maxGrossExposureFraction: 1.2,
+    },
   });
   assert.equal(result.valid, false);
   assert.ok(result.reasons.includes("unsupported_symbol_AAPL"));
   assert.ok(result.reasons.includes("fast_ema_must_be_below_slow_ema"));
   assert.ok(result.reasons.includes("risk_per_trade_fraction_out_of_range"));
+  assert.ok(result.reasons.includes("max_concurrent_positions_out_of_range"));
+  assert.ok(result.reasons.includes("max_gross_exposure_fraction_out_of_range"));
 });
 
-test("updates only an admin draft with revision control and no runtime activation", () => {
+test("rejects a simultaneous holding limit larger than the selected universe", () => {
+  const current = readScalpingAdminDraft();
+  const result = validateScalpingAdminDraft({
+    strategy: { ...current.strategy, allowedSymbols: ["TQQQ", "SOXL"] },
+    objectives: current.objectives,
+    portfolioConstraints: { ...current.portfolioConstraints, maxConcurrentPositions: 3 },
+  });
+  assert.equal(result.valid, false);
+  assert.ok(result.reasons.includes("max_concurrent_positions_exceeds_selected_symbols"));
+});
+
+test("updates multiple selected symbols and account-level constraints without runtime activation", () => {
   const current = readScalpingAdminDraft();
   const result = updateScalpingAdminDraft({
     expectedRevision: current.revision,
     strategy: {
       ...current.strategy,
-      allowedSymbols: ["TQQQ", "SOXL"],
+      allowedSymbols: ["TQQQ", "SOXL", "UPRO"],
       minEntryProbability: 0.67,
       riskPerTradeFraction: 0.008,
     },
@@ -97,12 +117,24 @@ test("updates only an admin draft with revision control and no runtime activatio
       ...current.objectives,
       targetNetReturnPct: 4,
     },
+    portfolioConstraints: {
+      ...current.portfolioConstraints,
+      maxConcurrentPositions: 2,
+      maximumNewIntentsPerCycle: 2,
+      maxGrossExposureFraction: 0.6,
+      maxAggregateRiskFraction: 0.018,
+    },
   }, { updatedAt: "2026-08-05T00:00:00.000Z", updatedBy: "test_admin" });
   assert.equal(result.ok, true);
   assert.equal(result.draft.revision, 2);
   assert.equal(result.draft.updatedBy, "test_admin");
-  assert.deepEqual(result.draft.strategy.allowedSymbols, ["TQQQ", "SOXL"]);
+  assert.deepEqual(result.draft.strategy.allowedSymbols, ["TQQQ", "SOXL", "UPRO"]);
+  assert.equal(result.draft.portfolioConstraints.maxConcurrentPositions, 2);
+  assert.equal(result.draft.portfolioConstraints.maximumNewIntentsPerCycle, 2);
   const dashboard = buildTradingScalpingAdminDashboard({ draft: result.draft, performanceSnapshot: null, checkedAt: "2026-08-05T00:00:00.000Z" });
+  assert.equal(dashboard.multiAsset.multiSelectSupported, true);
+  assert.equal(dashboard.multiAsset.selectedSymbolCount, 3);
+  assert.equal(dashboard.multiAsset.simultaneousHoldingLimit, 2);
   assert.equal(dashboard.controls.appliesToTradingRuntime, false);
   assert.equal(dashboard.safety.orderSubmissionAllowed, false);
   assert.equal(dashboard.controls.survivesProcessRestart, false);
@@ -110,17 +142,15 @@ test("updates only an admin draft with revision control and no runtime activatio
 
 test("rejects a stale revision without overwriting the current draft", () => {
   const current = readScalpingAdminDraft();
-  const first = updateScalpingAdminDraft({
+  const payload = {
     expectedRevision: current.revision,
     strategy: current.strategy,
     objectives: current.objectives,
-  });
+    portfolioConstraints: current.portfolioConstraints,
+  };
+  const first = updateScalpingAdminDraft(payload);
   assert.equal(first.ok, true);
-  const stale = updateScalpingAdminDraft({
-    expectedRevision: current.revision,
-    strategy: current.strategy,
-    objectives: current.objectives,
-  });
+  const stale = updateScalpingAdminDraft(payload);
   assert.equal(stale.ok, false);
   assert.equal(stale.statusCode, 409);
   assert.equal(stale.code, "SCALPING_DRAFT_REVISION_CONFLICT");
@@ -148,6 +178,23 @@ test("maps a replay snapshot into KPI, objective, chart, breakdown, and trade vi
   assert.equal(view.charts.dailyPnl.length, 2);
   assert.equal(view.latestTrades.length, 1);
   assert.equal(view.breakdown.bySymbol.TQQQ.trades, 20);
+});
+
+test("uses persistent registry metadata when a DB-backed draft is available", () => {
+  const draft = readScalpingAdminDraft();
+  const dashboard = buildTradingScalpingAdminDashboard({
+    draft,
+    performanceSnapshot: null,
+    registry: {
+      status: { schemaReady: true, mode: "postgres_registry" },
+      versions: [{ id: "v1", versionNumber: 1, status: "approved" }],
+      auditEvents: [],
+    },
+  });
+  assert.equal(dashboard.controls.persistenceMode, "postgres_registry");
+  assert.equal(dashboard.controls.survivesProcessRestart, true);
+  assert.equal(dashboard.safety.databaseWriteUsed, true);
+  assert.equal(dashboard.controls.appliesToTradingRuntime, false);
 });
 
 test("labels target return as a research acceptance threshold rather than a guarantee", () => {

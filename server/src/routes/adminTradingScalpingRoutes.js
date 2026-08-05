@@ -2,37 +2,77 @@ import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
-  buildTradingScalpingAdminDashboard,
-  updateScalpingAdminDraft,
-} from "../services/tradingScalpingAdminDashboard.js";
+  approveScalpingStrategyAdminDraft,
+  readScalpingStrategyAdminDashboard,
+  requestScalpingStrategyAdminReview,
+  retireScalpingStrategyAdminVersion,
+  saveScalpingStrategyAdminDraft,
+} from "../services/tradingScalpingStrategyRegistryService.js";
 
 const router = express.Router();
 
-router.get("/scalping-dashboard", (request, response) => {
+function adminActor(request) {
+  return request.get("x-finple-admin-actor") || "admin_console";
+}
+
+function safety() {
+  return {
+    appliesToTradingRuntime: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    liveActivationAllowed: false,
+  };
+}
+
+router.get("/scalping-dashboard", (request, response, next) => {
   requireAdminAccess(request, response, () => {
-    response.setHeader("Cache-Control", "no-store, max-age=0");
-    response.json(buildTradingScalpingAdminDashboard());
+    readScalpingStrategyAdminDashboard()
+      .then((dashboard) => {
+        response.setHeader("Cache-Control", "no-store, max-age=0");
+        response.json(dashboard);
+      })
+      .catch(next);
   });
 });
 
-router.put("/scalping-strategy-draft", (request, response) => {
+router.put("/scalping-strategy-draft", (request, response, next) => {
   requireAdminAccess(request, response, () => {
-    const result = updateScalpingAdminDraft(request.body ?? {}, {
-      updatedBy: request.get("x-finple-admin-actor") || "admin_console",
-    });
-    response.status(result.statusCode).json({
-      ok: result.ok,
-      code: result.code,
-      reasons: result.reasons,
-      draft: result.draft,
-      dashboard: buildTradingScalpingAdminDashboard({ draft: result.draft }),
-      safety: {
-        appliesToTradingRuntime: false,
-        providerCallsAllowed: false,
-        orderSubmissionAllowed: false,
-        liveActivationAllowed: false,
-      },
-    });
+    saveScalpingStrategyAdminDraft(request.body ?? {}, { actor: adminActor(request) })
+      .then((result) => {
+        response.status(result.statusCode || 200).json({
+          ...result,
+          safety: safety(),
+        });
+      })
+      .catch(next);
+  });
+});
+
+router.post("/scalping-strategy-draft/review-request", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    requestScalpingStrategyAdminReview(request.body ?? {}, { actor: adminActor(request) })
+      .then((result) => response.json({ ...result, safety: safety() }))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-strategy-draft/approve", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    approveScalpingStrategyAdminDraft(request.body ?? {}, { actor: adminActor(request) })
+      .then((result) => response.status(201).json({ ...result, safety: safety() }))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-strategy-versions/:versionId/retire", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    retireScalpingStrategyAdminVersion(
+      request.params.versionId,
+      request.body ?? {},
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.json({ ...result, safety: safety() }))
+      .catch(next);
   });
 });
 
