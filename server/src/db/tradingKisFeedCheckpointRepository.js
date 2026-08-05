@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import {
-  isDatabaseConfigured,
-  query as databaseQuery,
-} from "./database.js";
+import { query as databaseQuery } from "./database.js";
 
 export const KIS_SHADOW_FEED_CHECKPOINT_KEY = "leveraged-etf-scalping-kis-shadow-feed-v1";
 export const KIS_SHADOW_FEED_CHECKPOINT_SCHEMA_VERSION = "kis-shadow-feed-checkpoint-v1";
@@ -15,8 +12,12 @@ function clean(value) {
   return String(value ?? "").trim();
 }
 
+function databaseConfigured(env = process.env) {
+  return Boolean(clean(env.DATABASE_URL));
+}
+
 function enabled(env = process.env) {
-  return isDatabaseConfigured() && ["1", "true", "yes", "on"].includes(clean(env.FINPLE_TRADING_KIS_FEED_CHECKPOINT_ENABLED).toLowerCase());
+  return databaseConfigured(env) && ["1", "true", "yes", "on"].includes(clean(env.FINPLE_TRADING_KIS_FEED_CHECKPOINT_ENABLED).toLowerCase());
 }
 
 function sanitize(value) {
@@ -51,13 +52,14 @@ function mapRow(row) {
 }
 
 async function status(queryFn = databaseQuery, env = process.env) {
+  const configured = databaseConfigured(env);
   if (!enabled(env)) {
     return {
-      databaseConfigured: isDatabaseConfigured(),
+      databaseConfigured: configured,
       featureEnabled: false,
       schemaReady: false,
       mode: "memory_checkpoint",
-      reason: isDatabaseConfigured() ? "checkpoint_feature_flag_disabled" : "database_not_configured",
+      reason: configured ? "checkpoint_feature_flag_disabled" : "database_not_configured",
     };
   }
   const result = await queryFn(
