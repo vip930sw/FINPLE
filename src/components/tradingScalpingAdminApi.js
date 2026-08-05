@@ -121,6 +121,31 @@ export async function stopTradingScalpingKisFeed(reason = "operator_stop") {
   });
 }
 
+export async function fetchTradingScalpingKisCaptureStatus() {
+  return requestJson("/admin/trading-readiness/scalping-kis-capture", { method: "GET" });
+}
+
+export async function startTradingScalpingKisCapture(payload = {}) {
+  return requestJson("/admin/trading-readiness/scalping-kis-capture/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function stopTradingScalpingKisCapture(reason = "operator_stop") {
+  return requestJson("/admin/trading-readiness/scalping-kis-capture/stop", {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function sealTradingScalpingKisCaptureSession(payload = {}) {
+  return requestJson("/admin/trading-readiness/scalping-kis-capture/seal", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function fetchTradingScalpingModelSignalStatus() {
   return requestJson("/admin/trading-readiness/scalping-model-signal", { method: "GET" });
 }
