@@ -1,0 +1,47 @@
+name: Trading Scalping Model Runtime
+
+on:
+  pull_request:
+    paths:
+      - "server/src/services/tradingScalpingModelSignalAdapter.js"
+      - "server/src/services/tradingScalpingModelSignalAdapter.test.js"
+      - "server/src/services/tradingScalpingModelSignalRuntimeService.js"
+      - "server/src/services/tradingScalpingModelSignalRuntimeService.test.js"
+      - "server/src/services/tradingKisShadowFeedRuntimeService.js"
+      - "server/src/routes/adminTradingScalpingRoutes.js"
+      - "src/components/TradingScalpingModelSignalPanel.jsx"
+      - "src/components/TradingScalpingModelSignalPanel.css"
+      - "src/components/TradingAiMlPanelGroup.jsx"
+      - "src/components/tradingScalpingAdminApi.js"
+      - "scripts/check-trading-scalping-model-runtime.test.mjs"
+      - "docs/trading/FINPLE_SCALPING_MODEL_SIGNAL_RUNTIME_TSC4F2_2026_08_05.md"
+      - ".github/workflows/trading-scalping-model-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Test model signal runtime contracts
+        run: >-
+          node --test
+          server/src/services/tradingScalpingModelSignalAdapter.test.js
+          server/src/services/tradingScalpingModelSignalRuntimeService.test.js
+          scripts/check-trading-scalping-model-signal.test.mjs
+          scripts/check-trading-scalping-model-runtime.test.mjs
+      - name: Check backend syntax
+        run: |
+          node --check server/src/services/tradingScalpingModelSignalRuntimeService.js
+          node --check server/src/services/tradingKisShadowFeedRuntimeService.js
+          node --check server/src/routes/adminTradingScalpingRoutes.js
+      - name: Build frontend
+        run: npm run build

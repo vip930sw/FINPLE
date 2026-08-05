@@ -8,6 +8,12 @@ import {
   readKisFeedRecoveryState,
 } from "./tradingKisFeedOperationalSupervisor.js";
 import { assessKisShadowFeedApproval } from "./tradingKisReadOnlyApproval.js";
+import {
+  readScalpingModelSignalRuntimeStatus,
+  resetScalpingModelSignalRuntimeForTest,
+  startScalpingModelSignalRuntime,
+  stopScalpingModelSignalRuntime,
+} from "./tradingScalpingModelSignalRuntimeService.js";
 import { getUsEquityMarketSession } from "./tradingUsEquityMarketCalendar.js";
 import {
   ingestScalpingShadowCycle,
@@ -51,6 +57,7 @@ function publicEnvelope(input = {}) {
     preflight: input.preflight,
     shadow: input.shadow,
     strategy: input.strategy || null,
+    modelSignal: input.modelSignal || null,
     safety: {
       adminOnly: true,
       marketDataOnly: true,
@@ -70,6 +77,7 @@ function publicEnvelope(input = {}) {
 
 export function resetKisShadowFeedRuntimeForTest() {
   activeFeedRuntime = null;
+  resetScalpingModelSignalRuntimeForTest();
 }
 
 export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies = {}) {
@@ -78,10 +86,16 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
   const readShadowStatus = dependencies.readShadowStatus ?? readScalpingShadowRuntimeStatus;
   const getRegistry = dependencies.getRegistrySnapshot ?? getTradingStrategyRegistrySnapshot;
   const marketSessionResolver = dependencies.marketSessionResolver ?? getUsEquityMarketSession;
+  const readModelSignalStatus = dependencies.readModelSignalStatus ?? readScalpingModelSignalRuntimeStatus;
   const shadow = await readShadowStatus({}, dependencies);
   const registry = await getRegistry({ strategyKey: SCALPING_STRATEGY_REGISTRY_KEY }, dependencies);
   const strategyVersionId = activeFeedRuntime?.strategyVersionId || shadow.snapshot?.strategyVersionId || null;
   const approvedVersion = strategyVersionId ? resolveApprovedVersion(registry, strategyVersionId) : null;
+  const selectedSymbols = approvedVersion?.strategy?.allowedSymbols || [];
+  const modelSignal = await readModelSignalStatus(
+    { env, nowMs, selectedSymbols },
+    dependencies,
+  );
   const preflight = assessKisShadowFeedApproval(
     {
       receipt: options.receipt,
@@ -104,11 +118,11 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
     id: approvedVersion.id,
     versionNumber: approvedVersion.versionNumber,
     checksum: approvedVersion.checksum,
-    selectedSymbols: approvedVersion.strategy?.allowedSymbols || [],
+    selectedSymbols,
     requireModelSignal: approvedVersion.strategy?.requireModelSignal === true,
-    externalModelSignalAvailable: typeof dependencies.modelSignalProvider === "function",
+    externalModelSignalAvailable: modelSignal.entrySignalAvailable === true,
     tradeSignalGenerationExpected:
-      approvedVersion.strategy?.requireModelSignal !== true || typeof dependencies.modelSignalProvider === "function",
+      approvedVersion.strategy?.requireModelSignal !== true || modelSignal.entrySignalAvailable === true,
   } : null;
   const operations = activeFeedRuntime?.supervisor.status() || null;
   const runtimeActive = operations?.active === true;
@@ -159,6 +173,7 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
       strategyVersionNumber: shadow.snapshot?.strategyVersionNumber || null,
     },
     strategy,
+    modelSignal,
   });
 }
 
@@ -171,6 +186,8 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
   const now = dependencies.now ?? (() => nowMs);
   const readShadowStatus = dependencies.readShadowStatus ?? readScalpingShadowRuntimeStatus;
   const getRegistry = dependencies.getRegistrySnapshot ?? getTradingStrategyRegistrySnapshot;
+  const startModelSignalRuntime = dependencies.startModelSignalRuntime ?? startScalpingModelSignalRuntime;
+  const stopModelSignalRuntime = dependencies.stopModelSignalRuntime ?? stopScalpingModelSignalRuntime;
   const shadow = await readShadowStatus({}, dependencies);
   if (!shadow.active || !shadow.snapshot?.strategyVersionId) {
     throw runtimeError("ACTIVE_SHADOW_RUN_REQUIRED", "KIS feed 시작 전에 승인 전략 기반 Shadow run이 실행 중이어야 합니다.");
@@ -195,6 +212,16 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     );
   }
 
+  const modelRuntime = await startModelSignalRuntime(
+    {
+      selectedSymbols: approvedVersion.strategy.allowedSymbols,
+      strategyVersionId: approvedVersion.id,
+      approval: input.modelApproval,
+    },
+    { env, nowMs, actor: clean(options.actor) || "admin_console" },
+    dependencies,
+  );
+
   const runnerFactory = dependencies.runnerFactory ?? createKisCompletedBarFeedRunner;
   const runner = runnerFactory(
     {
@@ -218,7 +245,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
       aggregatorFactory: dependencies.aggregatorFactory,
       marketSessionResolver: dependencies.marketSessionResolver,
       ingestShadowCycle: dependencies.ingestShadowCycle ?? ingestScalpingShadowCycle,
-      modelSignalProvider: dependencies.modelSignalProvider,
+      modelSignalProvider: modelRuntime.provider,
     },
   );
 
@@ -245,17 +272,26 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
       marketSessionResolver: dependencies.marketSessionResolver,
     },
   );
-  const operationalStatus = await supervisor.start({
-    appKey,
-    appSecret,
-    maxReconnectAttempts: input.maxReconnectAttempts,
-    reconnectPolicy: input.reconnectPolicy,
-  });
+
+  let operationalStatus;
+  try {
+    operationalStatus = await supervisor.start({
+      appKey,
+      appSecret,
+      maxReconnectAttempts: input.maxReconnectAttempts,
+      reconnectPolicy: input.reconnectPolicy,
+    });
+  } catch (error) {
+    await stopModelSignalRuntime({ env, nowMs }, dependencies);
+    throw error;
+  }
+
   activeFeedRuntime = {
     supervisor,
     strategyVersionId: approvedVersion.id,
     startedBy: clean(options.actor) || "admin_console",
     receipt: input.receipt,
+    modelSignalRuntimeActive: modelRuntime.status?.active === true,
   };
   return readKisShadowFeedRuntimeStatus(
     {
@@ -274,22 +310,24 @@ export async function stopKisShadowFeedRuntime(input = {}, options = {}, depende
     throw runtimeError("KIS_SHADOW_FEED_NOT_ACTIVE", "확인 또는 정지할 KIS Shadow feed 상태가 없습니다.");
   }
   const current = activeFeedRuntime;
+  const env = options.env ?? dependencies.env ?? process.env;
+  const nowMs = resolveNowMs(options, dependencies);
+  const stopModelSignalRuntime = dependencies.stopModelSignalRuntime ?? stopScalpingModelSignalRuntime;
   const operationalStatus = await current.supervisor.stop(
     clean(input.reason) || "admin_console_operator_stop",
     clean(options.actor) || "admin_console",
   );
   activeFeedRuntime = null;
+  const modelSignal = await stopModelSignalRuntime({ env, nowMs }, dependencies);
   const status = await readKisShadowFeedRuntimeStatus(
-    {
-      env: options.env ?? dependencies.env ?? process.env,
-      nowMs: resolveNowMs(options, dependencies),
-    },
+    { env, nowMs },
     dependencies,
   );
   return {
     ...status,
     operations: operationalStatus,
     runner: operationalStatus.runner,
+    modelSignal,
     active: false,
     acknowledgementRequired: false,
   };
