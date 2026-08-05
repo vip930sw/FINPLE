@@ -279,7 +279,7 @@ export async function saveKisHistoricalRevision(revision, options = {}, dependen
 export async function readLatestKisHistoricalCaptureSummary(options = {}, dependencies = {}) {
   const queryFn = dependencies.query ?? databaseQuery;
   const env = options.env ?? dependencies.env ?? process.env;
-  const persistence = await persistenceStatus(queryFn, env);
+  const persistence = options.persistence ?? await persistenceStatus(queryFn, env);
 
   if (!persistence.schemaReady) {
     const rows = [...memoryRows.values()];

@@ -78,3 +78,34 @@ test("capture status fails closed when the database status query fails", async (
   assert.equal(status.startEligible, false);
   assert.ok(status.blockingReasons.includes("database_unavailable"));
 });
+
+test("capture status reuses persistence and does not overlap database work", async () => {
+  resetKisHistoricalCaptureRuntimeForTest();
+  const events = [];
+  const persistence = {
+    databaseConfigured: true,
+    featureEnabled: false,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres",
+    reason: null,
+  };
+  const status = await readKisHistoricalCaptureRuntimeStatus({ env: {} }, {
+    getPersistenceStatus: async () => {
+      events.push("persistence:start");
+      await new Promise((resolve) => setImmediate(resolve));
+      events.push("persistence:end");
+      return persistence;
+    },
+    readSummary: async (options) => {
+      events.push("summary");
+      assert.equal(options.persistence, persistence);
+      return summary;
+    },
+    getPoolStats: () => ({ initialized: true, totalCount: 1, idleCount: 1, waitingCount: 0 }),
+    getDeploymentInfo: () => ({ commitSha: null }),
+  });
+
+  assert.deepEqual(events, ["persistence:start", "persistence:end", "summary"]);
+  assert.equal(status.diagnostics.pool.after.waitingCount, 0);
+});

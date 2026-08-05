@@ -5,45 +5,6 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
-  fetchAdminTradingLabMockExecutionPreflightStatus,
-  fetchAdminTradingLabMockExecutionReviewResultStatus,
-  fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
-  fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
-  fetchAdminTradingLabMockFillSimulationCoreStatus,
-  fetchAdminTradingLabMockDashboardCleanupPreflightStatus,
-  fetchAdminTradingLabMockDashboardCleanupReviewResultStatus,
-  fetchAdminTradingLabMockDashboardCleanupCoreStatus,
-  fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus,
-  fetchAdminTradingLabDashboardUxPolishPreflightStatus,
-  fetchAdminTradingLabDashboardUxPolishReviewResultStatus,
-  fetchAdminTradingLabDashboardUxPolishCoreStatus,
-  fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus,
-  fetchAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus,
-  fetchAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus,
-  fetchAdminTradingLabDbBackedMockTradingHistoryReviewResultStatus,
-  fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
-  fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
-  fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
-  fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus,
-  fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus,
-  fetchAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus,
-  fetchAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus,
-  fetchAdminTradingLabMockPortfolioPerformanceRecalculationPreflightStatus,
-  fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus,
-  fetchAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus,
-  fetchAdminTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus,
-  fetchAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus,
-  fetchAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus,
-  fetchAdminTradingLabMockFillSimulationPreflightStatus,
-  fetchAdminTradingLabMockFillSimulationReviewResultStatus,
-  fetchAdminTradingLabMockOrderGenerationPreflightStatus,
-  fetchAdminTradingLabMockOrderGenerationReviewResultStatus,
-  fetchAdminTradingLabMockRunCandidatePreflightStatus,
-  fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
-  fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus,
-  fetchAdminTradingLabStrategyDraftReviewResultStatus,
-  fetchAdminTradingLabStrategyDraftReviewStatus,
-  fetchAdminTradingLabStrategyDraftStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
@@ -859,119 +820,47 @@ export function TradingReadinessPanel() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoadState("loading");
 
-    Promise.all([
-      fetchTradingReadinessStatus(),
-      fetchAdminTradingShadowStatus().catch(() => null),
-      fetchAdminTradingShadowReviewStatus().catch(() => null),
-      fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
-      fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
-      fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
-      fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
-      fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
-      fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
-      fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
-      fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
-      fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
-      fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
-      fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
-      fetchAdminTradingLabDashboardStatus().catch(() => null),
-      fetchAdminTradingLabStrategyDraftStatus().catch(() => null),
-      fetchAdminTradingLabStrategyDraftReviewStatus().catch(() => null),
-      fetchAdminTradingLabStrategyDraftReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabStrategyDraftClearancePreflightStatus().catch(() => null),
-      fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockRunCandidatePreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockOrderGenerationPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockOrderGenerationReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockExecutionPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockExecutionReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockFillSimulationPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockFillSimulationReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockFillSimulationCorePreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockFillSimulationCoreStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioPerformanceRecalculationPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus().catch(() => null),
-      fetchAdminTradingLabMockTradingRunSummaryPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockTradingRunSummaryCoreStatus().catch(() => null),
-      fetchAdminTradingLabMockDashboardCleanupPreflightStatus().catch(() => null),
-      fetchAdminTradingLabMockDashboardCleanupReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabMockDashboardCleanupCoreStatus().catch(() => null),
-      fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabDashboardUxPolishPreflightStatus().catch(() => null),
-      fetchAdminTradingLabDashboardUxPolishReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabDashboardUxPolishCoreStatus().catch(() => null),
-      fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus().catch(() => null),
-      fetchAdminTradingLabDbBackedMockTradingHistoryReviewResultStatus().catch(() => null),
-      fetchAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus().catch(() => null),
-      fetchAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus().catch(() => null),
-    ])
+    const request = activeTradingPanelTab === "lab"
+      ? fetchAdminTradingLabDashboardStatus().then((dashboard) => ({ dashboard }))
+      : Promise.all([
+        fetchTradingReadinessStatus(),
+        fetchAdminTradingShadowStatus().catch(() => null),
+        fetchAdminTradingShadowReviewStatus().catch(() => null),
+        fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
+        fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
+        fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
+        fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
+        fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
+        fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
+        fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
+        fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
+        fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
+        fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
+        fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
+      ]).then((safety) => ({ safety }));
+
+    request
       .then((payload) => {
         if (cancelled) return;
-        setReadiness(payload?.[0] || FALLBACK_READINESS);
-        setShadowStatus(payload?.[1] || null);
-        setShadowReviewStatus(payload?.[2] || null);
-        setRiskKillSwitchStatus(payload?.[3] || null);
-        setRiskKillSwitchReviewResultStatus(payload?.[4] || null);
-        setManualApprovalOrderDraftStatus(payload?.[5] || null);
-        setManualApprovalOrderDraftReviewResultStatus(payload?.[6] || null);
-        setManualApprovalOrderDraftClearanceStatus(payload?.[7] || null);
-        setManualApprovalClearanceReviewResultStatus(payload?.[8] || null);
-        setKisProviderCallInventoryStatus(payload?.[9] || null);
-        setProviderResponseEnvelopeValidationStatus(payload?.[10] || null);
-        setProviderResponseValidationReviewResultStatus(payload?.[11] || null);
-        setProviderCallPolicyStatus(payload?.[12] || null);
-        setKisQuoteAdapterOptInPreflightStatus(payload?.[13] || null);
-        setTradingLabDashboardStatus(payload?.[14] || null);
-        setTradingLabStrategyDraftStatus(payload?.[15] || null);
-        setTradingLabStrategyDraftReviewStatus(payload?.[16] || null);
-        setTradingLabStrategyDraftReviewResultStatus(payload?.[17] || null);
-        setTradingLabStrategyDraftClearancePreflightStatus(payload?.[18] || null);
-        setTradingLabStrategyDraftClearanceReviewResultStatus(payload?.[19] || null);
-        setTradingLabMockRunCandidatePreflightStatus(payload?.[20] || null);
-        setTradingLabMockOrderGenerationPreflightStatus(payload?.[21] || null);
-        setTradingLabMockOrderGenerationReviewResultStatus(payload?.[22] || null);
-        setTradingLabMockExecutionPreflightStatus(payload?.[23] || null);
-        setTradingLabMockExecutionReviewResultStatus(payload?.[24] || null);
-        setTradingLabMockFillSimulationPreflightStatus(payload?.[25] || null);
-        setTradingLabMockFillSimulationReviewResultStatus(payload?.[26] || null);
-        setTradingLabMockFillSimulationCorePreflightStatus(payload?.[27] || null);
-        setTradingLabMockFillSimulationCoreReviewResultStatus(payload?.[28] || null);
-        setTradingLabMockFillSimulationCoreStatus(payload?.[29] || null);
-        setTradingLabMockPortfolioLedgerUpdatePreflightStatus(payload?.[30] || null);
-        setTradingLabMockPortfolioLedgerUpdateReviewResultStatus(payload?.[31] || null);
-        setTradingLabMockPortfolioLedgerUpdateCorePreflightStatus(payload?.[32] || null);
-        setTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus(payload?.[33] || null);
-        setTradingLabMockPortfolioLedgerUpdateCoreStatus(payload?.[34] || null);
-        setTradingLabMockPortfolioPerformanceRecalculationPreflightStatus(payload?.[35] || null);
-        setTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus(payload?.[36] || null);
-        setTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus(payload?.[37] || null);
-        setTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus(payload?.[38] || null);
-        setTradingLabMockPortfolioPerformanceRecalculationCoreStatus(payload?.[39] || null);
-        setTradingLabMockTradingRunSummaryPreflightStatus(payload?.[40] || null);
-        setTradingLabMockTradingRunSummaryReviewResultStatus(payload?.[41] || null);
-        setTradingLabMockTradingRunSummaryCoreStatus(payload?.[42] || null);
-        setTradingLabMockDashboardCleanupPreflightStatus(payload?.[43] || null);
-        setTradingLabMockDashboardCleanupReviewResultStatus(payload?.[44] || null);
-        setTradingLabMockDashboardCleanupCoreStatus(payload?.[45] || null);
-        setTradingLabMockDashboardCleanupCoreReviewResultStatus(payload?.[46] || null);
-        setTradingLabDashboardUxPolishPreflightStatus(payload?.[47] || null);
-        setTradingLabDashboardUxPolishReviewResultStatus(payload?.[48] || null);
-        setTradingLabDashboardUxPolishCoreStatus(payload?.[49] || null);
-        setTradingLabDbBackedMockTradingHistoryPreflightStatus(payload?.[50] || null);
-        setTradingLabDbBackedMockTradingHistoryReviewResultStatus(payload?.[51] || null);
-        setTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus(payload?.[52] || null);
-        setTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus(payload?.[53] || null);
+        if (payload.dashboard) setTradingLabDashboardStatus(payload.dashboard);
+        if (payload.safety) {
+          setReadiness(payload.safety[0] || FALLBACK_READINESS);
+          setShadowStatus(payload.safety[1] || null);
+          setShadowReviewStatus(payload.safety[2] || null);
+          setRiskKillSwitchStatus(payload.safety[3] || null);
+          setRiskKillSwitchReviewResultStatus(payload.safety[4] || null);
+          setManualApprovalOrderDraftStatus(payload.safety[5] || null);
+          setManualApprovalOrderDraftReviewResultStatus(payload.safety[6] || null);
+          setManualApprovalOrderDraftClearanceStatus(payload.safety[7] || null);
+          setManualApprovalClearanceReviewResultStatus(payload.safety[8] || null);
+          setKisProviderCallInventoryStatus(payload.safety[9] || null);
+          setProviderResponseEnvelopeValidationStatus(payload.safety[10] || null);
+          setProviderResponseValidationReviewResultStatus(payload.safety[11] || null);
+          setProviderCallPolicyStatus(payload.safety[12] || null);
+          setKisQuoteAdapterOptInPreflightStatus(payload.safety[13] || null);
+        }
         setLoadState("ready");
       })
       .catch(() => {
@@ -983,7 +872,7 @@ export function TradingReadinessPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeTradingPanelTab]);
 
   const flags = readiness?.flags || FALLBACK_READINESS.flags;
   const blockerCount = useMemo(() => {

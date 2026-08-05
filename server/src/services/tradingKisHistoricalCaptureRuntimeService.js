@@ -1,4 +1,5 @@
 import { getKisHistoricalCapturePersistenceStatus, readLatestKisHistoricalCaptureSummary } from "../db/tradingKisHistoricalCaptureRepository.js";
+import { getDatabasePoolStats } from "../db/database.js";
 import { getDeploymentInfo } from "./deploymentInfo.js";
 import { acquireKisConnectionLease, readKisConnectionLease, releaseKisConnectionLease } from "./tradingKisConnectionLease.js";
 import { createKisHistoricalCaptureAccumulator, KIS_HISTORICAL_CAPTURE_SYMBOLS } from "./tradingKisHistoricalCapture.js";
@@ -98,11 +99,19 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
   );
   let persistence;
   let summary;
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
+  const serviceStartedAt = monotonicNow();
+  const poolStats = dependencies.getPoolStats ?? getDatabasePoolStats;
+  const poolBefore = poolStats();
+  let persistenceMs = 0;
+  let summaryMs = 0;
   try {
-    [persistence, summary] = await Promise.all([
-      (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies),
-      (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env }, dependencies),
-    ]);
+    const persistenceStartedAt = monotonicNow();
+    persistence = await (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies);
+    persistenceMs = monotonicNow() - persistenceStartedAt;
+    const summaryStartedAt = monotonicNow();
+    summary = await (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env, persistence }, dependencies);
+    summaryMs = monotonicNow() - summaryStartedAt;
     persistence = {
       ...persistence,
       databaseAvailable: persistence.databaseConfigured ? true : false,
@@ -141,6 +150,17 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
     },
     runner,
     lease,
+    diagnostics: {
+      timingMs: {
+        persistence: Math.round(persistenceMs),
+        summary: Math.round(summaryMs),
+        service: Math.round(monotonicNow() - serviceStartedAt),
+      },
+      pool: {
+        before: poolBefore,
+        after: poolStats(),
+      },
+    },
     safety: {
       adminOnly: true,
       captureOnly: true,
