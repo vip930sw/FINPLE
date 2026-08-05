@@ -114,6 +114,19 @@ function createSupervisorHarness(runner) {
         },
       };
     },
+    trip(code = "provider_heartbeat_stale") {
+      operational = {
+        ...operational,
+        active: false,
+        runner: { ...operational.runner, active: false, state: "closed" },
+        guard: {
+          state: "tripped",
+          tripped: true,
+          trip: { code, message: "test circuit breaker", at: new Date(regularSessionMs).toISOString() },
+          alerts: [],
+        },
+      };
+    },
     get startInput() { return startInput; },
     get stoppedReason() { return stoppedReason; },
   };
@@ -236,6 +249,45 @@ test("stops the active supervisor without touching the Shadow worker", async () 
   assert.equal(result.active, false);
   assert.equal(result.runner.state, "closed");
   assert.equal(result.operations.checkpoint.automaticResumeAllowed, false);
+});
+
+test("reports a tripped runner as inactive until the operator acknowledges and clears it", async () => {
+  const fakeRunner = {
+    async start() { return { active: true, state: "connected" }; },
+    async stop(reason) { return { active: false, state: "closed", stopReason: reason }; },
+    status() { return { active: false, state: "created" }; },
+  };
+  const harness = createSupervisorHarness(fakeRunner);
+  const dependencies = {
+    env,
+    now: () => regularSessionMs,
+    readShadowStatus: async () => shadow(true),
+    getRegistrySnapshot: async () => registry(),
+    runnerFactory: () => fakeRunner,
+    supervisorFactory: harness.factory,
+    readRecoveryState: async () => noRecovery(),
+  };
+  await startKisShadowFeedRuntime(
+    { receipt: receipt() },
+    { env, nowMs: regularSessionMs },
+    dependencies,
+  );
+  harness.trip();
+  const tripped = await readKisShadowFeedRuntimeStatus(
+    { env, receipt: receipt(), nowMs: regularSessionMs },
+    dependencies,
+  );
+  assert.equal(tripped.active, false);
+  assert.equal(tripped.acknowledgementRequired, true);
+  assert.equal(tripped.preflight.startEligible, false);
+  assert.ok(tripped.preflight.blockingReasons.includes("circuit_breaker_acknowledgement_required"));
+
+  const cleared = await stopKisShadowFeedRuntime(
+    { reason: "admin_acknowledged_trip" },
+    { env, nowMs: regularSessionMs },
+    dependencies,
+  );
+  assert.equal(cleared.acknowledgementRequired, false);
 });
 
 test("returns restart-safe checkpoint recovery without automatic resume", async () => {
