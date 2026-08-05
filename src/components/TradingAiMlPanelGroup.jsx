@@ -1,6 +1,7 @@
 import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
 import TradingScalpingShadowPanel from "./TradingScalpingShadowPanel.jsx";
 import "./TradingScalpingRegistryPanel.css";
+import "./TradingScalpingKisFeedPanel.css";
 
 function TradingAiMlPanelGroup({
   groupKey,

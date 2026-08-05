@@ -102,3 +102,21 @@ export async function stopTradingScalpingShadowRuntime(reason = "operator_stop")
     body: JSON.stringify({ reason }),
   });
 }
+
+export async function fetchTradingScalpingKisFeedStatus() {
+  return requestJson("/admin/trading-readiness/scalping-shadow-feed", { method: "GET" });
+}
+
+export async function startTradingScalpingKisFeed(payload = {}) {
+  return requestJson("/admin/trading-readiness/scalping-shadow-feed/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function stopTradingScalpingKisFeed(reason = "operator_stop") {
+  return requestJson("/admin/trading-readiness/scalping-shadow-feed/stop", {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
