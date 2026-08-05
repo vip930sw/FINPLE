@@ -2,6 +2,7 @@ import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
 import TradingScalpingShadowPanel from "./TradingScalpingShadowPanel.jsx";
 import TradingScalpingModelSignalPanel from "./TradingScalpingModelSignalPanel.jsx";
 import TradingScalpingKisOpsPanel from "./TradingScalpingKisOpsPanel.jsx";
+import TradingScalpingKisCapturePanel from "./TradingScalpingKisCapturePanel.jsx";
 import "./TradingScalpingRegistryPanel.css";
 import "./TradingScalpingKisFeedPanel.css";
 
@@ -29,6 +30,7 @@ function TradingAiMlPanelGroup({
           <TradingScalpingShadowPanel />
           <TradingScalpingModelSignalPanel />
           <TradingScalpingKisOpsPanel />
+          <TradingScalpingKisCapturePanel />
         </>
       ) : null}
       <details
