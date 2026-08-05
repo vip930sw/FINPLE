@@ -1,0 +1,512 @@
+.scalpingAdminPanel {
+  display: grid;
+  gap: 18px;
+  margin: 18px 0 28px;
+  padding: 20px;
+  border: 1px solid #d8dee8;
+  border-radius: 18px;
+  background: #f7f9fc;
+  color: #182033;
+}
+
+.scalpingAdminPanel--loading,
+.scalpingAdminPanel--error {
+  min-height: 120px;
+  align-content: center;
+  justify-items: start;
+}
+
+.scalpingAdminPanel--error button,
+.scalpingAdminSaveRow button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scalpingAdminSaveRow button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.scalpingAdminHero,
+.scalpingAdminCard > header,
+.scalpingAdminChartCard > header,
+.scalpingAdminSaveRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.scalpingAdminHero h2 {
+  margin: 4px 0 6px;
+  font-size: clamp(22px, 2vw, 30px);
+}
+
+.scalpingAdminHero p,
+.scalpingAdminCard header span,
+.scalpingAdminChartCard header span {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scalpingAdminEyebrow {
+  color: #5b21b6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.scalpingAdminHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.scalpingAdminStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.scalpingAdminStatus--draft {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.scalpingAdminStatus--blocked,
+.scalpingAdminStatus--missed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.scalpingAdminStatus--met {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scalpingAdminStatus--unavailable,
+.scalpingAdminStatus--neutral {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.scalpingAdminSafetyNotice,
+.scalpingAdminFeedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.scalpingAdminSafetyNotice {
+  border: 1px solid #f5d0a4;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.scalpingAdminFeedback.isSuccess {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.scalpingAdminFeedback.isError {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.scalpingAdminGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.scalpingAdminGrid--editor,
+.scalpingAdminGrid--tables {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scalpingAdminGrid--charts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scalpingAdminCard,
+.scalpingAdminChartCard {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #dde3ec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.scalpingAdminCard > header,
+.scalpingAdminChartCard > header {
+  margin-bottom: 14px;
+}
+
+.scalpingAdminCard header div,
+.scalpingAdminChartCard header div {
+  display: grid;
+  gap: 4px;
+}
+
+.scalpingAdminCard header strong,
+.scalpingAdminChartCard header strong {
+  font-size: 15px;
+}
+
+.scalpingAdminCard header small,
+.scalpingAdminChartCard header small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.scalpingAdminSymbolGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.scalpingAdminSymbolGrid label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid #d7dee9;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.scalpingAdminSymbolGrid label.isSelected {
+  border-color: #7c3aed;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.scalpingAdminSymbolGrid input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scalpingAdminFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scalpingAdminFieldGrid--objectives {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scalpingAdminField {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.scalpingAdminField > span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scalpingAdminField > div {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  overflow: hidden;
+  border: 1px solid #d7dee9;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.scalpingAdminField input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172033;
+  font: inherit;
+  font-size: 12px;
+}
+
+.scalpingAdminField small {
+  flex: 0 0 auto;
+  padding-right: 9px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.scalpingAdminToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.scalpingAdminSaveRow {
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e8edf3;
+}
+
+.scalpingAdminSaveRow > div {
+  display: grid;
+  gap: 3px;
+}
+
+.scalpingAdminSaveRow small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.scalpingAdminSaveRow strong {
+  font-size: 12px;
+}
+
+.scalpingAdminMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scalpingAdminMetric {
+  display: grid;
+  gap: 5px;
+  min-height: 78px;
+  align-content: center;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.scalpingAdminMetric span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.scalpingAdminMetric strong {
+  font-size: 18px;
+}
+
+.scalpingAdminMetric--positive strong {
+  color: #15803d;
+}
+
+.scalpingAdminMetric--negative strong,
+.scalpingAdminMetric--risk strong {
+  color: #b91c1c;
+}
+
+.scalpingAdminChartViewport {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.scalpingAdminChartViewport svg {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  height: 190px;
+}
+
+.scalpingAdminChartGrid {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+
+.scalpingAdminChartLine {
+  fill: none;
+  stroke: #6d28d9;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scalpingAdminEmptyChart {
+  display: grid;
+  min-height: 190px;
+  place-items: center;
+  padding: 20px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 12px;
+}
+
+.scalpingAdminDailyBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  min-height: 190px;
+  overflow-x: auto;
+  padding: 14px 4px 4px;
+}
+
+.scalpingAdminDailyBarItem {
+  display: grid;
+  flex: 1 0 22px;
+  gap: 6px;
+  justify-items: center;
+}
+
+.scalpingAdminDailyBarAxis {
+  display: flex;
+  height: 150px;
+  align-items: center;
+}
+
+.scalpingAdminDailyBar {
+  display: block;
+  width: 12px;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: #64748b;
+}
+
+.scalpingAdminDailyBar.isPositive {
+  background: #16a34a;
+}
+
+.scalpingAdminDailyBar.isNegative {
+  align-self: flex-end;
+  border-radius: 0 0 4px 4px;
+  background: #dc2626;
+}
+
+.scalpingAdminDailyBarItem small {
+  color: #94a3b8;
+  font-size: 9px;
+  writing-mode: vertical-rl;
+}
+
+.scalpingAdminTableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.scalpingAdminTable {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.scalpingAdminTable th,
+.scalpingAdminTable td {
+  padding: 10px 9px;
+  border-bottom: 1px solid #edf1f5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.scalpingAdminTable th:first-child,
+.scalpingAdminTable td:first-child {
+  text-align: left;
+}
+
+.scalpingAdminTable th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.scalpingAdminEmptyCell {
+  height: 76px;
+  color: #94a3b8;
+  text-align: center !important;
+}
+
+@media (max-width: 1180px) {
+  .scalpingAdminGrid--charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scalpingAdminChartCard:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .scalpingAdminFieldGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .scalpingAdminPanel {
+    padding: 14px;
+  }
+
+  .scalpingAdminHero,
+  .scalpingAdminCard > header,
+  .scalpingAdminChartCard > header,
+  .scalpingAdminSaveRow {
+    flex-direction: column;
+  }
+
+  .scalpingAdminHeroMeta {
+    justify-content: flex-start;
+  }
+
+  .scalpingAdminGrid--editor,
+  .scalpingAdminGrid--tables,
+  .scalpingAdminGrid--charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scalpingAdminChartCard:last-child {
+    grid-column: auto;
+  }
+
+  .scalpingAdminMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .scalpingAdminSymbolGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scalpingAdminFieldGrid,
+  .scalpingAdminFieldGrid--objectives,
+  .scalpingAdminMetricGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
