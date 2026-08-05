@@ -7,6 +7,10 @@ import {
   stopKisShadowFeedRuntime,
 } from "../services/tradingKisShadowFeedRuntimeService.js";
 import {
+  acknowledgeScalpingModelSignalCircuitBreaker,
+  readScalpingModelSignalRuntimeStatus,
+} from "../services/tradingScalpingModelSignalRuntimeService.js";
+import {
   approveScalpingStrategyAdminDraft,
   readScalpingStrategyAdminDashboard,
   requestScalpingStrategyAdminReview,
@@ -172,6 +176,28 @@ router.post("/scalping-shadow-feed/stop", (request, response, next) => {
   requireAdminAccess(request, response, () => {
     stopKisShadowFeedRuntime(
       { reason: request.body?.reason || "admin_console_operator_stop" },
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.json(result))
+      .catch(next);
+  });
+});
+
+router.get("/scalping-model-signal", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    readScalpingModelSignalRuntimeStatus()
+      .then((result) => {
+        response.setHeader("Cache-Control", "no-store, max-age=0");
+        response.json(result);
+      })
+      .catch(next);
+  });
+});
+
+router.post("/scalping-model-signal/acknowledge", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    acknowledgeScalpingModelSignalCircuitBreaker(
+      {},
       { actor: adminActor(request) },
     )
       .then((result) => response.json(result))
