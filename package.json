@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "check:frontend": "npm run build",
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
+    "check:fixed-staging-preflight": "node --test scripts/check-fixed-staging-preflight.test.mjs && node scripts/check-fixed-staging-preflight.mjs --contract-only",
     "check:production-deployment-control": "node --test scripts/check-production-deployment-control.mjs",
     "check:p6-monthly-csv-operations": "node --test scripts/check-p6-monthly-csv-operations.mjs",
     "check:official-portfolio-baseline": "node --test scripts/check-official-portfolio-baseline.test.mjs",
