@@ -82,7 +82,7 @@ async function requestJson(path, options = {}) {
 
   try {
     const response = await fetch(requestUrl, {
-      credentials: "include",
+      credentials: "omit",
       ...fetchOptions,
       signal: controller.signal,
       headers: adminHeaders(adminToken, {
