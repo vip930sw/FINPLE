@@ -2,15 +2,17 @@ import {
   getFinpleAdminToken,
   getFinpleApiBaseUrl,
 } from "./portfolio/services/serverPortfolioService.js";
+import { normalizeFinpleApiBaseUrl } from "./portfolio/services/apiBaseUrl.js";
+
+const DEFAULT_TIMEOUT_MS = 10_000;
 
 function buildUrl(path) {
-  const base = String(getFinpleApiBaseUrl() || "").replace(/\/+$/, "");
+  const base = normalizeFinpleApiBaseUrl(getFinpleApiBaseUrl());
   const suffix = path.startsWith("/") ? path : `/${path}`;
   return `${base}${suffix}`;
 }
 
-function adminHeaders(extra = {}) {
-  const token = getFinpleAdminToken();
+function adminHeaders(token, extra = {}) {
   return {
     Accept: "application/json",
     ...(token ? { "x-finple-admin-token": token } : {}),
@@ -18,39 +20,93 @@ function adminHeaders(extra = {}) {
   };
 }
 
-async function readJson(response) {
+function requestError(message, code, details = {}) {
+  return Object.assign(new Error(message), { code, ...details });
+}
+
+async function readJson(response, context = {}) {
   const text = await response.text();
   let body = null;
+  let parseFailed = false;
   try {
     body = text ? JSON.parse(text) : null;
   } catch {
-    body = null;
+    parseFailed = true;
   }
   if (!response.ok) {
-    const error = new Error(body?.message || body?.code || `요청 실패 (${response.status})`);
-    error.status = response.status;
-    error.code = body?.code || "ADMIN_SCALPING_REQUEST_FAILED";
-    error.reasons = Array.isArray(body?.reasons)
-      ? body.reasons
-      : Array.isArray(body?.details)
-        ? body.details
-        : [];
-    error.body = body;
-    throw error;
+    const code = response.status === 404
+      ? "ADMIN_ROUTE_NOT_FOUND"
+      : response.status === 403 && body?.code === "ADMIN_TOKEN_REQUIRED"
+        ? context.adminTokenConfigured ? "ADMIN_AUTH_INVALID" : "ADMIN_AUTH_MISSING"
+        : response.status === 403
+          ? "ADMIN_FORBIDDEN"
+          : response.status === 401
+            ? "ADMIN_AUTH_INVALID"
+            : body?.code || "ADMIN_SCALPING_REQUEST_FAILED";
+    throw requestError(body?.message || body?.code || `요청 실패 (${response.status})`, code, {
+      status: response.status,
+      reasons: Array.isArray(body?.reasons)
+        ? body.reasons
+        : Array.isArray(body?.details)
+          ? body.details
+          : [],
+      body,
+      parseFailed,
+      ...context,
+    });
+  }
+  if (parseFailed) {
+    throw requestError("API 응답이 올바른 JSON이 아닙니다.", "RESPONSE_JSON_PARSE_FAILED", context);
   }
   return body;
 }
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(buildUrl(path), {
-    credentials: "include",
-    ...options,
-    headers: adminHeaders({
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {}),
-    }),
-  });
-  return readJson(response);
+  const {
+    signal: externalSignal,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    ...fetchOptions
+  } = options;
+  const requestUrl = buildUrl(path);
+  const adminToken = getFinpleAdminToken();
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromExternalSignal = () => controller.abort(externalSignal?.reason);
+  const timer = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort("timeout");
+  }, timeoutMs);
+
+  if (externalSignal?.aborted) abortFromExternalSignal();
+  else externalSignal?.addEventListener("abort", abortFromExternalSignal, { once: true });
+
+  try {
+    const response = await fetch(requestUrl, {
+      credentials: "include",
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: adminHeaders(adminToken, {
+        ...(fetchOptions.body ? { "Content-Type": "application/json" } : {}),
+        ...(fetchOptions.headers || {}),
+      }),
+    });
+    return await readJson(response, {
+      requestUrl,
+      adminTokenConfigured: Boolean(adminToken),
+    });
+  } catch (error) {
+    if (error?.code) throw error;
+    if (timedOut) {
+      throw requestError("API 응답 시간이 초과되었습니다.", "REQUEST_TIMEOUT", { requestUrl });
+    }
+    if (externalSignal?.aborted) {
+      throw requestError("API 요청이 취소되었습니다.", "REQUEST_ABORTED", { requestUrl });
+    }
+    throw requestError("API 서버에 연결하지 못했습니다.", "TRANSPORT_FAILURE", { requestUrl });
+  } finally {
+    window.clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", abortFromExternalSignal);
+  }
 }
 
 export async function fetchTradingScalpingAdminDashboard() {
@@ -121,8 +177,8 @@ export async function stopTradingScalpingKisFeed(reason = "operator_stop") {
   });
 }
 
-export async function fetchTradingScalpingKisCaptureStatus() {
-  return requestJson("/admin/trading-readiness/scalping-kis-capture", { method: "GET" });
+export async function fetchTradingScalpingKisCaptureStatus(options = {}) {
+  return requestJson("/admin/trading-readiness/scalping-kis-capture", { method: "GET", ...options });
 }
 
 export async function startTradingScalpingKisCapture(payload = {}) {

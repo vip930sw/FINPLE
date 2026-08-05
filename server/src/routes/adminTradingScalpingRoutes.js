@@ -213,10 +213,10 @@ router.post("/scalping-shadow-feed/stop", (request, response, next) => {
 });
 
 router.get("/scalping-kis-capture", (request, response, next) => {
+  response.setHeader("Cache-Control", "no-store, max-age=0");
   requireAdminAccess(request, response, () => {
     readKisHistoricalCaptureRuntimeStatus()
       .then((result) => {
-        response.setHeader("Cache-Control", "no-store, max-age=0");
         response.json(result);
       })
       .catch(next);

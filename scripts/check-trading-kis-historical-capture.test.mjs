@@ -49,8 +49,8 @@ test("admin provides a persistent operations quick navigation with KIS capture f
   assert.match(panel, /id="trading-scalping-model-signal"/);
   assert.match(panel, /id="trading-scalping-shadow"/);
   assert.match(panel, /id="trading-scalping-strategy"/);
-  assert.ok(panel.indexOf("<TradingScalpingKisCapturePanel />") < panel.indexOf("<TradingScalpingKisOpsPanel />"));
-  assert.equal((panel.match(/<TradingScalpingKisCapturePanel \/>/g) || []).length, 1);
+  assert.ok(panel.indexOf("<TradingScalpingKisCapturePanel") < panel.indexOf("<TradingScalpingKisOpsPanel />"));
+  assert.equal((panel.match(/<TradingScalpingKisCapturePanel/g) || []).length, 1);
   assert.match(styles, /\.scalpingAdminQuickNav\s*\{[\s\S]*position:\s*fixed/);
   assert.match(styles, /scroll-margin-top/);
 });

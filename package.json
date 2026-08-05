@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "check:frontend": "npm run build",
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
+    "check:trading-tsc4h4-preflight-diagnostics": "node --test src/components/tradingScalpingAdminApi.test.js server/src/services/tradingKisHistoricalCaptureRuntimeService.test.js scripts/check-trading-tsc4h4-preflight-diagnostics.test.mjs scripts/check-trading-kis-historical-capture.test.mjs",
     "check:production-deployment-control": "node --test scripts/check-production-deployment-control.mjs",
     "check:p6-monthly-csv-operations": "node --test scripts/check-p6-monthly-csv-operations.mjs",
     "check:official-portfolio-baseline": "node --test scripts/check-official-portfolio-baseline.test.mjs",

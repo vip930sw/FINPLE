@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
-  fetchTradingScalpingKisCaptureStatus,
   sealTradingScalpingKisCaptureSession,
   startTradingScalpingKisCapture,
   stopTradingScalpingKisCapture,
@@ -43,29 +42,18 @@ function todayNy() {
   }).format(new Date());
 }
 
-function TradingScalpingKisCapturePanel() {
-  const [status, setStatus] = useState(null);
+function TradingScalpingKisCapturePanel({
+  status,
+  loadState = "loading",
+  statusError = null,
+  onRefresh = async () => {},
+}) {
   const [selectedSymbols, setSelectedSymbols] = useState(DEFAULT_SYMBOLS);
   const [sessionDate, setSessionDate] = useState(todayNy());
   const [expectedMinutes, setExpectedMinutes] = useState(390);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-
-  const load = async () => {
-    try {
-      setStatus(await fetchTradingScalpingKisCaptureStatus());
-      setError("");
-    } catch (nextError) {
-      setError(nextError.message || "KIS 데이터 축적 상태를 불러오지 못했습니다.");
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => void load(), 5_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const toggleSymbol = (symbol) => {
     setSelectedSymbols((current) => current.includes(symbol)
@@ -76,10 +64,11 @@ function TradingScalpingKisCapturePanel() {
   const start = async () => {
     setBusy("start");
     setNotice("");
+    setError("");
     try {
       await startTradingScalpingKisCapture({ selectedSymbols });
       setNotice("KIS 완료 1분봉 축적을 시작했습니다.");
-      await load();
+      await onRefresh();
     } catch (nextError) {
       setError(nextError.message || "KIS 데이터 축적을 시작하지 못했습니다.");
     } finally {
@@ -90,10 +79,11 @@ function TradingScalpingKisCapturePanel() {
   const stop = async () => {
     setBusy("stop");
     setNotice("");
+    setError("");
     try {
       await stopTradingScalpingKisCapture("admin_console_operator_stop");
       setNotice("KIS 데이터 축적을 정지했습니다.");
-      await load();
+      await onRefresh();
     } catch (nextError) {
       setError(nextError.message || "KIS 데이터 축적을 정지하지 못했습니다.");
     } finally {
@@ -104,6 +94,7 @@ function TradingScalpingKisCapturePanel() {
   const seal = async () => {
     setBusy("seal");
     setNotice("");
+    setError("");
     try {
       const result = await sealTradingScalpingKisCaptureSession({
         sessionDate,
@@ -114,7 +105,7 @@ function TradingScalpingKisCapturePanel() {
       setNotice(result?.revision?.readyForModelResearch
         ? "불변 데이터 revision을 발급했고 모델 연구 준비가 완료됐습니다."
         : "불변 revision을 발급했지만 내구성 또는 coverage 기준이 부족합니다.");
-      await load();
+      await onRefresh();
     } catch (nextError) {
       setError(nextError.message || "KIS 세션 revision을 발급하지 못했습니다.");
     } finally {
@@ -131,6 +122,7 @@ function TradingScalpingKisCapturePanel() {
     () => status?.selectedSymbols?.length ? status.selectedSymbols : selectedSymbols,
     [status, selectedSymbols],
   );
+  const visibleError = error || statusError?.message || "";
 
   return (
     <section className="kisCapturePanel" aria-labelledby="kis-capture-title">
@@ -142,13 +134,13 @@ function TradingScalpingKisCapturePanel() {
         </div>
         <div className="kisCaptureHeaderActions">
           <strong className={status?.active ? "is-active" : "is-stopped"}>
-            {status?.active ? "축적 중" : "정지"}
+            {loadState === "loading" ? "확인 중" : loadState === "error" ? "진단 오류" : status?.active ? "축적 중" : "정지"}
           </strong>
-          <button type="button" onClick={() => void load()}>새로고침</button>
+          <button type="button" onClick={() => { setError(""); void onRefresh(); }}>새로고침</button>
         </div>
       </header>
 
-      {error ? <div className="kisCaptureMessage is-error">{error}</div> : null}
+      {visibleError ? <div className="kisCaptureMessage is-error">{visibleError}</div> : null}
       {notice ? <div className="kisCaptureMessage is-notice">{notice}</div> : null}
 
       <div className="kisCaptureSummary">
