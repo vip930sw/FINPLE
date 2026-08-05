@@ -1,6 +1,13 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { readKisConnectionLease } from "../services/tradingKisConnectionLease.js";
+import {
+  readKisHistoricalCaptureRuntimeStatus,
+  sealKisHistoricalCaptureSession,
+  startKisHistoricalCaptureRuntime,
+  stopKisHistoricalCaptureRuntime,
+} from "../services/tradingKisHistoricalCaptureRuntimeService.js";
 import {
   readKisShadowFeedRuntimeStatus,
   startKisShadowFeedRuntime,
@@ -42,6 +49,17 @@ function safety() {
 
 function feedStartInput(body = {}) {
   return {
+    maximumCycleLagMs: body.maximumCycleLagMs,
+    maximumQuoteAgeMs: body.maximumQuoteAgeMs,
+    flushIntervalMs: body.flushIntervalMs,
+    maxReconnectAttempts: body.maxReconnectAttempts,
+    reconnectPolicy: body.reconnectPolicy,
+  };
+}
+
+function captureStartInput(body = {}) {
+  return {
+    selectedSymbols: body.selectedSymbols,
     maximumCycleLagMs: body.maximumCycleLagMs,
     maximumQuoteAgeMs: body.maximumQuoteAgeMs,
     flushIntervalMs: body.flushIntervalMs,
@@ -163,6 +181,17 @@ router.get("/scalping-shadow-feed", (request, response, next) => {
 
 router.post("/scalping-shadow-feed/start", (request, response, next) => {
   requireAdminAccess(request, response, () => {
+    const lease = readKisConnectionLease();
+    if (lease?.owner === "kis_historical_capture") {
+      response.status(409).json({
+        ok: false,
+        code: "KIS_CONNECTION_LEASE_CONFLICT",
+        message: "KIS 데이터 축적을 먼저 정지해야 Shadow feed를 시작할 수 있습니다.",
+        details: ["active_owner:kis_historical_capture"],
+        safety: safety(),
+      });
+      return;
+    }
     startKisShadowFeedRuntime(
       feedStartInput(request.body),
       { actor: adminActor(request) },
@@ -179,6 +208,55 @@ router.post("/scalping-shadow-feed/stop", (request, response, next) => {
       { actor: adminActor(request) },
     )
       .then((result) => response.json(result))
+      .catch(next);
+  });
+});
+
+router.get("/scalping-kis-capture", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    readKisHistoricalCaptureRuntimeStatus()
+      .then((result) => {
+        response.setHeader("Cache-Control", "no-store, max-age=0");
+        response.json(result);
+      })
+      .catch(next);
+  });
+});
+
+router.post("/scalping-kis-capture/start", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    startKisHistoricalCaptureRuntime(
+      captureStartInput(request.body),
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.status(201).json(result))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-kis-capture/stop", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    stopKisHistoricalCaptureRuntime(
+      { reason: request.body?.reason || "admin_console_operator_stop" },
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.json(result))
+      .catch(next);
+  });
+});
+
+router.post("/scalping-kis-capture/seal", (request, response, next) => {
+  requireAdminAccess(request, response, () => {
+    sealKisHistoricalCaptureSession(
+      {
+        sessionDate: request.body?.sessionDate,
+        expectedMinutes: request.body?.expectedMinutes,
+        minimumCoverageRatio: request.body?.minimumCoverageRatio,
+        selectedSymbols: request.body?.selectedSymbols,
+      },
+      { actor: adminActor(request) },
+    )
+      .then((result) => response.status(result.sealed ? 201 : 409).json(result))
       .catch(next);
   });
 });
