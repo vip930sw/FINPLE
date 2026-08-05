@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
 import TradingScalpingShadowPanel from "./TradingScalpingShadowPanel.jsx";
@@ -200,7 +201,9 @@ function ScalpingOperationsDock() {
     boxShadow: "0 24px 64px rgba(15, 23, 42, .3)",
   }), []);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <aside className="scalpingAdminQuickNav" aria-label="실시간 운영 바로가기">
       <details>
         <summary>실시간 운영 바로가기</summary>
@@ -260,7 +263,8 @@ function ScalpingOperationsDock() {
           </div>
         </div>
       </details>
-    </aside>
+    </aside>,
+    document.body,
   );
 }
 
