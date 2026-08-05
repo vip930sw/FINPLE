@@ -327,6 +327,8 @@ function ScalpingOperationsDock() {
     top: 16,
     right: 16,
     bottom: 16,
+    zIndex: 1,
+    pointerEvents: "auto",
     width: "min(1080px, calc(100vw - 32px))",
     overflowY: "auto",
     overscrollBehavior: "contain",
@@ -350,11 +352,17 @@ function ScalpingOperationsDock() {
   }), []);
 
   const closeDock = useCallback(() => {
-    window.setTimeout(() => {
+    window.requestAnimationFrame(() => {
       setOpen(false);
       window.requestAnimationFrame(() => launcherRef.current?.focus());
-    }, 0);
+    });
   }, []);
+
+  const handleCloseClick = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeDock();
+  }, [closeDock]);
 
   useEffect(() => {
     if (!open || typeof document === "undefined") return undefined;
@@ -377,7 +385,7 @@ function ScalpingOperationsDock() {
     <aside
       className="scalpingAdminQuickNav"
       aria-label="실시간 운영 바로가기"
-      style={{ zIndex: 1000 }}
+      style={{ zIndex: 10000 }}
     >
       {!open ? (
         <button
@@ -393,16 +401,30 @@ function ScalpingOperationsDock() {
       ) : (
         <div
           role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDock();
-          }}
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1000,
-            background: "rgba(15, 23, 42, .38)",
+            zIndex: 10000,
+            pointerEvents: "none",
           }}
         >
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="실시간 운영 닫기 배경"
+            onClick={handleCloseClick}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              width: "100%",
+              height: "100%",
+              padding: 0,
+              border: 0,
+              background: "rgba(15, 23, 42, .38)",
+              pointerEvents: "auto",
+            }}
+          />
           <section
             role="dialog"
             aria-modal="true"
@@ -421,13 +443,18 @@ function ScalpingOperationsDock() {
                   ref={closeRef}
                   type="button"
                   aria-label="실시간 운영 닫기"
-                  onClick={closeDock}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={handleCloseClick}
                   style={{
                     position: "fixed",
-                    top: 32,
-                    right: 32,
-                    zIndex: 1002,
-                    minHeight: 34,
+                    top: "calc(16px + env(safe-area-inset-top, 0px))",
+                    right: "calc(16px + env(safe-area-inset-right, 0px))",
+                    zIndex: 2,
+                    minWidth: 44,
+                    minHeight: 44,
                     padding: "0 11px",
                     border: "1px solid #cbd5e1",
                     borderRadius: 9,

@@ -7,10 +7,11 @@ async function source(path) {
 }
 
 test("TSC-4H4 keeps one abortable capture snapshot and explicit diagnostics", async () => {
-  const [api, group, panel] = await Promise.all([
+  const [api, group, panel, appStyles] = await Promise.all([
     source("src/components/tradingScalpingAdminApi.js"),
     source("src/components/TradingAiMlPanelGroup.jsx"),
     source("src/components/TradingScalpingKisCapturePanel.jsx"),
+    source("src/App.css"),
   ]);
 
   assert.match(api, /normalizeFinpleApiBaseUrl\(getFinpleApiBaseUrl\(\)\)/);
@@ -20,9 +21,21 @@ test("TSC-4H4 keeps one abortable capture snapshot and explicit diagnostics", as
   assert.match(group, /DEPLOYMENT_SHA_MISMATCH/);
   assert.match(group, /BACKEND_VERSION_MISMATCH/);
   assert.match(group, /if \(event\.key === "Escape"\) closeDock\(\)/);
-  assert.match(group, /onClick=\{closeDock\}/);
-  assert.match(group, /if \(event\.target === event\.currentTarget\) closeDock\(\)/);
-  assert.match(group, /window\.setTimeout\(\(\) => \{\s*setOpen\(false\);\s*window\.requestAnimationFrame/);
+  assert.match(group, /onClick=\{handleCloseClick\}/);
+  assert.match(group, /aria-label="실시간 운영 닫기 배경"\s*onClick=\{handleCloseClick\}/);
+  assert.ok(group.indexOf('aria-label="실시간 운영 닫기 배경"') < group.indexOf('role="dialog"'));
+  assert.match(group, /onPointerDown=\{\(event\) => \{\s*event\.preventDefault\(\);\s*event\.stopPropagation\(\)/);
+  assert.match(group, /window\.requestAnimationFrame\(\(\) => \{\s*setOpen\(false\);\s*window\.requestAnimationFrame/);
+  assert.match(group, /style=\{\{ zIndex: 10000 \}\}/);
+  assert.match(appStyles, /\.header\s*\{[\s\S]*?z-index:\s*9999\s*!important/);
+  assert.match(group, /pointerEvents: "none"[\s\S]*aria-label="실시간 운영 닫기 배경"[\s\S]*pointerEvents: "auto"/);
+  assert.match(group, /zIndex: 1,\s*pointerEvents: "auto"/);
+  assert.match(group, /minWidth: 44,\s*minHeight: 44/);
+  assert.match(group, /env\(safe-area-inset-top, 0px\)/);
+  assert.match(group, /env\(safe-area-inset-right, 0px\)/);
+  assert.match(group, /const previousOverflow = document\.body\.style\.overflow[\s\S]*document\.body\.style\.overflow = previousOverflow/);
+  assert.match(group, /controller\?\.abort\(\)/);
+  assert.doesNotMatch(group, /onMouseDown/);
   assert.doesNotMatch(group, /setInterval/);
   assert.doesNotMatch(panel, /fetchTradingScalpingKisCaptureStatus|setInterval/);
 });
