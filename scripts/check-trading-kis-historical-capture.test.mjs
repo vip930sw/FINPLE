@@ -38,3 +38,19 @@ test("capture preserves no-forward-fill and manual model approval boundaries", a
   assert.match(service, /runtimeRegistrationAllowed: false/);
   assert.match(service, /readyForRuntime: false/);
 });
+
+test("admin provides a persistent operations quick navigation with KIS capture first", async () => {
+  const panel = await source("src/components/TradingAiMlPanelGroup.jsx");
+  const styles = await source("src/components/TradingScalpingRegistryPanel.css");
+  assert.match(panel, /실시간 운영 바로가기/);
+  assert.match(panel, /href: "#trading-scalping-kis-capture"/);
+  assert.match(panel, /id="trading-scalping-kis-capture"/);
+  assert.match(panel, /id="trading-scalping-kis-operations"/);
+  assert.match(panel, /id="trading-scalping-model-signal"/);
+  assert.match(panel, /id="trading-scalping-shadow"/);
+  assert.match(panel, /id="trading-scalping-strategy"/);
+  assert.ok(panel.indexOf("<TradingScalpingKisCapturePanel />") < panel.indexOf("<TradingScalpingKisOpsPanel />"));
+  assert.equal((panel.match(/<TradingScalpingKisCapturePanel \/>/g) || []).length, 1);
+  assert.match(styles, /\.scalpingAdminQuickNav\s*\{[\s\S]*position:\s*fixed/);
+  assert.match(styles, /scroll-margin-top/);
+});
