@@ -72,7 +72,10 @@ test("persistent checkpoint writes only sanitized JSON contracts", async () => {
     return { rows: [] };
   };
 
-  const env = { FINPLE_TRADING_KIS_FEED_CHECKPOINT_ENABLED: "true" };
+  const env = {
+    DATABASE_URL: "postgres://checkpoint-test",
+    FINPLE_TRADING_KIS_FEED_CHECKPOINT_ENABLED: "true",
+  };
   const result = await saveKisFeedCheckpoint({
     shadowRunId: "00000000-0000-0000-0000-000000000001",
     strategyVersionId: "00000000-0000-0000-0000-000000000002",
