@@ -3,8 +3,9 @@ import {
   KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
 } from "./tradingKisOverseasRealtimeAdapter.js";
 import { createOneMinuteMarketAggregator } from "./tradingMinuteBarAggregator.js";
+import { getUsEquityMarketSession } from "./tradingUsEquityMarketCalendar.js";
 
-export const KIS_COMPLETED_BAR_FEED_RUNNER_VERSION = "kis-completed-bar-shadow-feed-v1";
+export const KIS_COMPLETED_BAR_FEED_RUNNER_VERSION = "kis-completed-bar-shadow-feed-v2";
 
 const DEFAULT_CYCLE_LAG_MS = 15_000;
 const DEFAULT_QUOTE_AGE_MS = 20_000;
@@ -31,35 +32,19 @@ function runnerError(code, message, details = []) {
   return error;
 }
 
-function newYorkParts(timestampMs) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  });
-  const values = Object.fromEntries(formatter.formatToParts(new Date(timestampMs)).map((part) => [part.type, part.value]));
+export function buildUsRegularSessionForMinute(timestampMs, options = {}) {
+  const session = getUsEquityMarketSession(timestampMs, options);
   return {
-    date: `${values.year}-${values.month}-${values.day}`,
-    hour: Number(values.hour),
-    minute: Number(values.minute),
-  };
-}
-
-export function buildUsRegularSessionForMinute(timestampMs) {
-  const parts = newYorkParts(timestampMs);
-  const minuteOfDay = parts.hour * 60 + parts.minute;
-  const openMinute = 9 * 60 + 30;
-  const closeMinute = 16 * 60;
-  const regular = minuteOfDay >= openMinute && minuteOfDay < closeMinute;
-  return {
-    name: regular ? "REGULAR" : "CLOSED",
-    minutesSinceOpen: regular ? minuteOfDay - openMinute : null,
-    minutesToClose: regular ? closeMinute - minuteOfDay : null,
-    sessionDate: parts.date,
+    name: session.state === "REGULAR" ? "REGULAR" : "CLOSED",
+    state: session.state,
+    reason: session.reason,
+    calendarSupported: session.calendarSupported,
+    calendarVersion: session.calendarVersion,
+    earlyClose: session.earlyClose === true,
+    earlyCloseName: session.earlyCloseName || null,
+    minutesSinceOpen: session.minutesSinceOpen,
+    minutesToClose: session.minutesToClose,
+    sessionDate: session.sessionDate,
   };
 }
 
@@ -74,8 +59,8 @@ function quoteFreshForBar(bar, maximumQuoteAgeMs) {
   };
 }
 
-async function toShadowBar(bar, modelSignalProvider) {
-  const session = buildUsRegularSessionForMinute(bar.minuteStartMs);
+async function toShadowBar(bar, modelSignalProvider, sessionResolver, calendarOverrides) {
+  const session = sessionResolver(bar.minuteStartMs, { overrideByDate: calendarOverrides });
   const timestamp = new Date(bar.minuteStartMs).toISOString();
   const modelSignal = typeof modelSignalProvider === "function"
     ? await modelSignalProvider({
@@ -107,8 +92,11 @@ async function toShadowBar(bar, modelSignalProvider) {
     } : {},
     session: {
       name: session.name,
+      state: session.state,
       minutesSinceOpen: session.minutesSinceOpen,
       minutesToClose: session.minutesToClose,
+      earlyClose: session.earlyClose,
+      calendarVersion: session.calendarVersion,
     },
     modelSignal: modelSignal || {},
     regime: clean(modelSignal?.regime) || "unclassified",
@@ -125,6 +113,8 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
   const clearIntervalImpl = dependencies.clearIntervalImpl ?? clearInterval;
   const feedFactory = dependencies.feedFactory ?? createKisOverseasRealtimeFeed;
   const aggregatorFactory = dependencies.aggregatorFactory ?? createOneMinuteMarketAggregator;
+  const sessionResolver = dependencies.marketSessionResolver ?? buildUsRegularSessionForMinute;
+  const calendarOverrides = options.calendarOverrides || {};
   const ingestShadowCycle = dependencies.ingestShadowCycle;
   const modelSignalProvider = dependencies.modelSignalProvider;
   const maximumCycleLagMs = finite(options.maximumCycleLagMs) ?? DEFAULT_CYCLE_LAG_MS;
@@ -158,6 +148,7 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
   let incompleteCycleCount = 0;
   let staleQuoteBarCount = 0;
   let outsideSessionBarCount = 0;
+  let unsupportedCalendarBarCount = 0;
   let protocolIssueCount = 0;
   let lastIncompleteCycle = null;
 
@@ -172,12 +163,14 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
     incompleteCycleCount,
     staleQuoteBarCount,
     outsideSessionBarCount,
+    unsupportedCalendarBarCount,
     protocolIssueCount,
     lastProviderEventAt,
     lastCompletedMinute,
     lastIncompleteCycle,
     bufferedMinuteCount: cycleBuffer.size,
     lastError,
+    marketSession: sessionResolver(now(), { overrideByDate: calendarOverrides }),
     approval: {
       ready: approval.ready,
       approvalId: approval.receipt?.approvalId || null,
@@ -201,7 +194,15 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
   const addCompletedBars = (bars = []) => {
     for (const bar of bars) {
       completedBarCount += 1;
-      const session = buildUsRegularSessionForMinute(bar.minuteStartMs);
+      const session = sessionResolver(bar.minuteStartMs, { overrideByDate: calendarOverrides });
+      if (!session.calendarSupported) {
+        unsupportedCalendarBarCount += 1;
+        lastError = {
+          code: "calendar_unsupported",
+          at: new Date(now()).toISOString(),
+        };
+        continue;
+      }
       if (session.name !== "REGULAR") {
         outsideSessionBarCount += 1;
         continue;
@@ -220,7 +221,7 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
   const processCompleteCycle = async (minuteStartMs, rows) => {
     const bars = [];
     for (const symbol of selectedSymbols) {
-      bars.push(await toShadowBar(rows.get(symbol), modelSignalProvider));
+      bars.push(await toShadowBar(rows.get(symbol), modelSignalProvider, sessionResolver, calendarOverrides));
     }
     await ingestShadowCycle({ bars });
     completedCycleCount += 1;
@@ -327,7 +328,9 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
       drain(now() + maximumCycleLagMs + 60_000);
       await processing;
       state = "closed";
-      lastError = reason ? lastError : lastError;
+      if (reason && !lastError) {
+        lastError = { code: clean(reason), at: new Date(now()).toISOString() };
+      }
       return status();
     },
 

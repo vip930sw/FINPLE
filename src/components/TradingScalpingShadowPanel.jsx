@@ -141,7 +141,7 @@ function TradingScalpingShadowPanel() {
     try {
       setFeedStatus(await stopTradingScalpingKisFeed("admin_console_operator_stop"));
     } catch (stopError) {
-      setFeedError(stopError.message || "KIS Shadow feed를 정지하지 못했습니다.");
+      setFeedError(stopError.message || "KIS Shadow feed 상태를 확인 해제하지 못했습니다.");
     } finally {
       setFeedBusy(false);
     }
@@ -153,6 +153,7 @@ function TradingScalpingShadowPanel() {
   const active = status?.active === true;
   const selectedVersion = approvedVersions.find((version) => version.id === strategyVersionId);
   const feedActive = feedStatus?.active === true;
+  const feedAcknowledgementRequired = feedStatus?.acknowledgementRequired === true;
   const feedRunner = feedStatus?.runner || {};
   const feedPreflight = feedStatus?.preflight || {};
   const feedStrategy = feedStatus?.strategy || {};
@@ -162,13 +163,13 @@ function TradingScalpingShadowPanel() {
     <section className="scalpingShadowPanel" aria-labelledby="scalping-shadow-title">
       <header className="scalpingShadowHeader">
         <div>
-          <span>TSC-4C/4D PRIVATE SHADOW</span>
+          <span>TSC-4C/4D/4E PRIVATE SHADOW</span>
           <h2 id="scalping-shadow-title">Private Shadow Runtime · 가상체결·KIS 완료봉 검증</h2>
           <p>승인 전략과 읽기전용 KIS 시세만 사용합니다. 브로커 주문·실계좌 조회·자동 Live 전환은 제공하지 않습니다.</p>
         </div>
         <div className="scalpingShadowBadges">
           <strong className={active ? "isRunning" : "isIdle"}>Shadow {active ? "실행 중" : "정지"}</strong>
-          <strong className={feedActive ? "isRunning" : "isIdle"}>KIS Feed {feedActive ? "실행 중" : "정지"}</strong>
+          <strong className={feedActive ? "isRunning" : "isIdle"}>KIS Feed {feedActive ? "실행 중" : feedAcknowledgementRequired ? "차단 확인 필요" : "정지"}</strong>
           <span>Virtual only</span>
           <span>Order blocked</span>
         </div>
@@ -211,8 +212,8 @@ function TradingScalpingShadowPanel() {
         <button type="button" disabled={busy || active || !strategyVersionId} onClick={() => void start()}>
           {busy && !active ? "시작 중" : "선택 전략으로 시작"}
         </button>
-        <button type="button" className="isStop" disabled={busy || !active || feedActive} onClick={() => void stop()}>
-          {busy && active ? "정지 중" : feedActive ? "Feed 먼저 정지" : "Shadow 정지"}
+        <button type="button" className="isStop" disabled={busy || !active || feedActive || feedAcknowledgementRequired} onClick={() => void stop()}>
+          {busy && active ? "정지 중" : feedActive ? "Feed 먼저 정지" : feedAcknowledgementRequired ? "Feed 차단 확인 필요" : "Shadow 정지"}
         </button>
         <button type="button" className="isRefresh" disabled={busy || feedBusy} onClick={() => void load()}>새로고침</button>
       </div>
@@ -228,7 +229,7 @@ function TradingScalpingShadowPanel() {
             <strong>KIS 읽기전용 Completed-Bar Feed</strong>
             <span>실시간 체결·호가를 1분봉으로 집계하고, 선택 종목이 모두 완성된 cycle만 Shadow에 전달합니다.</span>
           </div>
-          <span className={`feedState ${feedActive ? "isRunning" : "isIdle"}`}>{statusLabel(feedRunner.state)}</span>
+          <span className={`feedState ${feedActive ? "isRunning" : "isIdle"}`}>{feedAcknowledgementRequired ? "Circuit breaker 확인 필요" : statusLabel(feedRunner.state)}</span>
         </header>
         {feedError ? <div className="scalpingShadowError">{feedError}</div> : null}
         <div className="scalpingShadowFeedGateGrid">
@@ -252,11 +253,11 @@ function TradingScalpingShadowPanel() {
           </div>
         ) : null}
         <div className="scalpingShadowFeedActions">
-          <button type="button" disabled={feedBusy || feedActive || !feedPreflight.startEligible} onClick={() => void startFeed()}>
+          <button type="button" disabled={feedBusy || feedActive || feedAcknowledgementRequired || !feedPreflight.startEligible} onClick={() => void startFeed()}>
             {feedBusy && !feedActive ? "연결 중" : "승인된 KIS Feed 시작"}
           </button>
-          <button type="button" className="isStop" disabled={feedBusy || !feedActive} onClick={() => void stopFeed()}>
-            {feedBusy && feedActive ? "정지 중" : "KIS Feed 정지"}
+          <button type="button" className="isStop" disabled={feedBusy || (!feedActive && !feedAcknowledgementRequired)} onClick={() => void stopFeed()}>
+            {feedBusy ? "처리 중" : feedAcknowledgementRequired ? "차단 확인·상태 해제" : "KIS Feed 정지"}
           </button>
         </div>
         <div className="scalpingShadowMetricGrid scalpingShadowMetricGrid--feed">

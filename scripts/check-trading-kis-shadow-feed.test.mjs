@@ -27,10 +27,12 @@ test("read-only approval gate requires scoped, expiring, revocable evidence", as
 
 test("completed-bar runner composes KIS feed, minute aggregation, and internal Shadow ingestion", async () => {
   const source = await read("server/src/services/tradingKisCompletedBarFeedRunner.js");
+  const calendar = await read("server/src/services/tradingUsEquityMarketCalendar.js");
   assert.match(source, /createKisOverseasRealtimeFeed/);
   assert.match(source, /createOneMinuteMarketAggregator/);
   assert.match(source, /ingestShadowCycle/);
-  assert.match(source, /America\/New_York/);
+  assert.match(source, /getUsEquityMarketSession/);
+  assert.match(calendar, /America\/New_York/);
   assert.match(source, /missingSymbols/);
   assert.match(source, /forwardFilled: false/);
   assert.match(source, /rawProviderPayloadStored: false/);

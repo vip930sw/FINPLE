@@ -38,6 +38,8 @@ const env = {
   KIS_TRADING_APP_SECRET: "ephemeral-secret",
 };
 
+const regularSessionMs = Date.parse("2026-08-05T13:35:00Z");
+
 function registry() {
   return {
     versions: [{
@@ -64,53 +66,140 @@ function shadow(active = true) {
   };
 }
 
+function noRecovery() {
+  return {
+    recovery: {
+      checkpointAvailable: false,
+      manualResumeRequired: false,
+      automaticResumeAllowed: false,
+    },
+    persistence: { mode: "memory_checkpoint" },
+  };
+}
+
+function createSupervisorHarness(runner) {
+  let operational = {
+    active: false,
+    runner: runner.status(),
+    guard: { state: "created", alerts: [] },
+    checkpoint: { manualResumeRequired: true, automaticResumeAllowed: false },
+  };
+  let startInput = null;
+  let stoppedReason = null;
+  return {
+    factory() {
+      return {
+        async start(input) {
+          startInput = input;
+          operational = {
+            ...operational,
+            active: true,
+            runner: await runner.start(input),
+            guard: { state: "healthy", alerts: [] },
+          };
+          return operational;
+        },
+        async stop(reason) {
+          stoppedReason = reason;
+          operational = {
+            ...operational,
+            active: false,
+            runner: await runner.stop(reason),
+            guard: { state: "stopped", alerts: [] },
+          };
+          return operational;
+        },
+        status() {
+          return operational;
+        },
+      };
+    },
+    trip(code = "provider_heartbeat_stale") {
+      operational = {
+        ...operational,
+        active: false,
+        runner: { ...operational.runner, active: false, state: "closed" },
+        guard: {
+          state: "tripped",
+          tripped: true,
+          trip: { code, message: "test circuit breaker", at: new Date(regularSessionMs).toISOString() },
+          alerts: [],
+        },
+      };
+    },
+    get startInput() { return startInput; },
+    get stoppedReason() { return stoppedReason; },
+  };
+}
+
 test.beforeEach(() => resetKisShadowFeedRuntimeForTest());
 
-test("status remains blocked until explicit start but shows configuration readiness", async () => {
+test("status remains blocked until explicit start but shows market-session readiness", async () => {
   const result = await readKisShadowFeedRuntimeStatus(
-    { env, receipt: receipt(), nowMs: Date.parse("2026-08-05T00:00:00Z") },
+    { env, receipt: receipt(), nowMs: regularSessionMs },
     {
       readShadowStatus: async () => shadow(true),
       getRegistrySnapshot: async () => registry(),
+      readRecoveryState: async () => noRecovery(),
     },
   );
   assert.equal(result.active, false);
   assert.equal(result.preflight.providerCallsAllowed, false);
   assert.equal(result.preflight.startEligible, true);
   assert.deepEqual(result.preflight.blockingReasons, []);
+  assert.equal(result.preflight.marketSession.state, "REGULAR");
   assert.equal(result.strategy.tradeSignalGenerationExpected, false);
   assert.equal(result.safety.orderSubmissionAllowed, false);
+  assert.equal(result.safety.automaticRestartAllowed, false);
 });
 
-test("starts an approved market-data-only runner and never exposes credentials", async () => {
-  let startInput = null;
+test("status blocks feed start on an official exchange holiday", async () => {
+  const result = await readKisShadowFeedRuntimeStatus(
+    { env, receipt: receipt(), nowMs: Date.parse("2026-07-03T15:00:00Z") },
+    {
+      readShadowStatus: async () => shadow(true),
+      getRegistrySnapshot: async () => registry(),
+      readRecoveryState: async () => noRecovery(),
+    },
+  );
+  assert.equal(result.preflight.startEligible, false);
+  assert.ok(result.preflight.blockingReasons.includes("market_session_not_open_for_feed_start"));
+  assert.equal(result.preflight.marketSession.holidayName, "independence_day_observed");
+});
+
+test("starts an approved supervised market-data-only runner and never exposes credentials", async () => {
   const fakeRunner = {
-    async start(input) {
-      startInput = input;
-      return { active: true, state: "connected", safety: { orderSubmissionAllowed: false } };
+    async start() {
+      return {
+        active: true,
+        state: "connected",
+        lastProviderEventAt: new Date(regularSessionMs).toISOString(),
+        lastCompletedMinute: new Date(regularSessionMs - 60_000).toISOString(),
+      };
     },
-    async stop() {
-      return { active: false, state: "closed" };
-    },
-    status() {
-      return { active: true, state: "connected", completedCycleCount: 0 };
-    },
+    async stop() { return { active: false, state: "closed" }; },
+    status() { return { active: false, state: "created" }; },
   };
+  const harness = createSupervisorHarness(fakeRunner);
   const dependencies = {
     env,
+    now: () => regularSessionMs,
     readShadowStatus: async () => shadow(true),
     getRegistrySnapshot: async () => registry(),
     runnerFactory: () => fakeRunner,
+    supervisorFactory: harness.factory,
+    readRecoveryState: async () => noRecovery(),
   };
   const result = await startKisShadowFeedRuntime(
     { receipt: receipt() },
-    { env, nowMs: Date.parse("2026-08-05T00:00:00Z"), actor: "admin" },
+    { env, nowMs: regularSessionMs, actor: "admin" },
     dependencies,
   );
   assert.equal(result.active, true);
-  assert.equal(startInput.appKey, "ephemeral-key");
-  assert.equal(startInput.appSecret, "ephemeral-secret");
+  assert.equal(harness.startInput.appKey, "ephemeral-key");
+  assert.equal(harness.startInput.appSecret, "ephemeral-secret");
   assert.doesNotMatch(JSON.stringify(result), /ephemeral-key|ephemeral-secret/);
+  assert.equal(result.operations.guard.state, "healthy");
   assert.equal(result.safety.accountCallsAllowed, false);
   assert.equal(result.safety.orderSubmissionAllowed, false);
 });
@@ -119,7 +208,7 @@ test("blocks start when the Shadow run is inactive", async () => {
   await assert.rejects(
     () => startKisShadowFeedRuntime(
       { receipt: receipt() },
-      { env, nowMs: Date.parse("2026-08-05T00:00:00Z") },
+      { env, nowMs: regularSessionMs },
       {
         env,
         readShadowStatus: async () => shadow(false),
@@ -130,30 +219,97 @@ test("blocks start when the Shadow run is inactive", async () => {
   );
 });
 
-test("stops the active feed without touching the Shadow worker", async () => {
-  let stoppedReason = null;
+test("stops the active supervisor without touching the Shadow worker", async () => {
   const fakeRunner = {
     async start() { return { active: true, state: "connected" }; },
-    async stop(reason) { stoppedReason = reason; return { active: false, state: "closed" }; },
-    status() { return { active: true, state: "connected" }; },
+    async stop(reason) { return { active: false, state: "closed", stopReason: reason }; },
+    status() { return { active: false, state: "created" }; },
   };
+  const harness = createSupervisorHarness(fakeRunner);
   const dependencies = {
     env,
+    now: () => regularSessionMs,
     readShadowStatus: async () => shadow(true),
     getRegistrySnapshot: async () => registry(),
     runnerFactory: () => fakeRunner,
+    supervisorFactory: harness.factory,
+    readRecoveryState: async () => noRecovery(),
   };
   await startKisShadowFeedRuntime(
     { receipt: receipt() },
-    { env, nowMs: Date.parse("2026-08-05T00:00:00Z") },
+    { env, nowMs: regularSessionMs },
     dependencies,
   );
   const result = await stopKisShadowFeedRuntime(
     { reason: "operator_stop" },
-    { env, nowMs: Date.parse("2026-08-05T00:00:00Z") },
+    { env, nowMs: regularSessionMs },
     dependencies,
   );
-  assert.equal(stoppedReason, "operator_stop");
+  assert.equal(harness.stoppedReason, "operator_stop");
   assert.equal(result.active, false);
   assert.equal(result.runner.state, "closed");
+  assert.equal(result.operations.checkpoint.automaticResumeAllowed, false);
+});
+
+test("reports a tripped runner as inactive until the operator acknowledges and clears it", async () => {
+  const fakeRunner = {
+    async start() { return { active: true, state: "connected" }; },
+    async stop(reason) { return { active: false, state: "closed", stopReason: reason }; },
+    status() { return { active: false, state: "created" }; },
+  };
+  const harness = createSupervisorHarness(fakeRunner);
+  const dependencies = {
+    env,
+    now: () => regularSessionMs,
+    readShadowStatus: async () => shadow(true),
+    getRegistrySnapshot: async () => registry(),
+    runnerFactory: () => fakeRunner,
+    supervisorFactory: harness.factory,
+    readRecoveryState: async () => noRecovery(),
+  };
+  await startKisShadowFeedRuntime(
+    { receipt: receipt() },
+    { env, nowMs: regularSessionMs },
+    dependencies,
+  );
+  harness.trip();
+  const tripped = await readKisShadowFeedRuntimeStatus(
+    { env, receipt: receipt(), nowMs: regularSessionMs },
+    dependencies,
+  );
+  assert.equal(tripped.active, false);
+  assert.equal(tripped.acknowledgementRequired, true);
+  assert.equal(tripped.preflight.startEligible, false);
+  assert.ok(tripped.preflight.blockingReasons.includes("circuit_breaker_acknowledgement_required"));
+
+  const cleared = await stopKisShadowFeedRuntime(
+    { reason: "admin_acknowledged_trip" },
+    { env, nowMs: regularSessionMs },
+    dependencies,
+  );
+  assert.equal(cleared.acknowledgementRequired, false);
+});
+
+test("returns restart-safe checkpoint recovery without automatic resume", async () => {
+  const result = await readKisShadowFeedRuntimeStatus(
+    { env, receipt: receipt(), nowMs: regularSessionMs },
+    {
+      readShadowStatus: async () => shadow(true),
+      getRegistrySnapshot: async () => registry(),
+      readRecoveryState: async () => ({
+        recovery: {
+          checkpointAvailable: true,
+          manualResumeRequired: true,
+          automaticResumeAllowed: false,
+          priorOperationalState: "tripped",
+          priorStopReason: "circuit_breaker:provider_heartbeat_stale",
+          checkpointAt: "2026-08-05T13:30:00Z",
+        },
+        persistence: { mode: "postgres_checkpoint" },
+      }),
+    },
+  );
+  assert.equal(result.recovery.checkpointAvailable, true);
+  assert.equal(result.recovery.automaticResumeAllowed, false);
+  assert.equal(result.operations.checkpoint.persistence.mode, "postgres_checkpoint");
 });
