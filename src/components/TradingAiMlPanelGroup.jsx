@@ -173,7 +173,10 @@ function useCaptureStatusSnapshot(enabled) {
     let disposed = false;
     let timer = null;
     let controller = null;
+    let polling = false;
     const poll = async () => {
+      if (polling) return;
+      polling = true;
       controller = new AbortController();
       try {
         const status = normalizeCaptureStatusPayload(
@@ -185,14 +188,22 @@ function useCaptureStatusSnapshot(enabled) {
           setSnapshot({ status: null, loadState: "error", error });
         }
       } finally {
-        if (!disposed) timer = window.setTimeout(() => void poll(), CAPTURE_POLL_INTERVAL_MS);
+        polling = false;
+        if (!disposed && !document.hidden) timer = window.setTimeout(() => void poll(), CAPTURE_POLL_INTERVAL_MS);
       }
     };
-    void poll();
+    const handleVisibilityChange = () => {
+      window.clearTimeout(timer);
+      controller?.abort();
+      if (!document.hidden && !disposed && !polling) void poll();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (!document.hidden) void poll();
     return () => {
       disposed = true;
       controller?.abort();
       window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [enabled, refreshVersion]);
 
@@ -319,6 +330,7 @@ function CaptureOperationalPreflight({ snapshot }) {
 
 function ScalpingOperationsDock() {
   const [open, setOpen] = useState(false);
+  const [activeOperation, setActiveOperation] = useState(SCALPING_OPERATION_LINKS[0].href);
   const launcherRef = useRef(null);
   const closeRef = useRef(null);
   const captureSnapshot = useCaptureStatusSnapshot(open);
@@ -492,31 +504,38 @@ function ScalpingOperationsDock() {
               }}
             >
               {SCALPING_OPERATION_LINKS.map((item) => (
-                <a key={item.href} href={item.href}>{item.label}</a>
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={activeOperation === item.href ? "page" : undefined}
+                  onClick={() => setActiveOperation(item.href)}
+                >
+                  {item.label}
+                </a>
               ))}
             </nav>
 
             <div className="scalpingAdminOperationsStack" data-admin-panel-key="scalping-operations-stack">
-              <section id="trading-scalping-kis-capture" className="scalpingAdminOperationAnchor" aria-label="KIS 완료 1분봉 호가 축적">
+              {activeOperation === "#trading-scalping-kis-capture" ? <section id="trading-scalping-kis-capture" className="scalpingAdminOperationAnchor" aria-label="KIS 완료 1분봉 호가 축적">
                 <TradingScalpingKisCapturePanel
                   status={captureSnapshot.status}
                   loadState={captureSnapshot.loadState}
                   statusError={captureSnapshot.error}
                   onRefresh={captureSnapshot.refresh}
                 />
-              </section>
-              <section id="trading-scalping-kis-operations" className="scalpingAdminOperationAnchor" aria-label="KIS Feed 운영 감시 복구">
+              </section> : null}
+              {activeOperation === "#trading-scalping-kis-operations" ? <section id="trading-scalping-kis-operations" className="scalpingAdminOperationAnchor" aria-label="KIS Feed 운영 감시 복구">
                 <TradingScalpingKisOpsPanel />
-              </section>
-              <section id="trading-scalping-model-signal" className="scalpingAdminOperationAnchor" aria-label="모델 신호 상태 진입 차단">
+              </section> : null}
+              {activeOperation === "#trading-scalping-model-signal" ? <section id="trading-scalping-model-signal" className="scalpingAdminOperationAnchor" aria-label="모델 신호 상태 진입 차단">
                 <TradingScalpingModelSignalPanel />
-              </section>
-              <section id="trading-scalping-shadow" className="scalpingAdminOperationAnchor" aria-label="스캘핑 Shadow 운용">
+              </section> : null}
+              {activeOperation === "#trading-scalping-shadow" ? <section id="trading-scalping-shadow" className="scalpingAdminOperationAnchor" aria-label="스캘핑 Shadow 운용">
                 <TradingScalpingShadowPanel />
-              </section>
-              <section id="trading-scalping-strategy" className="scalpingAdminOperationAnchor" aria-label="스캘핑 전략 관리">
+              </section> : null}
+              {activeOperation === "#trading-scalping-strategy" ? <section id="trading-scalping-strategy" className="scalpingAdminOperationAnchor" aria-label="스캘핑 전략 관리">
                 <TradingScalpingAdminPanel />
-              </section>
+              </section> : null}
             </div>
           </section>
         </div>

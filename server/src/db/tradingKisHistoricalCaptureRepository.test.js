@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   getKisHistoricalCapturePersistenceStatus,
+  readLatestKisHistoricalCaptureSummary,
   readKisHistoricalSessionRows,
   resetKisHistoricalCaptureMemoryForTest,
   saveKisHistoricalMinuteRows,
@@ -75,4 +76,23 @@ test("session revision is immutable in memory fallback", async () => {
     saveKisHistoricalRevision({ ...revision, rawDataChecksum: "d".repeat(64) }, { env: {} }),
     (error) => error.code === "KIS_CAPTURE_REVISION_CONFLICT",
   );
+});
+
+test("latest summary reuses a supplied persistence status", async () => {
+  let queryCount = 0;
+  const persistence = {
+    databaseConfigured: true,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres",
+  };
+  const result = await readLatestKisHistoricalCaptureSummary({ env: {}, persistence }, {
+    query: async () => {
+      queryCount += 1;
+      return { rows: [{ total_rows: 0, latest_minute: null, latest_revision: null }] };
+    },
+  });
+
+  assert.equal(queryCount, 1);
+  assert.equal(result.persistence, persistence);
 });
