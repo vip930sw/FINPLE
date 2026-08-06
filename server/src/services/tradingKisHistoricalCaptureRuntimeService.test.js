@@ -61,6 +61,7 @@ test("capture status exposes version metadata and redacts approval receipt value
 
 test("capture status fails closed when the database status query fails", async () => {
   resetKisHistoricalCaptureRuntimeForTest();
+  const events = [];
   const status = await readKisHistoricalCaptureRuntimeStatus({
     env: {
       DATABASE_URL: "postgres://configured-but-unavailable",
@@ -70,6 +71,7 @@ test("capture status fails closed when the database status query fails", async (
     getPersistenceStatus: async () => { throw new Error("synthetic database outage"); },
     readSummary: async () => summary,
     getDeploymentInfo: () => ({ commitSha: null }),
+    onLifecycleEvent: (event) => events.push(event.event),
   });
 
   assert.equal(status.persistence.databaseConfigured, true);
@@ -77,6 +79,8 @@ test("capture status fails closed when the database status query fails", async (
   assert.equal(status.persistence.reason, "database_unavailable");
   assert.equal(status.startEligible, false);
   assert.ok(status.blockingReasons.includes("database_unavailable"));
+  assert.ok(events.includes("persistence_failed"));
+  assert.equal(events.includes("summary_started"), false);
 });
 
 test("capture status reuses persistence and does not overlap database work", async () => {
@@ -108,4 +112,103 @@ test("capture status reuses persistence and does not overlap database work", asy
 
   assert.deepEqual(events, ["persistence:start", "persistence:end", "summary"]);
   assert.equal(status.diagnostics.pool.after.waitingCount, 0);
+});
+
+test("capture status emits ordered lifecycle stages", async () => {
+  const events = [];
+  const persistence = {
+    databaseConfigured: true,
+    featureEnabled: true,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres_durable",
+    reason: null,
+  };
+  await readKisHistoricalCaptureRuntimeStatus({ env: { DATABASE_URL: "synthetic", FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "true" } }, {
+    getPersistenceStatus: async () => persistence,
+    readSummary: async () => summary,
+    getDeploymentInfo: () => ({ commitSha: "abcdef1234567890" }),
+    onLifecycleEvent: (event) => events.push(event.event),
+  });
+
+  assert.deepEqual(events, [
+    "persistence_started",
+    "persistence_completed",
+    "summary_started",
+    "summary_completed",
+    "service_completed",
+  ]);
+});
+
+test("capture status logs summary failure without exposing the error message", async () => {
+  const events = [];
+  const persistence = {
+    databaseConfigured: true,
+    featureEnabled: true,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres_durable",
+    reason: null,
+  };
+  const status = await readKisHistoricalCaptureRuntimeStatus({ env: { DATABASE_URL: "synthetic", FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "true" } }, {
+    getPersistenceStatus: async () => persistence,
+    readSummary: async () => { throw new Error("synthetic summary failure"); },
+    getDeploymentInfo: () => ({ commitSha: null }),
+    onLifecycleEvent: (event) => events.push(event),
+  });
+
+  assert.equal(status.persistence.mode, "database_unavailable");
+  assert.ok(events.some((event) => event.event === "summary_failed"));
+  assert.equal(JSON.stringify(events).includes("synthetic summary failure"), false);
+});
+
+test("capture status stops before summary after client disconnect", async () => {
+  let disconnected = false;
+  let summaryCalls = 0;
+  const events = [];
+  const persistence = {
+    databaseConfigured: true,
+    featureEnabled: true,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres_durable",
+    reason: null,
+  };
+
+  await assert.rejects(
+    readKisHistoricalCaptureRuntimeStatus({ env: { DATABASE_URL: "synthetic", FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "true" } }, {
+      getPersistenceStatus: async () => {
+        disconnected = true;
+        return persistence;
+      },
+      readSummary: async () => {
+        summaryCalls += 1;
+        return summary;
+      },
+      isClientDisconnected: () => disconnected,
+      onLifecycleEvent: (event) => events.push(event.event),
+    }),
+    (error) => error.code === "CLIENT_DISCONNECTED",
+  );
+
+  assert.equal(summaryCalls, 0);
+  assert.ok(events.includes("persistence_completed"));
+  assert.ok(events.includes("service_failed"));
+});
+
+test("capture status does not normalize database timeouts into a healthy status", async () => {
+  const events = [];
+  await assert.rejects(
+    readKisHistoricalCaptureRuntimeStatus({ env: { DATABASE_URL: "synthetic", FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "true" } }, {
+      getPersistenceStatus: async () => {
+        const error = new Error("synthetic query timeout");
+        error.code = "57014";
+        throw error;
+      },
+      onLifecycleEvent: (event) => events.push(event.event),
+    }),
+    (error) => error.code === "57014",
+  );
+  assert.ok(events.includes("persistence_failed"));
+  assert.ok(events.includes("service_failed"));
 });

@@ -23,6 +23,23 @@ export function getDatabasePoolStats() {
   };
 }
 
+function poolStats(value) {
+  return {
+    initialized: Boolean(value),
+    totalCount: value?.totalCount || 0,
+    idleCount: value?.idleCount || 0,
+    waitingCount: value?.waitingCount || 0,
+  };
+}
+
+function notify(callback, payload) {
+  try {
+    callback?.(payload);
+  } catch {
+    // Observability must never break the database operation.
+  }
+}
+
 function getSslOption() {
   const value = String(process.env.DATABASE_SSL || "false").toLowerCase();
 
@@ -87,6 +104,34 @@ async function getPool() {
 export async function query(text, params = []) {
   const dbPool = await getPool();
   return dbPool.query(text, params);
+}
+
+export async function queryWithDiagnostics(text, params = [], dependencies = {}) {
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
+  const acquireStartedAt = monotonicNow();
+  const dbPool = dependencies.pool ?? await getPool();
+  const client = await dbPool.connect();
+  const acquiredAt = monotonicNow();
+  notify(dependencies.onPoolAcquired, {
+    stageMs: acquiredAt - acquireStartedAt,
+    pool: poolStats(dbPool),
+  });
+
+  let queryError = null;
+  const queryStartedAt = monotonicNow();
+  try {
+    return await client.query(text, params);
+  } catch (error) {
+    queryError = error;
+    throw error;
+  } finally {
+    const queryMs = monotonicNow() - queryStartedAt;
+    client.release(queryError || undefined);
+    notify(dependencies.onPoolReleased, {
+      stageMs: queryMs,
+      pool: poolStats(dbPool),
+    });
+  }
 }
 
 export async function withTransaction(callback) {

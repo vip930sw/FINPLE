@@ -1,6 +1,8 @@
 import express from "express";
 
+import { getDatabasePoolStats, isDatabaseConfigured } from "../db/database.js";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { getDeploymentInfo } from "../services/deploymentInfo.js";
 import { readKisConnectionLease } from "../services/tradingKisConnectionLease.js";
 import {
   readKisHistoricalCaptureRuntimeStatus,
@@ -31,6 +33,90 @@ import {
 } from "../services/tradingScalpingShadowRuntimeService.js";
 
 const router = express.Router();
+const CAPTURE_STATUS_ROUTE = "GET /api/admin/trading-readiness/scalping-kis-capture";
+
+function safeIdentifier(value, fallback = null) {
+  const normalized = String(value || "").replace(/[^A-Za-z0-9_.:-]/g, "_").slice(0, 80);
+  return normalized || fallback;
+}
+
+function createCaptureStatusLifecycle(request, response, dependencies = {}) {
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
+  const startedAt = monotonicNow();
+  const deploymentSha = (dependencies.getDeploymentInfo ?? getDeploymentInfo)().commitSha || null;
+  const poolStats = dependencies.getPoolStats ?? getDatabasePoolStats;
+  const writer = dependencies.log ?? ((payload) => console.info(JSON.stringify(payload)));
+  let lastEventAt = startedAt;
+  let requestFailureLogged = false;
+  const state = {
+    clientDisconnected: false,
+    databaseConfigured: (dependencies.isDatabaseConfigured ?? isDatabaseConfigured)(),
+    schemaReady: null,
+    persistenceMode: null,
+  };
+
+  function emit(event, details = {}) {
+    if (details.databaseConfigured !== undefined) state.databaseConfigured = details.databaseConfigured === true;
+    if (details.schemaReady !== undefined) state.schemaReady = details.schemaReady;
+    if (details.persistenceMode !== undefined) state.persistenceMode = details.persistenceMode;
+    const current = monotonicNow();
+    const stageMs = Number.isFinite(Number(details.stageMs)) ? Number(details.stageMs) : current - lastEventAt;
+    lastEventAt = current;
+    const pool = details.pool ?? poolStats();
+    const error = details.error;
+    try {
+      writer({
+        type: "capture_status_lifecycle",
+        event,
+        requestId: request.requestId || null,
+        route: CAPTURE_STATUS_ROUTE,
+        elapsedMs: Math.round(current - startedAt),
+        stageMs: Math.round(stageMs),
+        httpStatus: Number(details.httpStatus ?? response.statusCode) || null,
+        deploymentSha,
+        databaseConfigured: state.databaseConfigured,
+        schemaReady: state.schemaReady,
+        persistenceMode: state.persistenceMode,
+        poolTotalCount: Number(pool?.totalCount || 0),
+        poolIdleCount: Number(pool?.idleCount || 0),
+        poolWaitingCount: Number(pool?.waitingCount || 0),
+        clientDisconnected: state.clientDisconnected,
+        errorCode: error ? safeIdentifier(error.code, "CAPTURE_STATUS_REQUEST_FAILED") : null,
+        errorClass: error ? safeIdentifier(error.name || error.constructor?.name, "Error") : null,
+      });
+    } catch {
+      // Logging must not change the request outcome.
+    }
+  }
+
+  function fail(error) {
+    if (requestFailureLogged) return;
+    requestFailureLogged = true;
+    emit("request_failed", { error, httpStatus: Number(error?.statusCode || 500) });
+  }
+
+  request.once?.("aborted", () => {
+    state.clientDisconnected = true;
+    emit("client_aborted");
+  });
+  response.once?.("finish", () => emit("response_finished"));
+  response.once?.("close", () => {
+    if (response.writableFinished !== true) state.clientDisconnected = true;
+    emit("response_closed");
+  });
+  response.once?.("error", (error) => {
+    state.clientDisconnected = true;
+    fail(error);
+  });
+
+  emit("request_started", { stageMs: 0 });
+  return {
+    disconnected: () => state.clientDisconnected,
+    emit,
+    fail,
+    now: monotonicNow,
+  };
+}
 
 function adminActor(request) {
   return request.get("x-finple-admin-actor") || "admin_console";
@@ -212,16 +298,33 @@ router.post("/scalping-shadow-feed/stop", (request, response, next) => {
   });
 });
 
-router.get("/scalping-kis-capture", (request, response, next) => {
+export function handleKisHistoricalCaptureStatusRequest(request, response, next, dependencies = {}) {
   response.setHeader("Cache-Control", "no-store, max-age=0");
-  requireAdminAccess(request, response, () => {
-    readKisHistoricalCaptureRuntimeStatus()
+  const lifecycle = createCaptureStatusLifecycle(request, response, dependencies);
+  const authStartedAt = lifecycle.now();
+  let operation;
+  (dependencies.requireAdminAccess ?? requireAdminAccess)(request, response, () => {
+    lifecycle.emit("admin_auth_passed", { stageMs: lifecycle.now() - authStartedAt });
+    operation = Promise.resolve()
+      .then(() => (dependencies.readStatus ?? readKisHistoricalCaptureRuntimeStatus)({}, {
+        ...(dependencies.serviceDependencies || {}),
+        onLifecycleEvent: ({ event, ...details }) => lifecycle.emit(event, details),
+        isClientDisconnected: lifecycle.disconnected,
+      }))
       .then((result) => {
+        const serializationStartedAt = lifecycle.now();
         response.json(result);
+        lifecycle.emit("response_serialized", { stageMs: lifecycle.now() - serializationStartedAt });
       })
-      .catch(next);
+      .catch((error) => {
+        lifecycle.fail(error);
+        if (!lifecycle.disconnected()) next(error);
+      });
   });
-});
+  return operation;
+}
+
+router.get("/scalping-kis-capture", handleKisHistoricalCaptureStatusRequest);
 
 router.post("/scalping-kis-capture/start", (request, response, next) => {
   requireAdminAccess(request, response, () => {
