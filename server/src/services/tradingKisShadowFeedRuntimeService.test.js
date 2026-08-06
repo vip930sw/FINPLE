@@ -16,7 +16,7 @@ function receipt() {
     expiresAt: "2026-09-01T00:00:00Z",
     scope: "trading_read_only_market_data",
     environment: "virtual_shadow",
-    baseUrl: "https://openapi.koreainvestment.com:9443",
+    baseUrl: "https://openapivts.koreainvestment.com:29443",
     accountIdHash: "not_applicable_market_data_only",
     allowedReadScopes: ["current_quotes", "market_session_state", "provider_rate_limit_state"],
     forbiddenActions: [
@@ -34,6 +34,8 @@ function receipt() {
 
 const env = {
   FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+  FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "paper",
+  KIS_TRADING_BASE_URL: "https://openapivts.koreainvestment.com:29443",
   KIS_TRADING_APP_KEY: "ephemeral-key",
   KIS_TRADING_APP_SECRET: "ephemeral-secret",
 };

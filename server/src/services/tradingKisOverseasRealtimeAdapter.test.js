@@ -11,6 +11,7 @@ import {
   getKisReconnectDelayMs,
   parseKisOverseasRealtimeFrame,
 } from "./tradingKisOverseasRealtimeAdapter.js";
+import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
 
 function makeTradePayload(overrides = {}) {
   const values = {
@@ -34,9 +35,18 @@ test("builds official regular-session subscription key", () => {
 });
 
 test("builds KIS approval and subscription envelopes without exposing derived secrets", () => {
-  const approval = buildKisApprovalRequest({ appKey: "key", appSecret: "secret" });
+  const approval = buildKisApprovalRequest({
+    appKey: "key",
+    appSecret: "secret",
+    baseUrlEnvironment: "paper",
+  });
   assert.equal(approval.valid, true);
-  assert.match(approval.url, /oauth2\/Approval$/);
+  assert.equal(approval.url, `${KIS_READ_ONLY_BASE_URLS.paper}/oauth2/Approval`);
+  assert.equal(
+    buildKisApprovalRequest({ appKey: "key", appSecret: "secret", baseUrlEnvironment: "live" }).url,
+    `${KIS_READ_ONLY_BASE_URLS.live}/oauth2/Approval`,
+  );
+  assert.equal(buildKisApprovalRequest({ appKey: "key", appSecret: "secret", baseUrlEnvironment: "other" }).valid, false);
   const envelope = buildKisOverseasSubscriptionEnvelope({ approvalKey: "approval", trId: "HDFSCNT0", trKey: "DNASTQQQ" });
   assert.equal(envelope.valid, true);
   assert.equal(envelope.message.body.input.tr_id, "HDFSCNT0");
@@ -82,7 +92,13 @@ test("evaluates freshness and bounded exponential reconnect", () => {
 
 test("feed is blocked without explicit provider opt-in", async () => {
   const feed = createKisOverseasRealtimeFeed({ fetchImpl: async () => ({}), webSocketFactory: () => ({}) });
-  const session = await feed.connect({ symbols: ["TQQQ"], market: "NASDAQ", appKey: "k", appSecret: "s" });
+  const session = await feed.connect({
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+    baseUrlEnvironment: "paper",
+  });
   assert.equal(session.connected, false);
   assert.ok(session.reasons.includes("provider_calls_not_opted_in"));
 });
@@ -101,7 +117,15 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
       return socket;
     },
   });
-  const session = await feed.connect({ allowProviderCalls: true, symbols: ["TQQQ"], market: "NASDAQ", appKey: "k", appSecret: "s", maxReconnectAttempts: 0 }, {
+  const session = await feed.connect({
+    allowProviderCalls: true,
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+    baseUrlEnvironment: "paper",
+    maxReconnectAttempts: 0,
+  }, {
     onEvent: (event) => events.push(event),
     onStatus: (status) => statuses.push(status),
   });

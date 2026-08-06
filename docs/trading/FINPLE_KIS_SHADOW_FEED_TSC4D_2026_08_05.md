@@ -31,8 +31,10 @@ Provider calls require all of the following:
 - configured `KIS_TRADING_APP_KEY` and `KIS_TRADING_APP_SECRET`;
 - non-expired approval metadata;
 - scope exactly `trading_read_only_market_data`;
-- environment exactly `virtual_shadow`;
-- base URL exactly `https://openapi.koreainvestment.com:9443`;
+- an explicit non-secret credential marker, `FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT=paper|live`;
+- one exact environment mapping:
+  - Staging: receipt environment `virtual_shadow`, paper marker, and both receipt/runtime base URLs exactly `https://openapivts.koreainvestment.com:29443`;
+  - Production: receipt environment `production_live`, live marker, and both receipt/runtime base URLs exactly `https://openapi.koreainvestment.com:9443`;
 - allowed scopes containing:
   - `current_quotes`
   - `market_session_state`
@@ -50,6 +52,8 @@ Approval metadata is read from environment at runtime and returned only as a red
 
 ```text
 FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED
+FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT
+KIS_TRADING_BASE_URL
 FINPLE_TRADING_READ_ONLY_APPROVAL_ID
 FINPLE_TRADING_READ_ONLY_APPROVED_BY
 FINPLE_TRADING_READ_ONLY_APPROVED_AT
@@ -65,7 +69,7 @@ FINPLE_TRADING_READ_ONLY_REVOCATION_PLAN
 FINPLE_TRADING_READ_ONLY_REDACTION_VERSION
 ```
 
-This PR does not set or change any value.
+Credential class is never inferred from App Key or App Secret content. Unknown markers, arbitrary URLs, and paper/live cross-environment combinations fail closed. This PR does not set or change any value.
 
 ## 3. Completed-bar contract
 

@@ -17,7 +17,9 @@ test("capture is KIS-only, market-data-only, and has no order capability", async
   const runtime = await source("server/src/services/tradingKisHistoricalCaptureRuntimeService.js");
   const runner = await source("server/src/services/tradingKisHistoricalCaptureRunner.js");
   assert.match(runtime, /KIS_TRADING_APP_KEY/);
+  assert.match(runtime, /assessKisShadowFeedApproval/);
   assert.match(runner, /createKisOverseasRealtimeFeed/);
+  assert.match(runner, /baseUrlEnvironment: approval\.baseUrlEnvironment/);
   assert.match(runner, /captureOnly: true/);
   assert.match(runtime, /orderSubmissionAllowed: false/);
   assert.doesNotMatch(runtime, /submitOrder|placeOrder|cancelOrder|accountBalance|positionQuery/);

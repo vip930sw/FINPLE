@@ -16,13 +16,14 @@ function fakeAggregator() {
 
 test("capture runner connects market data only and persists complete cycles", async () => {
   let handlers;
+  let feedConfig;
   const captured = [];
   const intervals = [];
   const minuteStartMs = Date.parse("2026-08-04T13:30:00.000Z");
   const runner = createKisHistoricalCaptureRunner(
     {
       selectedSymbols: ["TQQQ", "SQQQ"],
-      approval: { ready: true },
+      approval: { ready: true, baseUrlEnvironment: "paper" },
       flushIntervalMs: 1000,
     },
     {
@@ -43,7 +44,8 @@ test("capture runner connects market data only and persists complete cycles", as
         status: () => ({ acceptedCycles: captured.length }),
       },
       feedFactory: () => ({
-        connect: async (_config, nextHandlers) => {
+        connect: async (config, nextHandlers) => {
+          feedConfig = config;
           handlers = nextHandlers;
           return { connected: true, close() {} };
         },
@@ -58,6 +60,7 @@ test("capture runner connects market data only and persists complete cycles", as
 
   const started = await runner.start({ appKey: "x", appSecret: "y" });
   assert.equal(started.active, true);
+  assert.equal(feedConfig.baseUrlEnvironment, "paper");
 
   const makeBar = (symbol) => ({
     symbol,

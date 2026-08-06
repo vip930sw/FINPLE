@@ -10,16 +10,19 @@ function approval() {
   return {
     ready: true,
     providerCallsAllowed: true,
+    baseUrlEnvironment: "paper",
     receipt: { approvalId: "approval-1", expiresAt: "2026-09-01T00:00:00Z" },
   };
 }
 
 function createFeedHarness() {
   let handlers = null;
+  let config = null;
   return {
     factory() {
       return {
-        async connect(_config, nextHandlers) {
+        async connect(nextConfig, nextHandlers) {
+          config = nextConfig;
           handlers = nextHandlers;
           nextHandlers.onStatus?.({ state: "connected" });
           return { connected: true, reasons: [], close() {} };
@@ -28,6 +31,9 @@ function createFeedHarness() {
     },
     event(event) {
       handlers.onEvent(event);
+    },
+    config() {
+      return config;
     },
   };
 }
@@ -96,6 +102,7 @@ test("creates one synchronized Shadow cycle only after all selected bars complet
   );
 
   await runner.start({ appKey: "ephemeral-key", appSecret: "ephemeral-secret" });
+  assert.equal(harness.config().baseUrlEnvironment, "paper");
   harness.event(quote("TQQQ", nowMs, 49.99, 50.01));
   harness.event(trade("TQQQ", nowMs + 1_000, 50));
   harness.event(quote("SQQQ", nowMs, 30, 30.02));

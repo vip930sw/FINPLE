@@ -286,6 +286,7 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
           allowProviderCalls: true,
           appKey: input.appKey,
           appSecret: input.appSecret,
+          baseUrlEnvironment: approval.baseUrlEnvironment,
           symbols: selectedSymbols,
           marketBySymbol: KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
           maxReconnectAttempts: input.maxReconnectAttempts,

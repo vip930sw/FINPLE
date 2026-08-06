@@ -1,3 +1,5 @@
+import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
+
 export const KIS_OVERSEAS_REALTIME_TR_IDS = Object.freeze({
   trade: "HDFSCNT0",
   quote: "HDFSASP0",
@@ -13,7 +15,6 @@ export const KIS_OVERSEAS_MARKET_CODES = Object.freeze({
 });
 
 export const KIS_OVERSEAS_REALTIME_ENDPOINTS = Object.freeze({
-  approval: "https://openapi.koreainvestment.com:9443/oauth2/Approval",
   websocket: "ws://ops.koreainvestment.com:21000/tryitout",
 });
 
@@ -139,17 +140,19 @@ export function buildKisOverseasSubscriptionEnvelope({ approvalKey, trId, trKey,
   };
 }
 
-export function buildKisApprovalRequest({ appKey, appSecret } = {}) {
+export function buildKisApprovalRequest({ appKey, appSecret, baseUrlEnvironment } = {}) {
   const normalizedAppKey = clean(appKey);
   const normalizedAppSecret = clean(appSecret);
+  const approvalBaseUrl = KIS_READ_ONLY_BASE_URLS[clean(baseUrlEnvironment).toLowerCase()] || "";
   const reasons = unique([
     normalizedAppKey ? null : "missing_app_key",
     normalizedAppSecret ? null : "missing_app_secret",
+    approvalBaseUrl ? null : "invalid_base_url_environment",
   ]);
   return {
     valid: reasons.length === 0,
     reasons,
-    url: KIS_OVERSEAS_REALTIME_ENDPOINTS.approval,
+    url: approvalBaseUrl ? `${approvalBaseUrl}/oauth2/Approval` : null,
     init: reasons.length > 0 ? null : {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -312,15 +315,15 @@ function validateFeedConfig(config = {}) {
   const symbols = Array.isArray(config.symbols) ? config.symbols.map(normalizeSymbol) : [];
   const marketBySymbol = config.marketBySymbol && typeof config.marketBySymbol === "object" ? config.marketBySymbol : {};
   const symbolEntries = symbols.map((symbol) => ({ symbol, market: normalizeMarket(marketBySymbol[symbol] ?? KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL[symbol] ?? config.market) }));
+  const approvalRequest = buildKisApprovalRequest(config);
   const reasons = unique([
     config.allowProviderCalls === true ? null : "provider_calls_not_opted_in",
-    clean(config.appKey) ? null : "missing_app_key",
-    clean(config.appSecret) ? null : "missing_app_secret",
+    ...approvalRequest.reasons,
     symbols.length > 0 ? null : "missing_symbols",
     ...symbols.filter((symbol) => !ALLOWED_SYMBOLS.has(symbol)).map((symbol) => `symbol_not_in_scalping_universe_${symbol}`),
     ...symbolEntries.filter((entry) => !entry.market).map((entry) => `unsupported_market_${entry.symbol}`),
   ]);
-  return { valid: reasons.length === 0, reasons, symbolEntries };
+  return { valid: reasons.length === 0, reasons, symbolEntries, approvalRequest };
 }
 
 export function createKisOverseasRealtimeFeed(dependencies = {}) {
@@ -353,7 +356,7 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
       };
 
       const requestApprovalKey = async () => {
-        const request = buildKisApprovalRequest(config);
+        const request = validation.approvalRequest;
         const response = await fetchImpl(request.url, request.init);
         if (!response?.ok) throw Object.assign(new Error("approval_request_failed"), { code: `http_${response?.status ?? "unknown"}` });
         const body = await response.json();

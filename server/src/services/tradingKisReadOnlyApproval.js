@@ -14,7 +14,15 @@ export const REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS = Object.freeze([
   "raw_provider_response_persistence",
 ]);
 
-const KIS_APPROVAL_BASE_URL = "https://openapi.koreainvestment.com:9443";
+export const KIS_READ_ONLY_BASE_URLS = Object.freeze({
+  paper: "https://openapivts.koreainvestment.com:29443",
+  live: "https://openapi.koreainvestment.com:9443",
+});
+
+const KIS_READ_ONLY_ENVIRONMENTS = Object.freeze({
+  virtual_shadow: "paper",
+  production_live: "live",
+});
 
 function clean(value) {
   return String(value ?? "").trim();
@@ -38,6 +46,23 @@ function epoch(value) {
 function missing(actual, required) {
   const values = new Set(actual);
   return required.filter((item) => !values.has(item));
+}
+
+function normalizedBaseUrl(value) {
+  return clean(value).replace(/\/+$/, "");
+}
+
+function credentialEnvironment(value) {
+  const normalized = clean(value).toLowerCase();
+  if (!normalized) return "unknown";
+  return normalized === "paper" || normalized === "live" ? normalized : "invalid";
+}
+
+function baseUrlEnvironment(value) {
+  const normalized = normalizedBaseUrl(value);
+  if (normalized === KIS_READ_ONLY_BASE_URLS.paper) return "paper";
+  if (normalized === KIS_READ_ONLY_BASE_URLS.live) return "live";
+  return "invalid";
 }
 
 export function loadKisShadowReadOnlyApprovalFromEnv(env = process.env) {
@@ -73,6 +98,19 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
   const appKeyConfigured = Boolean(clean(options.appKey ?? env.KIS_TRADING_APP_KEY));
   const appSecretConfigured = Boolean(clean(options.appSecret ?? env.KIS_TRADING_APP_SECRET));
   const explicitStartRequested = input.explicitStartRequested === true;
+  const expectedEnvironment = KIS_READ_ONLY_ENVIRONMENTS[clean(receipt.environment)] || null;
+  const resolvedCredentialEnvironment = credentialEnvironment(env.FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT);
+  const resolvedBaseUrlEnvironment = baseUrlEnvironment(env.KIS_TRADING_BASE_URL);
+  const receiptBaseUrlEnvironment = baseUrlEnvironment(receipt.baseUrl);
+  const environmentCredentialMatch = Boolean(
+    expectedEnvironment && resolvedCredentialEnvironment === expectedEnvironment,
+  );
+  const environmentBaseUrlMatch = Boolean(
+    expectedEnvironment
+      && resolvedBaseUrlEnvironment === expectedEnvironment
+      && receiptBaseUrlEnvironment === expectedEnvironment
+      && normalizedBaseUrl(env.KIS_TRADING_BASE_URL) === normalizedBaseUrl(receipt.baseUrl),
+  );
 
   const reasons = [
     featureEnabled ? null : "kis_shadow_feed_feature_flag_disabled",
@@ -84,8 +122,13 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     approvedAtMs !== null && approvedAtMs <= nowMs ? null : "approval_not_active_yet",
     expiresAtMs !== null && expiresAtMs > nowMs ? null : "approval_expired",
     clean(receipt.scope) === "trading_read_only_market_data" ? null : "approval_scope_must_be_market_data_read_only",
-    clean(receipt.environment) === "virtual_shadow" ? null : "approval_environment_must_be_virtual_shadow",
-    clean(receipt.baseUrl).replace(/\/+$/, "") === KIS_APPROVAL_BASE_URL ? null : "approval_base_url_mismatch",
+    expectedEnvironment ? null : "approval_environment_not_allowed",
+    resolvedCredentialEnvironment !== "unknown" ? null : "kis_credential_environment_required",
+    resolvedCredentialEnvironment !== "invalid" ? null : "kis_credential_environment_invalid",
+    resolvedBaseUrlEnvironment !== "invalid" ? null : "kis_trading_base_url_not_allowed",
+    receiptBaseUrlEnvironment !== "invalid" ? null : "approval_base_url_not_allowed",
+    environmentCredentialMatch ? null : "approval_environment_credential_mismatch",
+    environmentBaseUrlMatch ? null : "approval_environment_base_url_mismatch",
     clean(receipt.accountIdHash) ? null : "account_id_hash_marker_required",
     clean(receipt.evidenceTicket) ? null : "evidence_ticket_required",
     clean(receipt.revocationPlan) ? null : "revocation_plan_required",
@@ -102,6 +145,10 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     reasons,
     featureEnabled,
     explicitStartRequested,
+    credentialEnvironment: resolvedCredentialEnvironment,
+    baseUrlEnvironment: resolvedBaseUrlEnvironment,
+    environmentCredentialMatch,
+    environmentBaseUrlMatch,
     credentials: {
       appKeyConfigured,
       appSecretConfigured,
@@ -115,7 +162,7 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
       expiresAt: clean(receipt.expiresAt) || null,
       scope: clean(receipt.scope) || null,
       environment: clean(receipt.environment) || null,
-      baseUrl: clean(receipt.baseUrl) || null,
+      baseUrlConfigured: Boolean(clean(receipt.baseUrl)),
       accountIdHashPresent: Boolean(clean(receipt.accountIdHash)),
       evidenceTicket: clean(receipt.evidenceTicket) || null,
       revocationPlanPresent: Boolean(clean(receipt.revocationPlan)),
