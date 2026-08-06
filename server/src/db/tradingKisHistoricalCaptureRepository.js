@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { query as databaseQuery } from "./database.js";
+import { query as databaseQuery, queryWithDiagnostics as databaseQueryWithDiagnostics } from "./database.js";
 
 export const KIS_HISTORICAL_CAPTURE_SCHEMA_VERSION = "kis-historical-capture-repository-v1";
 
@@ -14,6 +14,25 @@ function clean(value) {
 function enabled(env = process.env) {
   return Boolean(clean(env.DATABASE_URL))
     && ["1", "true", "yes", "on"].includes(clean(env.FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED).toLowerCase());
+}
+
+function observedQuery(stage, dependencies = {}) {
+  if (dependencies.query) return dependencies.query;
+  const queryWithDiagnostics = dependencies.queryWithDiagnostics ?? databaseQueryWithDiagnostics;
+  return (text, params = []) => queryWithDiagnostics(text, params, {
+    monotonicNow: dependencies.monotonicNow,
+    pool: dependencies.pool,
+    onPoolAcquired: ({ stageMs, pool }) => dependencies.onLifecycleEvent?.({
+      event: `${stage}_pool_acquired`,
+      stageMs,
+      pool,
+    }),
+    onPoolReleased: ({ stageMs, pool }) => dependencies.onLifecycleEvent?.({
+      event: `${stage}_pool_released`,
+      stageMs,
+      pool,
+    }),
+  });
 }
 
 async function persistenceStatus(queryFn = databaseQuery, env = process.env) {
@@ -106,7 +125,7 @@ export function resetKisHistoricalCaptureMemoryForTest() {
 }
 
 export async function getKisHistoricalCapturePersistenceStatus(options = {}, dependencies = {}) {
-  return persistenceStatus(dependencies.query ?? databaseQuery, options.env ?? dependencies.env ?? process.env);
+  return persistenceStatus(observedQuery("persistence", dependencies), options.env ?? dependencies.env ?? process.env);
 }
 
 export async function saveKisHistoricalMinuteRows(rows = [], options = {}, dependencies = {}) {
@@ -277,7 +296,7 @@ export async function saveKisHistoricalRevision(revision, options = {}, dependen
 }
 
 export async function readLatestKisHistoricalCaptureSummary(options = {}, dependencies = {}) {
-  const queryFn = dependencies.query ?? databaseQuery;
+  const queryFn = observedQuery("summary", dependencies);
   const env = options.env ?? dependencies.env ?? process.env;
   const persistence = options.persistence ?? await persistenceStatus(queryFn, env);
 

@@ -68,6 +68,27 @@ function unavailablePersistence(env) {
   };
 }
 
+function clientDisconnectedError() {
+  const error = new Error("Capture status client disconnected.");
+  error.code = "CLIENT_DISCONNECTED";
+  error.statusCode = 499;
+  return error;
+}
+
+function isTimeoutError(error) {
+  return error?.name === "AbortError"
+    || error?.code === "57014"
+    || /timeout|timed out/i.test(String(error?.message || ""));
+}
+
+function emitLifecycle(dependencies, event, details = {}) {
+  try {
+    dependencies.onLifecycleEvent?.({ event, ...details });
+  } catch {
+    // Logging must not change the fail-closed status contract.
+  }
+}
+
 function redactedRevision(revision) {
   if (!revision) return null;
   return {
@@ -103,22 +124,63 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
   const serviceStartedAt = monotonicNow();
   const poolStats = dependencies.getPoolStats ?? getDatabasePoolStats;
   const poolBefore = poolStats();
-  let persistenceMs = 0;
+  let persistenceMs;
   let summaryMs = 0;
+  const lifecycleDetails = () => ({
+    databaseConfigured: Boolean(clean(env.DATABASE_URL)),
+    schemaReady: persistence?.schemaReady ?? null,
+    persistenceMode: persistence?.mode ?? null,
+    pool: poolStats(),
+  });
+  const failIfDisconnected = () => {
+    if (dependencies.isClientDisconnected?.() === true) throw clientDisconnectedError();
+  };
+
   try {
+    failIfDisconnected();
     const persistenceStartedAt = monotonicNow();
-    persistence = await (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies);
-    persistenceMs = monotonicNow() - persistenceStartedAt;
-    const summaryStartedAt = monotonicNow();
-    summary = await (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env, persistence }, dependencies);
-    summaryMs = monotonicNow() - summaryStartedAt;
-    persistence = {
-      ...persistence,
-      databaseAvailable: persistence.databaseConfigured ? true : false,
-    };
-  } catch {
-    persistence = unavailablePersistence(env);
-    summary = { totalRows: 0, latestCapturedMinute: null, latestRevision: null };
+    emitLifecycle(dependencies, "persistence_started", { stageMs: 0, ...lifecycleDetails() });
+    try {
+      persistence = await (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies);
+      persistenceMs = monotonicNow() - persistenceStartedAt;
+      persistence = {
+        ...persistence,
+        databaseAvailable: persistence.databaseConfigured ? true : false,
+      };
+      emitLifecycle(dependencies, "persistence_completed", { stageMs: persistenceMs, ...lifecycleDetails() });
+    } catch (error) {
+      const failedPersistenceMs = monotonicNow() - persistenceStartedAt;
+      emitLifecycle(dependencies, "persistence_failed", { error, stageMs: failedPersistenceMs, ...lifecycleDetails() });
+      if (dependencies.isClientDisconnected?.() === true || isTimeoutError(error)) throw error;
+      persistenceMs = failedPersistenceMs;
+      persistence = unavailablePersistence(env);
+      summary = { totalRows: 0, latestCapturedMinute: null, latestRevision: null };
+    }
+
+    if (!summary) {
+      failIfDisconnected();
+      const summaryStartedAt = monotonicNow();
+      emitLifecycle(dependencies, "summary_started", { stageMs: 0, ...lifecycleDetails() });
+      try {
+        summary = await (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env, persistence }, dependencies);
+        summaryMs = monotonicNow() - summaryStartedAt;
+        emitLifecycle(dependencies, "summary_completed", { stageMs: summaryMs, ...lifecycleDetails() });
+        failIfDisconnected();
+      } catch (error) {
+        summaryMs = monotonicNow() - summaryStartedAt;
+        emitLifecycle(dependencies, "summary_failed", { error, stageMs: summaryMs, ...lifecycleDetails() });
+        if (dependencies.isClientDisconnected?.() === true || isTimeoutError(error)) throw error;
+        persistence = unavailablePersistence(env);
+        summary = { totalRows: 0, latestCapturedMinute: null, latestRevision: null };
+      }
+    }
+  } catch (error) {
+    emitLifecycle(dependencies, "service_failed", {
+      error,
+      stageMs: monotonicNow() - serviceStartedAt,
+      ...lifecycleDetails(),
+    });
+    throw error;
   }
   const lease = readKisConnectionLease();
   const reasons = [
@@ -130,7 +192,7 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
   const runner = activeRuntime?.runner.status() || null;
   const deployment = (dependencies.getDeploymentInfo ?? getDeploymentInfo)();
 
-  return {
+  const status = {
     schemaVersion: KIS_HISTORICAL_CAPTURE_STATUS_SCHEMA_VERSION,
     runtimeVersion: KIS_HISTORICAL_CAPTURE_RUNTIME_VERSION,
     persistenceContractVersion: KIS_HISTORICAL_CAPTURE_PERSISTENCE_CONTRACT_VERSION,
@@ -175,6 +237,11 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
       automaticRuntimeRegistrationAllowed: false,
     },
   };
+  emitLifecycle(dependencies, "service_completed", {
+    stageMs: monotonicNow() - serviceStartedAt,
+    ...lifecycleDetails(),
+  });
+  return status;
 }
 
 export async function startKisHistoricalCaptureRuntime(input = {}, options = {}, dependencies = {}) {

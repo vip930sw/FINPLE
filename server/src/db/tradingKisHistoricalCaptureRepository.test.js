@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { queryWithDiagnostics } from "./database.js";
 import {
   getKisHistoricalCapturePersistenceStatus,
   readLatestKisHistoricalCaptureSummary,
@@ -95,4 +96,61 @@ test("latest summary reuses a supplied persistence status", async () => {
 
   assert.equal(queryCount, 1);
   assert.equal(result.persistence, persistence);
+});
+
+test("status query emits separate pool acquire and query release timings", async () => {
+  const events = [];
+  const persistence = {
+    databaseConfigured: true,
+    schemaReady: true,
+    durable: true,
+    mode: "postgres_durable",
+  };
+  await readLatestKisHistoricalCaptureSummary({ env: {}, persistence }, {
+    queryWithDiagnostics: async (text, params, hooks) => {
+      hooks.onPoolAcquired({ stageMs: 4, pool: { totalCount: 2, idleCount: 0, waitingCount: 1 } });
+      hooks.onPoolReleased({ stageMs: 7, pool: { totalCount: 2, idleCount: 1, waitingCount: 0 } });
+      return { rows: [{ total_rows: 0, latest_minute: null, latest_revision: null }] };
+    },
+    onLifecycleEvent: (event) => events.push(event),
+  });
+
+  assert.deepEqual(events.map((event) => [event.event, event.stageMs]), [
+    ["summary_pool_acquired", 4],
+    ["summary_pool_released", 7],
+  ]);
+  assert.equal(events[1].pool.idleCount, 1);
+});
+
+test("diagnostic query always returns the client to the pool", async () => {
+  const syntheticError = new Error("synthetic query failure");
+  const releaseArguments = [];
+  const pool = {
+    totalCount: 1,
+    idleCount: 0,
+    waitingCount: 0,
+    async connect() {
+      return {
+        async query() {
+          throw syntheticError;
+        },
+        release(error) {
+          releaseArguments.push(error);
+          pool.idleCount = 1;
+        },
+      };
+    },
+  };
+  const released = [];
+
+  await assert.rejects(
+    queryWithDiagnostics("SELECT 1", [], {
+      pool,
+      onPoolReleased: (event) => released.push(event),
+    }),
+    syntheticError,
+  );
+  assert.deepEqual(releaseArguments, [syntheticError]);
+  assert.equal(released.length, 1);
+  assert.equal(released[0].pool.idleCount, 1);
 });
