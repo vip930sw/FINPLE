@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { setImmediate } from "node:timers";
 
 import { queryWithDiagnostics } from "./database.js";
 import {
@@ -29,6 +31,30 @@ function row(checksum = "a".repeat(64)) {
     calendarVersion: "nyse-calendar-2026-v1",
     rowChecksum: checksum,
   };
+}
+
+function diagnosticPool(query) {
+  const client = new EventEmitter();
+  const releaseArguments = [];
+  const pool = {
+    totalCount: 1,
+    idleCount: 0,
+    waitingCount: 1,
+    async connect() {
+      pool.waitingCount = 0;
+      return client;
+    },
+  };
+  client.query = query;
+  client.release = (error) => {
+    releaseArguments.push(error);
+    if (error) {
+      pool.totalCount = 0;
+    } else {
+      pool.idleCount = 1;
+    }
+  };
+  return { client, pool, releaseArguments };
 }
 
 test("uses explicit ephemeral memory mode when durable schema is unavailable", async () => {
@@ -122,35 +148,73 @@ test("status query emits separate pool acquire and query release timings", async
   assert.equal(events[1].pool.idleCount, 1);
 });
 
-test("diagnostic query always returns the client to the pool", async () => {
-  const syntheticError = new Error("synthetic query failure");
-  const releaseArguments = [];
-  const pool = {
-    totalCount: 1,
-    idleCount: 0,
-    waitingCount: 0,
-    async connect() {
-      return {
-        async query() {
-          throw syntheticError;
-        },
-        release(error) {
-          releaseArguments.push(error);
-          pool.idleCount = 1;
-        },
-      };
-    },
-  };
+test("diagnostic query succeeds, emits timings, and releases once", async () => {
+  const result = { rows: [{ ok: 1 }] };
+  const { client, pool, releaseArguments } = diagnosticPool(async () => result);
+  const acquired = [];
   const released = [];
+  const times = [0, 4, 10, 17];
+
+  assert.equal(await queryWithDiagnostics("SELECT 1", [], {
+    pool,
+    monotonicNow: () => times.shift(),
+    onPoolAcquired: (event) => acquired.push(event),
+    onPoolReleased: (event) => released.push(event),
+  }), result);
+  assert.deepEqual(releaseArguments, [undefined]);
+  assert.equal(client.listenerCount("error"), 0);
+  assert.equal(acquired[0].stageMs, 4);
+  assert.equal(released[0].stageMs, 7);
+});
+
+test("diagnostic query propagates rejection and destroys the client once", async () => {
+  const syntheticError = new Error("synthetic query failure");
+  const { client, pool, releaseArguments } = diagnosticPool(async () => {
+    throw syntheticError;
+  });
+
+  await assert.rejects(
+    queryWithDiagnostics("SELECT 1", [], { pool }),
+    syntheticError,
+  );
+  assert.deepEqual(releaseArguments, [syntheticError]);
+  assert.equal(client.listenerCount("error"), 0);
+  assert.equal(pool.totalCount, 0);
+  assert.equal(pool.idleCount, 0);
+});
+
+test("diagnostic query handles an active client error without leaking details", async () => {
+  const syntheticError = new Error("private connection detail");
+  const { client, pool, releaseArguments } = diagnosticPool(() => new Promise(() => {}));
+  const events = [];
+  setImmediate(() => client.emit("error", syntheticError));
 
   await assert.rejects(
     queryWithDiagnostics("SELECT 1", [], {
       pool,
-      onPoolReleased: (event) => released.push(event),
+      onPoolAcquired: (event) => events.push(event),
+      onPoolReleased: (event) => events.push(event),
     }),
     syntheticError,
   );
   assert.deepEqual(releaseArguments, [syntheticError]);
-  assert.equal(released.length, 1);
-  assert.equal(released[0].pool.idleCount, 1);
+  assert.equal(client.listenerCount("error"), 0);
+  assert.equal(pool.totalCount, 0);
+  assert.doesNotMatch(JSON.stringify(events), /private connection detail/);
+});
+
+test("diagnostic query reports idle and waiting pool stats after release", async () => {
+  const { pool } = diagnosticPool(async () => ({ rows: [] }));
+  const released = [];
+
+  await queryWithDiagnostics("SELECT 1", [], {
+    pool,
+    onPoolReleased: (event) => released.push(event),
+  });
+  assert.deepEqual(released[0].pool, {
+    initialized: true,
+    totalCount: 1,
+    idleCount: 1,
+    waitingCount: 0,
+  });
 });
