@@ -5,6 +5,45 @@ import {
   buildKisFeedRecoveryState,
   createKisFeedOperationalSupervisor,
 } from "./tradingKisFeedOperationalSupervisor.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  KIS_READ_ONLY_BASE_URLS,
+  REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
+  REQUIRED_KIS_SHADOW_READ_SCOPES,
+} from "./tradingKisReadOnlyApproval.js";
+
+function providerDecision(receiptOverrides = {}) {
+  const approval = assessKisShadowFeedApproval({
+    explicitStartRequested: true,
+    receipt: {
+      approvalId: "approval-1",
+      approvedBy: "operator",
+      approvedAt: "2026-08-01T00:00:00Z",
+      expiresAt: "2026-09-01T00:00:00Z",
+      scope: "trading_read_only_market_data",
+      environment: "production_live",
+      baseUrl: KIS_READ_ONLY_BASE_URLS.live,
+      accountIdHash: "market-data-only",
+      allowedReadScopes: [...REQUIRED_KIS_SHADOW_READ_SCOPES],
+      forbiddenActions: [...REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS],
+      evidenceTicket: "ISSUE-465",
+      revocationPlan: "disable",
+      redactionVersion: "v1",
+      ...receiptOverrides,
+    },
+  }, {
+    nowMs: Date.parse("2026-08-05T00:00:00Z"),
+    env: {
+      FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+      FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+      KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      KIS_TRADING_APP_KEY: "configured",
+      KIS_TRADING_APP_SECRET: "configured",
+    },
+  });
+  return createKisProviderAccessDecision(approval);
+}
 
 function createRunner(nowRef) {
   let state = {
@@ -40,21 +79,14 @@ function createRunner(nowRef) {
   };
 }
 
-function options(runner) {
+function options(runner, receiptOverrides) {
   return {
     runner,
     shadowRunId: "run-1",
     strategyVersionId: "version-1",
     strategyVersionNumber: 1,
     selectedSymbols: ["TQQQ", "SQQQ"],
-    approval: {
-      receipt: {
-        approvalId: "approval-1",
-        expiresAt: "2026-09-01T00:00:00Z",
-        scope: "trading_read_only_market_data",
-        environment: "virtual_shadow",
-      },
-    },
+    providerAccessDecision: providerDecision(receiptOverrides),
     watchdogIntervalMs: 1_000,
     checkpointIntervalMs: 1_000,
     guardPolicy: {
@@ -84,6 +116,32 @@ test("starts only during an approved market session and persists a sanitized che
   assert.equal(checkpoints.length, 1);
   assert.equal(checkpoints[0].manualResumeRequired, true);
   assert.doesNotMatch(JSON.stringify(checkpoints[0]), /ephemeral-secret/);
+});
+
+test("checkpoint persists only the redacted public approval projection", async () => {
+  const nowRef = { value: Date.parse("2026-08-05T13:35:00Z") };
+  const sentinels = {
+    approvalId: "SENSITIVE_APPROVAL_ID_SENTINEL",
+    approvedBy: "SENSITIVE_APPROVER_SENTINEL",
+    evidenceTicket: "SENSITIVE_EVIDENCE_TICKET_SENTINEL",
+    revocationPlan: "SENSITIVE_REVOCATION_PLAN_SENTINEL",
+    accountIdHash: "SENSITIVE_ACCOUNT_HASH_SENTINEL",
+    redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
+  };
+  const checkpoints = [];
+  const supervisor = createKisFeedOperationalSupervisor(options(createRunner(nowRef), sentinels), {
+    now: () => nowRef.value,
+    setIntervalImpl: () => 1,
+    clearIntervalImpl: () => {},
+    saveCheckpoint: async (payload) => {
+      checkpoints.push(payload);
+      return { checkpoint: payload, persistence: { mode: "memory_checkpoint" } };
+    },
+  });
+  await supervisor.start({ appKey: "ephemeral", appSecret: "ephemeral-secret" });
+  const serialized = JSON.stringify(checkpoints);
+  for (const sentinel of Object.values(sentinels)) assert.equal(serialized.includes(sentinel), false);
+  assert.equal(checkpoints[0].approval.receipt.rawReceiptStored, false);
 });
 
 test("circuit breaker stops the runner and requires manual resume", async () => {

@@ -5,17 +5,45 @@ import {
   buildUsRegularSessionForMinute,
   createKisCompletedBarFeedRunner,
 } from "./tradingKisCompletedBarFeedRunner.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  KIS_READ_ONLY_BASE_URLS,
+  readKisProviderAccessDecision,
+  REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
+  REQUIRED_KIS_SHADOW_READ_SCOPES,
+} from "./tradingKisReadOnlyApproval.js";
 
-function approval() {
-  return {
-    ready: true,
-    providerCallsAllowed: true,
-    baseUrlEnvironment: "live",
-    credentialEnvironment: "live",
-    websocketEnvironment: "live",
-    environmentWebsocketMatch: true,
-    receipt: { approvalId: "approval-1", expiresAt: "2026-09-01T00:00:00Z" },
-  };
+function providerDecision(receiptOverrides = {}) {
+  const approval = assessKisShadowFeedApproval({
+    explicitStartRequested: true,
+    receipt: {
+      approvalId: "approval-1",
+      approvedBy: "operator",
+      approvedAt: "2026-08-01T00:00:00Z",
+      expiresAt: "2026-09-01T00:00:00Z",
+      scope: "trading_read_only_market_data",
+      environment: "production_live",
+      baseUrl: KIS_READ_ONLY_BASE_URLS.live,
+      accountIdHash: "market-data-only",
+      allowedReadScopes: [...REQUIRED_KIS_SHADOW_READ_SCOPES],
+      forbiddenActions: [...REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS],
+      evidenceTicket: "ISSUE-465",
+      revocationPlan: "disable",
+      redactionVersion: "v1",
+      ...receiptOverrides,
+    },
+  }, {
+    nowMs: Date.parse("2026-08-05T00:00:00Z"),
+    env: {
+      FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+      FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+      KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      KIS_TRADING_APP_KEY: "configured",
+      KIS_TRADING_APP_SECRET: "configured",
+    },
+  });
+  return createKisProviderAccessDecision(approval);
 }
 
 function createFeedHarness() {
@@ -83,7 +111,7 @@ test("creates one synchronized Shadow cycle only after all selected bars complet
   const runner = createKisCompletedBarFeedRunner(
     {
       selectedSymbols: ["TQQQ", "SQQQ"],
-      approval: approval(),
+      providerAccessDecision: providerDecision(),
       activeShadowRun: true,
       maximumCycleLagMs: 5_000,
       maximumQuoteAgeMs: 60_000,
@@ -105,10 +133,11 @@ test("creates one synchronized Shadow cycle only after all selected bars complet
   );
 
   await runner.start({ appKey: "ephemeral-key", appSecret: "ephemeral-secret" });
-  assert.equal(harness.config().baseUrlEnvironment, "live");
-  assert.equal(harness.config().credentialEnvironment, "live");
-  assert.equal(harness.config().websocketEnvironment, "live");
-  assert.equal(harness.config().environmentWebsocketMatch, true);
+  const access = readKisProviderAccessDecision(harness.config().providerAccessDecision);
+  assert.equal(access.baseUrlEnvironment, "live");
+  assert.equal(access.credentialEnvironment, "live");
+  assert.equal(access.websocketEnvironment, "live");
+  assert.equal(access.environmentWebsocketMatch, true);
   harness.event(quote("TQQQ", nowMs, 49.99, 50.01));
   harness.event(trade("TQQQ", nowMs + 1_000, 50));
   harness.event(quote("SQQQ", nowMs, 30, 30.02));
@@ -134,7 +163,7 @@ test("drops incomplete multi-symbol minutes instead of forward filling", async (
   const runner = createKisCompletedBarFeedRunner(
     {
       selectedSymbols: ["TQQQ", "SQQQ"],
-      approval: approval(),
+      providerAccessDecision: providerDecision(),
       activeShadowRun: true,
       maximumCycleLagMs: 5_000,
       maximumQuoteAgeMs: 60_000,
@@ -166,7 +195,7 @@ test("fails fail-closed when a completed bar quote is stale", async () => {
   const runner = createKisCompletedBarFeedRunner(
     {
       selectedSymbols: ["TQQQ"],
-      approval: approval(),
+      providerAccessDecision: providerDecision(),
       activeShadowRun: true,
       maximumQuoteAgeMs: 20_000,
     },
@@ -189,13 +218,40 @@ test("fails fail-closed when a completed bar quote is stale", async () => {
   assert.equal(status.staleQuoteBarCount, 1);
 });
 
-test("fails closed when approval or active Shadow run is missing", () => {
+test("fails closed for fabricated approval state or an inactive Shadow run", () => {
+  let feedFactoryCalls = 0;
   assert.throws(
-    () => createKisCompletedBarFeedRunner({ selectedSymbols: ["TQQQ"], approval: { ready: false }, activeShadowRun: true }, { ingestShadowCycle: async () => {} }),
-    (error) => error.code === "INVALID_KIS_SHADOW_FEED_CONFIGURATION" && error.details.includes("read_only_approval_not_ready"),
+    () => createKisCompletedBarFeedRunner({
+      selectedSymbols: ["TQQQ"],
+      providerAccessDecision: { ready: true, environmentWebsocketMatch: true },
+      activeShadowRun: true,
+    }, {
+      ingestShadowCycle: async () => {},
+      feedFactory: () => { feedFactoryCalls += 1; return {}; },
+    }),
+    (error) => error.code === "INVALID_KIS_SHADOW_FEED_CONFIGURATION" && error.details.includes("provider_authorization_required"),
   );
+  assert.equal(feedFactoryCalls, 0);
   assert.throws(
-    () => createKisCompletedBarFeedRunner({ selectedSymbols: ["TQQQ"], approval: approval(), activeShadowRun: false }, { ingestShadowCycle: async () => {} }),
+    () => createKisCompletedBarFeedRunner({ selectedSymbols: ["TQQQ"], providerAccessDecision: providerDecision(), activeShadowRun: false }, { ingestShadowCycle: async () => {} }),
     (error) => error.details.includes("active_shadow_run_required"),
   );
+});
+
+test("runner status contains only the public approval projection", () => {
+  const sentinels = {
+    approvalId: "SENSITIVE_APPROVAL_ID_SENTINEL",
+    approvedBy: "SENSITIVE_APPROVER_SENTINEL",
+    evidenceTicket: "SENSITIVE_EVIDENCE_TICKET_SENTINEL",
+    revocationPlan: "SENSITIVE_REVOCATION_PLAN_SENTINEL",
+    accountIdHash: "SENSITIVE_ACCOUNT_HASH_SENTINEL",
+    redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
+  };
+  const runner = createKisCompletedBarFeedRunner({
+    selectedSymbols: ["TQQQ"],
+    providerAccessDecision: providerDecision(sentinels),
+    activeShadowRun: true,
+  }, { ingestShadowCycle: async () => {} });
+  const serialized = JSON.stringify(runner.status());
+  for (const sentinel of Object.values(sentinels)) assert.equal(serialized.includes(sentinel), false);
 });

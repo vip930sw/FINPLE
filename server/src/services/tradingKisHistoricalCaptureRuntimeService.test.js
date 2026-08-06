@@ -22,16 +22,20 @@ const summary = {
 
 test("capture status exposes version metadata and redacts approval receipt values", async () => {
   resetKisHistoricalCaptureRuntimeForTest();
+  const sentinels = {
+    approvalId: "SENSITIVE_APPROVAL_ID_SENTINEL",
+    approvedBy: "SENSITIVE_APPROVER_SENTINEL",
+    approvedAt: "SENSITIVE_APPROVED_AT_SENTINEL",
+    expiresAt: "SENSITIVE_EXPIRES_AT_SENTINEL",
+    evidenceTicket: "SENSITIVE_EVIDENCE_TICKET_SENTINEL",
+    revocationPlan: "SENSITIVE_REVOCATION_PLAN_SENTINEL",
+    accountIdHash: "SENSITIVE_ACCOUNT_HASH_SENTINEL",
+    redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
+  };
   const status = await readKisHistoricalCaptureRuntimeStatus({
     env: {},
     nowMs: Date.parse("2026-08-05T00:00:00.000Z"),
-    receipt: {
-      approvalId: "synthetic-approval",
-      approvedBy: "synthetic-operator",
-      approvedAt: "2026-08-04T00:00:00.000Z",
-      expiresAt: "2026-08-06T00:00:00.000Z",
-      evidenceTicket: "synthetic-ticket",
-    },
+    receipt: sentinels,
   }, {
     getPersistenceStatus: async () => ({
       databaseConfigured: false,
@@ -56,6 +60,8 @@ test("capture status exposes version metadata and redacts approval receipt value
   assert.equal("approvalId" in status.approval.receipt, false);
   assert.equal("approvedBy" in status.approval.receipt, false);
   assert.equal("evidenceTicket" in status.approval.receipt, false);
+  const serialized = JSON.stringify(status);
+  for (const sentinel of Object.values(sentinels)) assert.equal(serialized.includes(sentinel), false);
   assert.equal("rawDataChecksum" in status.summary.latestRevision, false);
 });
 

@@ -7,7 +7,11 @@ import {
   createKisFeedOperationalSupervisor,
   readKisFeedRecoveryState,
 } from "./tradingKisFeedOperationalSupervisor.js";
-import { assessKisShadowFeedApproval } from "./tradingKisReadOnlyApproval.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  projectKisShadowFeedApprovalPublic,
+} from "./tradingKisReadOnlyApproval.js";
 import {
   readScalpingModelSignalRuntimeStatus,
   resetScalpingModelSignalRuntimeForTest,
@@ -149,7 +153,7 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
     },
     recovery: recoveryResult.recovery,
     preflight: {
-      ...preflight,
+      ...projectKisShadowFeedApprovalPublic(preflight),
       marketSession,
       startEligible:
         nonStartReasons.length === 0 &&
@@ -211,6 +215,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
       approval.reasons,
     );
   }
+  const providerAccessDecision = createKisProviderAccessDecision(approval);
 
   const modelRuntime = await startModelSignalRuntime(
     {
@@ -226,7 +231,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
   const runner = runnerFactory(
     {
       selectedSymbols: approvedVersion.strategy.allowedSymbols,
-      approval,
+      providerAccessDecision,
       activeShadowRun: true,
       maximumCycleLagMs: input.maximumCycleLagMs,
       maximumQuoteAgeMs: input.maximumQuoteAgeMs,
@@ -254,7 +259,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     {
       runner,
       env,
-      approval,
+      providerAccessDecision,
       shadowRunId: shadow.snapshot.runId,
       strategyVersionId: approvedVersion.id,
       strategyVersionNumber: approvedVersion.versionNumber,
@@ -290,7 +295,6 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     supervisor,
     strategyVersionId: approvedVersion.id,
     startedBy: clean(options.actor) || "admin_console",
-    receipt: input.receipt,
     modelSignalRuntimeActive: modelRuntime.status?.active === true,
   };
   return readKisShadowFeedRuntimeStatus(

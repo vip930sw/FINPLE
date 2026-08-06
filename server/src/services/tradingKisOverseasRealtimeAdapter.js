@@ -2,6 +2,8 @@ import {
   KIS_OVERSEAS_REALTIME_SUPPORT,
   KIS_READ_ONLY_BASE_URLS,
   KIS_READ_ONLY_WEBSOCKET_URLS,
+  kisProviderAccessCredentialsMatch,
+  readKisProviderAccessDecision,
 } from "./tradingKisReadOnlyApproval.js";
 
 export const KIS_OVERSEAS_REALTIME_TR_IDS = Object.freeze({
@@ -319,20 +321,28 @@ function validateFeedConfig(config = {}) {
   const symbols = Array.isArray(config.symbols) ? config.symbols.map(normalizeSymbol) : [];
   const marketBySymbol = config.marketBySymbol && typeof config.marketBySymbol === "object" ? config.marketBySymbol : {};
   const symbolEntries = symbols.map((symbol) => ({ symbol, market: normalizeMarket(marketBySymbol[symbol] ?? KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL[symbol] ?? config.market) }));
-  const approvalRequest = buildKisApprovalRequest(config);
-  const websocketEnvironment = clean(config.websocketEnvironment).toLowerCase();
-  const credentialEnvironment = clean(config.credentialEnvironment).toLowerCase();
+  const access = readKisProviderAccessDecision(config.providerAccessDecision);
+  const approvalRequest = buildKisApprovalRequest({
+    appKey: config.appKey,
+    appSecret: config.appSecret,
+    baseUrlEnvironment: access?.baseUrlEnvironment,
+  });
+  const websocketEnvironment = access?.websocketEnvironment || "";
   const websocketUrl = KIS_OVERSEAS_REALTIME_ENDPOINTS[websocketEnvironment] || "";
   const realtimeSupport = KIS_OVERSEAS_REALTIME_SUPPORT[websocketEnvironment];
   const reasons = unique([
-    config.allowProviderCalls === true ? null : "provider_calls_not_opted_in",
+    access ? null : "provider_authorization_required",
+    ...(access?.authorized ? [] : access?.reasons || []),
+    kisProviderAccessCredentialsMatch(config.providerAccessDecision, config.appKey, config.appSecret)
+      ? null
+      : "provider_credentials_mismatch",
     ...approvalRequest.reasons,
     websocketUrl ? null : "websocket_environment_not_allowed",
-    config.environmentWebsocketMatch === true
-      && websocketEnvironment === clean(config.baseUrlEnvironment).toLowerCase()
-      && websocketEnvironment === credentialEnvironment
-      ? null
-      : "environment_websocket_mismatch",
+    access?.environmentWebsocketMatch === true
+      && websocketEnvironment === access.baseUrlEnvironment
+      && websocketEnvironment === access.credentialEnvironment
+        ? null
+        : "environment_websocket_mismatch",
     websocketEnvironment === "paper" && realtimeSupport?.HDFSCNT0 !== true
       ? "paper_realtime_trade_scope_unsupported"
       : null,

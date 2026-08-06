@@ -34,6 +34,10 @@ const KIS_READ_ONLY_ENVIRONMENTS = Object.freeze({
   production_live: "live",
 });
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
+const approvalAssessments = new WeakMap();
+const providerAccessDecisions = new WeakMap();
+
 function clean(value) {
   return String(value ?? "").trim();
 }
@@ -75,6 +79,102 @@ function baseUrlEnvironment(value) {
   return "invalid";
 }
 
+function expiryStatus({ approvedAtMs, expiresAtMs, nowMs }) {
+  if (approvedAtMs === null || expiresAtMs === null || expiresAtMs <= approvedAtMs) return "INVALID";
+  if (approvedAtMs > nowMs) return "NOT_ACTIVE_YET";
+  if (expiresAtMs <= nowMs) return "EXPIRED";
+  return expiresAtMs - nowMs <= SEVEN_DAYS_MS ? "EXPIRING_SOON" : "ACTIVE";
+}
+
+export function projectKisShadowFeedApprovalPublic(approval = {}) {
+  const receipt = approval.receipt || {};
+  const credentials = approval.credentials || {};
+  return {
+    version: approval.version || KIS_SHADOW_FEED_APPROVAL_VERSION,
+    ready: approval.ready === true,
+    reasons: Array.isArray(approval.reasons) ? [...approval.reasons] : [],
+    featureEnabled: approval.featureEnabled === true,
+    explicitStartRequested: approval.explicitStartRequested === true,
+    providerCallsAllowed: approval.providerCallsAllowed === true,
+    credentialEnvironment: approval.credentialEnvironment || "unknown",
+    baseUrlEnvironment: approval.baseUrlEnvironment || "invalid",
+    websocketEnvironment: approval.websocketEnvironment || "invalid",
+    environmentCredentialMatch: approval.environmentCredentialMatch === true,
+    environmentBaseUrlMatch: approval.environmentBaseUrlMatch === true,
+    environmentWebsocketMatch: approval.environmentWebsocketMatch === true,
+    receipt: {
+      approvalIdPresent: receipt.approvalIdPresent === true,
+      approvedByPresent: receipt.approvedByPresent === true,
+      approvedAtValid: receipt.approvedAtValid === true,
+      approvalActive: receipt.approvalActive === true,
+      expiresAtValid: receipt.expiresAtValid === true,
+      approvalExpired: receipt.approvalExpired === true,
+      expiresWithin7Days: receipt.expiresWithin7Days === true,
+      expiryStatus: receipt.expiryStatus || "INVALID",
+      scopeMatch: receipt.scopeMatch === true,
+      environmentMatch: receipt.environmentMatch === true,
+      baseUrlConfigured: receipt.baseUrlConfigured === true,
+      accountIdHashPresent: receipt.accountIdHashPresent === true,
+      evidenceTicketPresent: receipt.evidenceTicketPresent === true,
+      revocationPlanPresent: receipt.revocationPlanPresent === true,
+      redactionVersionPresent: receipt.redactionVersionPresent === true,
+      rawReceiptStored: false,
+    },
+    credentials: {
+      appKeyConfigured: credentials.appKeyConfigured === true,
+      appSecretConfigured: credentials.appSecretConfigured === true,
+      valuesExposed: false,
+      valuesPersisted: false,
+    },
+    safety: {
+      providerCallsAllowedWithoutExplicitStart: false,
+      accountCallsAllowed: false,
+      brokerOrderAdapterPresent: false,
+      orderSubmissionAllowed: false,
+      liveActivationAllowed: false,
+      rawProviderPayloadStored: false,
+    },
+  };
+}
+
+export function createKisProviderAccessDecision(approval) {
+  const assessment = approvalAssessments.get(approval);
+  if (!assessment || assessment.explicitStartRequested !== true) return null;
+  const decision = Object.freeze({});
+  providerAccessDecisions.set(decision, Object.freeze({
+    authorized: assessment.authorized,
+    reasons: assessment.reasons,
+    baseUrlEnvironment: assessment.baseUrlEnvironment,
+    credentialEnvironment: assessment.credentialEnvironment,
+    websocketEnvironment: assessment.websocketEnvironment,
+    environmentWebsocketMatch: assessment.environmentWebsocketMatch,
+    approvalExpiresAtMs: assessment.expiresAtMs,
+    publicApproval: assessment.publicApproval,
+    appKey: assessment.appKey,
+    appSecret: assessment.appSecret,
+  }));
+  return decision;
+}
+
+export function readKisProviderAccessDecision(decision) {
+  const value = providerAccessDecisions.get(decision);
+  return value ? {
+    authorized: value.authorized,
+    reasons: [...value.reasons],
+    baseUrlEnvironment: value.baseUrlEnvironment,
+    credentialEnvironment: value.credentialEnvironment,
+    websocketEnvironment: value.websocketEnvironment,
+    environmentWebsocketMatch: value.environmentWebsocketMatch,
+    approvalExpiresAtMs: value.approvalExpiresAtMs,
+    publicApproval: projectKisShadowFeedApprovalPublic(value.publicApproval),
+  } : null;
+}
+
+export function kisProviderAccessCredentialsMatch(decision, appKey, appSecret) {
+  const value = providerAccessDecisions.get(decision);
+  return Boolean(value && value.appKey === clean(appKey) && value.appSecret === clean(appSecret));
+}
+
 export function loadKisShadowReadOnlyApprovalFromEnv(env = process.env) {
   return {
     approvalVersion: KIS_SHADOW_FEED_APPROVAL_VERSION,
@@ -105,8 +205,10 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
   const missingReadScopes = missing(allowedReadScopes, REQUIRED_KIS_SHADOW_READ_SCOPES);
   const missingForbiddenActions = missing(forbiddenActions, REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS);
   const featureEnabled = normalizeBoolean(env.FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED, false);
-  const appKeyConfigured = Boolean(clean(options.appKey ?? env.KIS_TRADING_APP_KEY));
-  const appSecretConfigured = Boolean(clean(options.appSecret ?? env.KIS_TRADING_APP_SECRET));
+  const appKey = clean(options.appKey ?? env.KIS_TRADING_APP_KEY);
+  const appSecret = clean(options.appSecret ?? env.KIS_TRADING_APP_SECRET);
+  const appKeyConfigured = Boolean(appKey);
+  const appSecretConfigured = Boolean(appSecret);
   const explicitStartRequested = input.explicitStartRequested === true;
   const expectedEnvironment = KIS_READ_ONLY_ENVIRONMENTS[clean(receipt.environment)] || null;
   const resolvedCredentialEnvironment = credentialEnvironment(env.FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT);
@@ -128,6 +230,7 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
       && environmentBaseUrlMatch,
   );
   const realtimeSupport = KIS_OVERSEAS_REALTIME_SUPPORT[websocketEnvironment];
+  const resolvedExpiryStatus = expiryStatus({ approvedAtMs, expiresAtMs, nowMs });
 
   const reasons = [
     featureEnabled ? null : "kis_shadow_feed_feature_flag_disabled",
@@ -166,7 +269,7 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     appSecretConfigured ? null : "kis_trading_app_secret_missing",
   ].filter(Boolean);
 
-  return {
+  const result = {
     version: KIS_SHADOW_FEED_APPROVAL_VERSION,
     ready: reasons.length === 0,
     reasons,
@@ -185,19 +288,21 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
       valuesPersisted: false,
     },
     receipt: {
-      approvalId: clean(receipt.approvalId) || null,
-      approvedBy: clean(receipt.approvedBy) || null,
-      approvedAt: clean(receipt.approvedAt) || null,
-      expiresAt: clean(receipt.expiresAt) || null,
-      scope: clean(receipt.scope) || null,
-      environment: clean(receipt.environment) || null,
+      approvalIdPresent: Boolean(clean(receipt.approvalId)),
+      approvedByPresent: Boolean(clean(receipt.approvedBy)),
+      approvedAtValid: approvedAtMs !== null,
+      approvalActive: approvedAtMs !== null && expiresAtMs !== null && approvedAtMs <= nowMs && expiresAtMs > nowMs,
+      expiresAtValid: expiresAtMs !== null,
+      approvalExpired: expiresAtMs !== null && expiresAtMs <= nowMs,
+      expiresWithin7Days: expiresAtMs !== null && expiresAtMs > nowMs && expiresAtMs - nowMs <= SEVEN_DAYS_MS,
+      expiryStatus: resolvedExpiryStatus,
+      scopeMatch: clean(receipt.scope) === "trading_read_only_market_data",
+      environmentMatch: Boolean(expectedEnvironment),
       baseUrlConfigured: Boolean(clean(receipt.baseUrl)),
       accountIdHashPresent: Boolean(clean(receipt.accountIdHash)),
-      evidenceTicket: clean(receipt.evidenceTicket) || null,
+      evidenceTicketPresent: Boolean(clean(receipt.evidenceTicket)),
       revocationPlanPresent: Boolean(clean(receipt.revocationPlan)),
-      redactionVersion: clean(receipt.redactionVersion) || null,
-      allowedReadScopes,
-      forbiddenActions,
+      redactionVersionPresent: Boolean(clean(receipt.redactionVersion)),
       rawReceiptStored: false,
     },
     providerCallsAllowed: reasons.length === 0,
@@ -205,4 +310,18 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     orderSubmissionAllowed: false,
     liveActivationAllowed: false,
   };
+  approvalAssessments.set(result, Object.freeze({
+    authorized: result.ready === true && result.providerCallsAllowed === true,
+    explicitStartRequested: result.explicitStartRequested,
+    reasons: Object.freeze([...result.reasons]),
+    baseUrlEnvironment: result.baseUrlEnvironment,
+    credentialEnvironment: result.credentialEnvironment,
+    websocketEnvironment: result.websocketEnvironment,
+    environmentWebsocketMatch: result.environmentWebsocketMatch,
+    expiresAtMs,
+    publicApproval: projectKisShadowFeedApprovalPublic(result),
+    appKey,
+    appSecret,
+  }));
+  return result;
 }

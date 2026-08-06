@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 
 import {
   assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
   KIS_READ_ONLY_BASE_URLS,
   KIS_READ_ONLY_WEBSOCKET_URLS,
+  projectKisShadowFeedApprovalPublic,
+  readKisProviderAccessDecision,
   REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
   REQUIRED_KIS_SHADOW_READ_SCOPES,
 } from "./tradingKisReadOnlyApproval.js";
@@ -40,6 +43,17 @@ function enabledEnv(overrides = {}) {
 }
 
 const nowMs = Date.parse("2026-08-05T00:00:00Z");
+
+const receiptSentinels = {
+  approvalId: "SENSITIVE_APPROVAL_ID_SENTINEL",
+  approvedBy: "SENSITIVE_APPROVER_SENTINEL",
+  approvedAt: "SENSITIVE_APPROVED_AT_SENTINEL",
+  expiresAt: "SENSITIVE_EXPIRES_AT_SENTINEL",
+  evidenceTicket: "SENSITIVE_EVIDENCE_TICKET_SENTINEL",
+  revocationPlan: "SENSITIVE_REVOCATION_PLAN_SENTINEL",
+  accountIdHash: "SENSITIVE_ACCOUNT_HASH_SENTINEL",
+  redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
+};
 
 test("requires explicit admin start for an otherwise valid paper contract", () => {
   const result = assessKisShadowFeedApproval(
@@ -197,4 +211,77 @@ test("never serializes credential values", () => {
   assert.equal(result.credentials.valuesExposed, false);
   assert.equal(result.credentials.valuesPersisted, false);
   assert.equal(result.receipt.rawReceiptStored, false);
+});
+
+test("public approval projections never serialize raw receipt metadata", () => {
+  const result = assessKisShadowFeedApproval(
+    { receipt: validReceipt(receiptSentinels), explicitStartRequested: true },
+    { env: enabledEnv(), nowMs },
+  );
+  const serialized = JSON.stringify(projectKisShadowFeedApprovalPublic(result));
+  for (const sentinel of Object.values(receiptSentinels)) {
+    assert.equal(serialized.includes(sentinel), false);
+  }
+  assert.equal(result.receipt.approvalIdPresent, true);
+  assert.equal(result.receipt.approvedAtValid, false);
+  assert.equal(result.receipt.expiryStatus, "INVALID");
+});
+
+test("provider access decisions reject fabricated objects and preserve canonical environments", () => {
+  assert.equal(createKisProviderAccessDecision({
+    ready: true,
+    providerCallsAllowed: true,
+    explicitStartRequested: true,
+    environmentWebsocketMatch: true,
+  }), null);
+  assert.equal(readKisProviderAccessDecision({}), null);
+
+  const liveApproval = assessKisShadowFeedApproval(
+    {
+      receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }),
+      explicitStartRequested: true,
+    },
+    {
+      env: enabledEnv({
+        FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+        KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      }),
+      nowMs,
+    },
+  );
+  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(liveApproval));
+  assert.equal(access.authorized, true);
+  assert.equal(access.baseUrlEnvironment, "live");
+  assert.equal(access.credentialEnvironment, "live");
+  assert.equal(access.websocketEnvironment, "live");
+});
+
+test("mutating a returned assessment cannot forge provider authorization", () => {
+  const paperApproval = assessKisShadowFeedApproval(
+    { receipt: validReceipt(), explicitStartRequested: true },
+    { env: enabledEnv(), nowMs },
+  );
+  paperApproval.ready = true;
+  paperApproval.providerCallsAllowed = true;
+  paperApproval.reasons = [];
+  paperApproval.baseUrlEnvironment = "live";
+  paperApproval.credentialEnvironment = "live";
+  paperApproval.websocketEnvironment = "live";
+  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(paperApproval));
+  assert.equal(access.authorized, false);
+  assert.equal(access.baseUrlEnvironment, "paper");
+  assert.ok(access.reasons.includes("paper_shadow_feed_not_supported"));
+});
+
+test("canonical paper access remains configuration-valid but provider-unsupported", () => {
+  const paperApproval = assessKisShadowFeedApproval(
+    { receipt: validReceipt(), explicitStartRequested: true },
+    { env: enabledEnv(), nowMs },
+  );
+  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(paperApproval));
+  assert.equal(access.authorized, false);
+  assert.equal(access.environmentWebsocketMatch, true);
+  assert.ok(access.reasons.includes("paper_realtime_trade_scope_unsupported"));
+  assert.ok(access.reasons.includes("paper_realtime_quote_scope_unsupported"));
+  assert.ok(access.reasons.includes("paper_shadow_feed_not_supported"));
 });

@@ -12,7 +12,49 @@ import {
   getKisReconnectDelayMs,
   parseKisOverseasRealtimeFrame,
 } from "./tradingKisOverseasRealtimeAdapter.js";
-import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  KIS_READ_ONLY_BASE_URLS,
+  REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
+  REQUIRED_KIS_SHADOW_READ_SCOPES,
+} from "./tradingKisReadOnlyApproval.js";
+
+const approvalNowMs = Date.parse("2026-08-05T00:00:00Z");
+
+function providerDecision(environment = "live") {
+  const live = environment === "live";
+  const receiptEnvironment = live ? "production_live" : "virtual_shadow";
+  const baseUrl = KIS_READ_ONLY_BASE_URLS[environment];
+  const approval = assessKisShadowFeedApproval({
+    explicitStartRequested: true,
+    receipt: {
+      approvalId: "approval-1",
+      approvedBy: "operator",
+      approvedAt: "2026-08-01T00:00:00Z",
+      expiresAt: "2026-09-01T00:00:00Z",
+      scope: "trading_read_only_market_data",
+      environment: receiptEnvironment,
+      baseUrl,
+      accountIdHash: "market-data-only",
+      allowedReadScopes: [...REQUIRED_KIS_SHADOW_READ_SCOPES],
+      forbiddenActions: [...REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS],
+      evidenceTicket: "ISSUE-465",
+      revocationPlan: "disable",
+      redactionVersion: "v1",
+    },
+  }, {
+    nowMs: approvalNowMs,
+    env: {
+      FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+      FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: environment,
+      KIS_TRADING_BASE_URL: baseUrl,
+      KIS_TRADING_APP_KEY: "k",
+      KIS_TRADING_APP_SECRET: "s",
+    },
+  });
+  return createKisProviderAccessDecision(approval);
+}
 
 function makeTradePayload(overrides = {}) {
   const values = {
@@ -91,9 +133,17 @@ test("evaluates freshness and bounded exponential reconnect", () => {
   assert.equal(getKisReconnectDelayMs(10), 30_000);
 });
 
-test("feed is blocked without explicit provider opt-in", async () => {
-  const feed = createKisOverseasRealtimeFeed({ fetchImpl: async () => ({}), webSocketFactory: () => ({}) });
+test("direct caller booleans cannot authorize provider access", async () => {
+  let fetchCalls = 0;
+  let socketCalls = 0;
+  let timerCalls = 0;
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => { fetchCalls += 1; return {}; },
+    webSocketFactory: () => { socketCalls += 1; return {}; },
+    setTimeoutImpl: () => { timerCalls += 1; return 1; },
+  });
   const session = await feed.connect({
+    allowProviderCalls: true,
     symbols: ["TQQQ"],
     market: "NASDAQ",
     appKey: "k",
@@ -104,7 +154,10 @@ test("feed is blocked without explicit provider opt-in", async () => {
     environmentWebsocketMatch: true,
   });
   assert.equal(session.connected, false);
-  assert.ok(session.reasons.includes("provider_calls_not_opted_in"));
+  assert.ok(session.reasons.includes("provider_authorization_required"));
+  assert.equal(fetchCalls, 0);
+  assert.equal(socketCalls, 0);
+  assert.equal(timerCalls, 0);
 });
 
 test("feed obtains ephemeral approval, subscribes trade+quote, parses events and clears on close", async () => {
@@ -124,15 +177,11 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
     },
   });
   const session = await feed.connect({
-    allowProviderCalls: true,
+    providerAccessDecision: providerDecision("live"),
     symbols: ["TQQQ"],
     market: "NASDAQ",
     appKey: "k",
     appSecret: "s",
-    baseUrlEnvironment: "live",
-    credentialEnvironment: "live",
-    websocketEnvironment: "live",
-    environmentWebsocketMatch: true,
     websocketUrl: "ws://example.invalid/ignored",
     maxReconnectAttempts: 0,
   }, {
@@ -160,15 +209,11 @@ test("paper maps only to the paper WebSocket but blocks unsupported overseas rea
     webSocketFactory: () => { socketCreated = true; },
   });
   const session = await feed.connect({
-    allowProviderCalls: true,
+    providerAccessDecision: providerDecision("paper"),
     symbols: ["TQQQ"],
     market: "NASDAQ",
     appKey: "k",
     appSecret: "s",
-    baseUrlEnvironment: "paper",
-    credentialEnvironment: "paper",
-    websocketEnvironment: "paper",
-    environmentWebsocketMatch: true,
   });
   assert.equal(KIS_OVERSEAS_REALTIME_ENDPOINTS.paper, "ws://ops.koreainvestment.com:31000/tryitout");
   assert.equal(session.connected, false);
@@ -178,7 +223,7 @@ test("paper maps only to the paper WebSocket but blocks unsupported overseas rea
   assert.ok(session.reasons.includes("paper_shadow_feed_not_supported"));
 });
 
-test("cross-environment WebSocket configuration fails closed", async () => {
+test("caller-selected cross-environment strings cannot replace provider authorization", async () => {
   const feed = createKisOverseasRealtimeFeed({ fetchImpl: async () => ({}), webSocketFactory: () => ({}) });
   const session = await feed.connect({
     allowProviderCalls: true,
@@ -192,5 +237,24 @@ test("cross-environment WebSocket configuration fails closed", async () => {
     environmentWebsocketMatch: false,
   });
   assert.equal(session.connected, false);
+  assert.ok(session.reasons.includes("provider_authorization_required"));
   assert.ok(session.reasons.includes("environment_websocket_mismatch"));
+});
+
+test("canonical authorization cannot be reused with different credentials", async () => {
+  let fetchCalls = 0;
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => { fetchCalls += 1; return {}; },
+    webSocketFactory: () => assert.fail("mismatched credentials must not open a socket"),
+  });
+  const session = await feed.connect({
+    providerAccessDecision: providerDecision("live"),
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "different-key",
+    appSecret: "different-secret",
+  });
+  assert.equal(session.connected, false);
+  assert.ok(session.reasons.includes("provider_credentials_mismatch"));
+  assert.equal(fetchCalls, 0);
 });

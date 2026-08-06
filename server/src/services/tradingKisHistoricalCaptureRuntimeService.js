@@ -4,7 +4,11 @@ import { getDeploymentInfo } from "./deploymentInfo.js";
 import { acquireKisConnectionLease, readKisConnectionLease, releaseKisConnectionLease } from "./tradingKisConnectionLease.js";
 import { createKisHistoricalCaptureAccumulator, KIS_HISTORICAL_CAPTURE_SYMBOLS } from "./tradingKisHistoricalCapture.js";
 import { createKisHistoricalCaptureRunner } from "./tradingKisHistoricalCaptureRunner.js";
-import { assessKisShadowFeedApproval } from "./tradingKisReadOnlyApproval.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  projectKisShadowFeedApprovalPublic,
+} from "./tradingKisReadOnlyApproval.js";
 import { readKisShadowFeedRuntimeStatus } from "./tradingKisShadowFeedRuntimeService.js";
 
 let activeRuntime = null;
@@ -32,28 +36,6 @@ function runtimeError(code, message, details = []) {
 function symbols(value) {
   const source = Array.isArray(value) && value.length > 0 ? value : KIS_HISTORICAL_CAPTURE_SYMBOLS;
   return [...new Set(source.map((item) => clean(item).toUpperCase()).filter(Boolean))].sort();
-}
-
-function redactedApproval(approval = {}) {
-  const receipt = approval.receipt || {};
-  return {
-    ...approval,
-    receipt: {
-      approvalIdPresent: Boolean(receipt.approvalId),
-      approvedByPresent: Boolean(receipt.approvedBy),
-      approvedAtPresent: Boolean(receipt.approvedAt),
-      expiresAtPresent: Boolean(receipt.expiresAt),
-      scopeConfigured: Boolean(receipt.scope),
-      environmentConfigured: Boolean(receipt.environment),
-      accountIdHashPresent: receipt.accountIdHashPresent === true,
-      evidenceTicketPresent: Boolean(receipt.evidenceTicket),
-      revocationPlanPresent: receipt.revocationPlanPresent === true,
-      redactionVersionPresent: Boolean(receipt.redactionVersion),
-      allowedReadScopes: receipt.allowedReadScopes || [],
-      forbiddenActions: receipt.forbiddenActions || [],
-      rawReceiptStored: false,
-    },
-  };
 }
 
 function unavailablePersistence(env) {
@@ -203,7 +185,7 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
     selectedSymbols,
     startEligible: reasons.length === 0 && !activeRuntime,
     blockingReasons: reasons,
-    approval: redactedApproval(approval),
+    approval: projectKisShadowFeedApprovalPublic(approval),
     persistence,
     summary: {
       totalRows: summary.totalRows,
@@ -266,6 +248,7 @@ export async function startKisHistoricalCaptureRuntime(input = {}, options = {},
   if (reasons.length > 0) {
     throw runtimeError("KIS_HISTORICAL_CAPTURE_START_BLOCKED", "KIS historical capture preflight is not ready.", reasons);
   }
+  const providerAccessDecision = createKisProviderAccessDecision(approval);
 
   acquireKisConnectionLease(LEASE_OWNER, { mode: "capture_only", selectedSymbols });
   const accumulatorFactory = dependencies.accumulatorFactory ?? createKisHistoricalCaptureAccumulator;
@@ -277,7 +260,7 @@ export async function startKisHistoricalCaptureRuntime(input = {}, options = {},
   const runner = runnerFactory(
     {
       selectedSymbols,
-      approval,
+      providerAccessDecision,
       maximumCycleLagMs: input.maximumCycleLagMs,
       maximumQuoteAgeMs: input.maximumQuoteAgeMs,
       flushIntervalMs: input.flushIntervalMs,

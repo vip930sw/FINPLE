@@ -53,8 +53,9 @@ test("completed-bar runner composes KIS feed, minute aggregation, and internal S
   assert.match(source, /forwardFilled: false/);
   assert.match(source, /rawProviderPayloadStored: false/);
   assert.match(source, /brokerOrderAdapterPresent: false/);
-  assert.match(source, /websocketEnvironment: approval\.websocketEnvironment/);
-  assert.match(source, /environmentWebsocketMatch: approval\.environmentWebsocketMatch/);
+  assert.match(source, /readKisProviderAccessDecision/);
+  assert.match(source, /providerAccessDecision/);
+  assert.doesNotMatch(source, /allowProviderCalls:\s*true/);
   assert.doesNotMatch(source, /submitOrder\s*\(|placeOrder\s*\(|cancelOrder\s*\(|modifyOrder\s*\(/);
 });
 

@@ -167,6 +167,30 @@ test("paper status remains blocked because the required overseas realtime TRs ar
   assert.equal(result.safety.automaticRestartAllowed, false);
 });
 
+test("Shadow status never serializes raw receipt metadata", async () => {
+  const sentinels = {
+    approvalId: "SENSITIVE_APPROVAL_ID_SENTINEL",
+    approvedBy: "SENSITIVE_APPROVER_SENTINEL",
+    approvedAt: "SENSITIVE_APPROVED_AT_SENTINEL",
+    expiresAt: "SENSITIVE_EXPIRES_AT_SENTINEL",
+    evidenceTicket: "SENSITIVE_EVIDENCE_TICKET_SENTINEL",
+    revocationPlan: "SENSITIVE_REVOCATION_PLAN_SENTINEL",
+    accountIdHash: "SENSITIVE_ACCOUNT_HASH_SENTINEL",
+    redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
+  };
+  const result = await readKisShadowFeedRuntimeStatus(
+    { env, receipt: receipt(sentinels), nowMs: regularSessionMs },
+    {
+      readShadowStatus: async () => shadow(true),
+      getRegistrySnapshot: async () => registry(),
+      readRecoveryState: async () => noRecovery(),
+    },
+  );
+  const serialized = JSON.stringify(result);
+  for (const sentinel of Object.values(sentinels)) assert.equal(serialized.includes(sentinel), false);
+  assert.equal(result.preflight.receipt.rawReceiptStored, false);
+});
+
 test("status blocks feed start on an official exchange holiday", async () => {
   const result = await readKisShadowFeedRuntimeStatus(
     { env, receipt: receipt(), nowMs: Date.parse("2026-07-03T15:00:00Z") },
