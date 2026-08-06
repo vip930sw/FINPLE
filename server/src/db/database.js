@@ -117,16 +117,29 @@ export async function queryWithDiagnostics(text, params = [], dependencies = {})
     pool: poolStats(dbPool),
   });
 
+  let clientError = null;
+  let rejectClientError;
+  const clientErrorPromise = new Promise((_, reject) => {
+    rejectClientError = reject;
+  });
+  const onClientError = (error) => {
+    if (clientError) return;
+    clientError = error;
+    rejectClientError(error);
+  };
+  client.on("error", onClientError);
+
   let queryError = null;
   const queryStartedAt = monotonicNow();
   try {
-    return await client.query(text, params);
+    return await Promise.race([client.query(text, params), clientErrorPromise]);
   } catch (error) {
     queryError = error;
     throw error;
   } finally {
     const queryMs = monotonicNow() - queryStartedAt;
-    client.release(queryError || undefined);
+    client.removeListener("error", onClientError);
+    client.release(queryError || clientError || undefined);
     notify(dependencies.onPoolReleased, {
       stageMs: queryMs,
       pool: poolStats(dbPool),
