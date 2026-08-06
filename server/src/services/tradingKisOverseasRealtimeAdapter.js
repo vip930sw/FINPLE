@@ -1,4 +1,8 @@
-import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
+import {
+  KIS_OVERSEAS_REALTIME_SUPPORT,
+  KIS_READ_ONLY_BASE_URLS,
+  KIS_READ_ONLY_WEBSOCKET_URLS,
+} from "./tradingKisReadOnlyApproval.js";
 
 export const KIS_OVERSEAS_REALTIME_TR_IDS = Object.freeze({
   trade: "HDFSCNT0",
@@ -15,7 +19,7 @@ export const KIS_OVERSEAS_MARKET_CODES = Object.freeze({
 });
 
 export const KIS_OVERSEAS_REALTIME_ENDPOINTS = Object.freeze({
-  websocket: "ws://ops.koreainvestment.com:21000/tryitout",
+  ...KIS_READ_ONLY_WEBSOCKET_URLS,
 });
 
 export const KIS_OVERSEAS_QUOTE_COLUMNS = Object.freeze([
@@ -316,14 +320,33 @@ function validateFeedConfig(config = {}) {
   const marketBySymbol = config.marketBySymbol && typeof config.marketBySymbol === "object" ? config.marketBySymbol : {};
   const symbolEntries = symbols.map((symbol) => ({ symbol, market: normalizeMarket(marketBySymbol[symbol] ?? KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL[symbol] ?? config.market) }));
   const approvalRequest = buildKisApprovalRequest(config);
+  const websocketEnvironment = clean(config.websocketEnvironment).toLowerCase();
+  const credentialEnvironment = clean(config.credentialEnvironment).toLowerCase();
+  const websocketUrl = KIS_OVERSEAS_REALTIME_ENDPOINTS[websocketEnvironment] || "";
+  const realtimeSupport = KIS_OVERSEAS_REALTIME_SUPPORT[websocketEnvironment];
   const reasons = unique([
     config.allowProviderCalls === true ? null : "provider_calls_not_opted_in",
     ...approvalRequest.reasons,
+    websocketUrl ? null : "websocket_environment_not_allowed",
+    config.environmentWebsocketMatch === true
+      && websocketEnvironment === clean(config.baseUrlEnvironment).toLowerCase()
+      && websocketEnvironment === credentialEnvironment
+      ? null
+      : "environment_websocket_mismatch",
+    websocketEnvironment === "paper" && realtimeSupport?.HDFSCNT0 !== true
+      ? "paper_realtime_trade_scope_unsupported"
+      : null,
+    websocketEnvironment === "paper" && realtimeSupport?.HDFSASP0 !== true
+      ? "paper_realtime_quote_scope_unsupported"
+      : null,
+    websocketEnvironment === "paper" && (realtimeSupport?.HDFSCNT0 !== true || realtimeSupport?.HDFSASP0 !== true)
+      ? "paper_shadow_feed_not_supported"
+      : null,
     symbols.length > 0 ? null : "missing_symbols",
     ...symbols.filter((symbol) => !ALLOWED_SYMBOLS.has(symbol)).map((symbol) => `symbol_not_in_scalping_universe_${symbol}`),
     ...symbolEntries.filter((entry) => !entry.market).map((entry) => `unsupported_market_${entry.symbol}`),
   ]);
-  return { valid: reasons.length === 0, reasons, symbolEntries, approvalRequest };
+  return { valid: reasons.length === 0, reasons, symbolEntries, approvalRequest, websocketUrl };
 }
 
 export function createKisOverseasRealtimeFeed(dependencies = {}) {
@@ -392,7 +415,7 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
           emitStatus("authorizing", { attempt: reconnectAttempt });
           approvalKey = await requestApprovalKey();
           if (!active) return;
-          socket = webSocketFactory(KIS_OVERSEAS_REALTIME_ENDPOINTS.websocket);
+          socket = webSocketFactory(validation.websocketUrl);
           bindSocketEvent(socket, "open", () => {
             reconnectAttempt = 0;
             emitStatus("subscribing");

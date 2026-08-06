@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   KIS_OVERSEAS_REALTIME_TR_IDS,
+  KIS_OVERSEAS_REALTIME_ENDPOINTS,
   buildKisApprovalRequest,
   buildKisOverseasSubscriptionEnvelope,
   buildKisOverseasSubscriptionKey,
@@ -97,7 +98,10 @@ test("feed is blocked without explicit provider opt-in", async () => {
     market: "NASDAQ",
     appKey: "k",
     appSecret: "s",
-    baseUrlEnvironment: "paper",
+    baseUrlEnvironment: "live",
+    credentialEnvironment: "live",
+    websocketEnvironment: "live",
+    environmentWebsocketMatch: true,
   });
   assert.equal(session.connected, false);
   assert.ok(session.reasons.includes("provider_calls_not_opted_in"));
@@ -108,10 +112,12 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
   const events = [];
   const statuses = [];
   let socket;
+  let socketUrl;
   const feed = createKisOverseasRealtimeFeed({
     now: () => 77_000,
     fetchImpl: async () => ({ ok: true, json: async () => ({ approval_key: "ephemeral" }) }),
-    webSocketFactory: () => {
+    webSocketFactory: (url) => {
+      socketUrl = url;
       socket = { readyState: 1, send: (value) => sent.push(value), close() { this.onclose?.(); } };
       queueMicrotask(() => socket.onopen?.());
       return socket;
@@ -123,7 +129,11 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
     market: "NASDAQ",
     appKey: "k",
     appSecret: "s",
-    baseUrlEnvironment: "paper",
+    baseUrlEnvironment: "live",
+    credentialEnvironment: "live",
+    websocketEnvironment: "live",
+    environmentWebsocketMatch: true,
+    websocketUrl: "ws://example.invalid/ignored",
     maxReconnectAttempts: 0,
   }, {
     onEvent: (event) => events.push(event),
@@ -131,6 +141,7 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
   });
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(session.connected, true);
+  assert.equal(socketUrl, KIS_OVERSEAS_REALTIME_ENDPOINTS.live);
   assert.equal(sent.length, 2);
   const messages = sent.map(JSON.parse);
   assert.deepEqual(messages.map((message) => message.body.input.tr_id).sort(), Object.values(KIS_OVERSEAS_REALTIME_TR_IDS).sort());
@@ -140,4 +151,46 @@ test("feed obtains ephemeral approval, subscribes trade+quote, parses events and
   session.close();
   assert.equal(session.status(), "closed");
   assert.ok(statuses.every((status) => status.credentialStored === false && status.rawProviderPayloadStored === false));
+});
+
+test("paper maps only to the paper WebSocket but blocks unsupported overseas realtime TRs", async () => {
+  let socketCreated = false;
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => assert.fail("paper approval must not be requested"),
+    webSocketFactory: () => { socketCreated = true; },
+  });
+  const session = await feed.connect({
+    allowProviderCalls: true,
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+    baseUrlEnvironment: "paper",
+    credentialEnvironment: "paper",
+    websocketEnvironment: "paper",
+    environmentWebsocketMatch: true,
+  });
+  assert.equal(KIS_OVERSEAS_REALTIME_ENDPOINTS.paper, "ws://ops.koreainvestment.com:31000/tryitout");
+  assert.equal(session.connected, false);
+  assert.equal(socketCreated, false);
+  assert.ok(session.reasons.includes("paper_realtime_trade_scope_unsupported"));
+  assert.ok(session.reasons.includes("paper_realtime_quote_scope_unsupported"));
+  assert.ok(session.reasons.includes("paper_shadow_feed_not_supported"));
+});
+
+test("cross-environment WebSocket configuration fails closed", async () => {
+  const feed = createKisOverseasRealtimeFeed({ fetchImpl: async () => ({}), webSocketFactory: () => ({}) });
+  const session = await feed.connect({
+    allowProviderCalls: true,
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+    baseUrlEnvironment: "live",
+    credentialEnvironment: "paper",
+    websocketEnvironment: "live",
+    environmentWebsocketMatch: false,
+  });
+  assert.equal(session.connected, false);
+  assert.ok(session.reasons.includes("environment_websocket_mismatch"));
 });

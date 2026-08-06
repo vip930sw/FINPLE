@@ -12,12 +12,19 @@ test("read-only approval gate requires scoped, expiring, revocable evidence", as
     "production_live",
     "openapivts.koreainvestment.com:29443",
     "openapi.koreainvestment.com:9443",
+    "ops.koreainvestment.com:31000/tryitout",
+    "ops.koreainvestment.com:21000/tryitout",
     "FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT",
     "KIS_TRADING_BASE_URL",
     "credentialEnvironment",
     "baseUrlEnvironment",
     "environmentCredentialMatch",
     "environmentBaseUrlMatch",
+    "websocketEnvironment",
+    "environmentWebsocketMatch",
+    "paper_realtime_trade_scope_unsupported",
+    "paper_realtime_quote_scope_unsupported",
+    "paper_shadow_feed_not_supported",
     "current_quotes",
     "market_session_state",
     "provider_rate_limit_state",
@@ -46,6 +53,8 @@ test("completed-bar runner composes KIS feed, minute aggregation, and internal S
   assert.match(source, /forwardFilled: false/);
   assert.match(source, /rawProviderPayloadStored: false/);
   assert.match(source, /brokerOrderAdapterPresent: false/);
+  assert.match(source, /websocketEnvironment: approval\.websocketEnvironment/);
+  assert.match(source, /environmentWebsocketMatch: approval\.environmentWebsocketMatch/);
   assert.doesNotMatch(source, /submitOrder\s*\(|placeOrder\s*\(|cancelOrder\s*\(|modifyOrder\s*\(/);
 });
 

@@ -19,6 +19,16 @@ export const KIS_READ_ONLY_BASE_URLS = Object.freeze({
   live: "https://openapi.koreainvestment.com:9443",
 });
 
+export const KIS_READ_ONLY_WEBSOCKET_URLS = Object.freeze({
+  paper: "ws://ops.koreainvestment.com:31000/tryitout",
+  live: "ws://ops.koreainvestment.com:21000/tryitout",
+});
+
+export const KIS_OVERSEAS_REALTIME_SUPPORT = Object.freeze({
+  paper: Object.freeze({ HDFSCNT0: false, HDFSASP0: false }),
+  live: Object.freeze({ HDFSCNT0: true, HDFSASP0: true }),
+});
+
 const KIS_READ_ONLY_ENVIRONMENTS = Object.freeze({
   virtual_shadow: "paper",
   production_live: "live",
@@ -111,6 +121,13 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
       && receiptBaseUrlEnvironment === expectedEnvironment
       && normalizedBaseUrl(env.KIS_TRADING_BASE_URL) === normalizedBaseUrl(receipt.baseUrl),
   );
+  const websocketEnvironment = KIS_READ_ONLY_WEBSOCKET_URLS[expectedEnvironment] ? expectedEnvironment : "invalid";
+  const environmentWebsocketMatch = Boolean(
+    websocketEnvironment !== "invalid"
+      && environmentCredentialMatch
+      && environmentBaseUrlMatch,
+  );
+  const realtimeSupport = KIS_OVERSEAS_REALTIME_SUPPORT[websocketEnvironment];
 
   const reasons = [
     featureEnabled ? null : "kis_shadow_feed_feature_flag_disabled",
@@ -129,6 +146,16 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     receiptBaseUrlEnvironment !== "invalid" ? null : "approval_base_url_not_allowed",
     environmentCredentialMatch ? null : "approval_environment_credential_mismatch",
     environmentBaseUrlMatch ? null : "approval_environment_base_url_mismatch",
+    environmentWebsocketMatch ? null : "approval_environment_websocket_mismatch",
+    websocketEnvironment === "paper" && realtimeSupport?.HDFSCNT0 !== true
+      ? "paper_realtime_trade_scope_unsupported"
+      : null,
+    websocketEnvironment === "paper" && realtimeSupport?.HDFSASP0 !== true
+      ? "paper_realtime_quote_scope_unsupported"
+      : null,
+    websocketEnvironment === "paper" && (realtimeSupport?.HDFSCNT0 !== true || realtimeSupport?.HDFSASP0 !== true)
+      ? "paper_shadow_feed_not_supported"
+      : null,
     clean(receipt.accountIdHash) ? null : "account_id_hash_marker_required",
     clean(receipt.evidenceTicket) ? null : "evidence_ticket_required",
     clean(receipt.revocationPlan) ? null : "revocation_plan_required",
@@ -149,6 +176,8 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     baseUrlEnvironment: resolvedBaseUrlEnvironment,
     environmentCredentialMatch,
     environmentBaseUrlMatch,
+    websocketEnvironment,
+    environmentWebsocketMatch,
     credentials: {
       appKeyConfigured,
       appSecretConfigured,

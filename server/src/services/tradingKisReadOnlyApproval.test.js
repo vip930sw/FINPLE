@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   assessKisShadowFeedApproval,
   KIS_READ_ONLY_BASE_URLS,
+  KIS_READ_ONLY_WEBSOCKET_URLS,
   REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
   REQUIRED_KIS_SHADOW_READ_SCOPES,
 } from "./tradingKisReadOnlyApproval.js";
@@ -50,17 +51,23 @@ test("requires explicit admin start for an otherwise valid paper contract", () =
   assert.equal(result.providerCallsAllowed, false);
 });
 
-test("allows Staging paper receipt, endpoint, and credential marker only with explicit start", () => {
+test("blocks the unsupported Staging paper realtime feed even with a matching contract", () => {
   const result = assessKisShadowFeedApproval(
     { receipt: validReceipt(), explicitStartRequested: true },
     { env: enabledEnv(), nowMs },
   );
-  assert.equal(result.ready, true);
+  assert.equal(result.ready, false);
   assert.equal(result.credentialEnvironment, "paper");
   assert.equal(result.baseUrlEnvironment, "paper");
+  assert.equal(result.websocketEnvironment, "paper");
   assert.equal(result.environmentCredentialMatch, true);
   assert.equal(result.environmentBaseUrlMatch, true);
-  assert.equal(result.providerCallsAllowed, true);
+  assert.equal(result.environmentWebsocketMatch, true);
+  assert.equal(KIS_READ_ONLY_WEBSOCKET_URLS[result.websocketEnvironment], "ws://ops.koreainvestment.com:31000/tryitout");
+  assert.ok(result.reasons.includes("paper_realtime_trade_scope_unsupported"));
+  assert.ok(result.reasons.includes("paper_realtime_quote_scope_unsupported"));
+  assert.ok(result.reasons.includes("paper_shadow_feed_not_supported"));
+  assert.equal(result.providerCallsAllowed, false);
   assert.equal(result.accountCallsAllowed, false);
   assert.equal(result.orderSubmissionAllowed, false);
   assert.equal(result.liveActivationAllowed, false);
@@ -74,6 +81,7 @@ test("blocks a Staging paper receipt with the live endpoint", () => {
   assert.equal(result.ready, false);
   assert.equal(result.baseUrlEnvironment, "live");
   assert.equal(result.environmentBaseUrlMatch, false);
+  assert.equal(result.environmentWebsocketMatch, false);
   assert.ok(result.reasons.includes("approval_environment_base_url_mismatch"));
 });
 
@@ -85,6 +93,7 @@ test("blocks a Staging paper receipt with a live credential marker", () => {
   assert.equal(result.ready, false);
   assert.equal(result.credentialEnvironment, "live");
   assert.equal(result.environmentCredentialMatch, false);
+  assert.equal(result.environmentWebsocketMatch, false);
   assert.ok(result.reasons.includes("approval_environment_credential_mismatch"));
 });
 
@@ -105,8 +114,11 @@ test("allows a Production live receipt, endpoint, and credential marker", () => 
   assert.equal(result.ready, true);
   assert.equal(result.credentialEnvironment, "live");
   assert.equal(result.baseUrlEnvironment, "live");
+  assert.equal(result.websocketEnvironment, "live");
   assert.equal(result.environmentCredentialMatch, true);
   assert.equal(result.environmentBaseUrlMatch, true);
+  assert.equal(result.environmentWebsocketMatch, true);
+  assert.equal(KIS_READ_ONLY_WEBSOCKET_URLS[result.websocketEnvironment], "ws://ops.koreainvestment.com:21000/tryitout");
   assert.equal(result.accountCallsAllowed, false);
   assert.equal(result.orderSubmissionAllowed, false);
   assert.equal(result.liveActivationAllowed, false);
@@ -152,6 +164,13 @@ test("blocks arbitrary endpoints and missing credential-environment markers", ()
   );
   assert.equal(invalidMarker.credentialEnvironment, "invalid");
   assert.ok(invalidMarker.reasons.includes("kis_credential_environment_invalid"));
+
+  const invalidReceiptEnvironment = assessKisShadowFeedApproval(
+    { receipt: validReceipt({ environment: "sandbox" }), explicitStartRequested: true },
+    { env: enabledEnv(), nowMs },
+  );
+  assert.equal(invalidReceiptEnvironment.websocketEnvironment, "invalid");
+  assert.equal(invalidReceiptEnvironment.environmentWebsocketMatch, false);
 });
 
 test("fails closed when approval expired or a forbidden action is missing", () => {

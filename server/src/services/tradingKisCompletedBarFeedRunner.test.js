@@ -10,7 +10,10 @@ function approval() {
   return {
     ready: true,
     providerCallsAllowed: true,
-    baseUrlEnvironment: "paper",
+    baseUrlEnvironment: "live",
+    credentialEnvironment: "live",
+    websocketEnvironment: "live",
+    environmentWebsocketMatch: true,
     receipt: { approvalId: "approval-1", expiresAt: "2026-09-01T00:00:00Z" },
   };
 }
@@ -102,7 +105,10 @@ test("creates one synchronized Shadow cycle only after all selected bars complet
   );
 
   await runner.start({ appKey: "ephemeral-key", appSecret: "ephemeral-secret" });
-  assert.equal(harness.config().baseUrlEnvironment, "paper");
+  assert.equal(harness.config().baseUrlEnvironment, "live");
+  assert.equal(harness.config().credentialEnvironment, "live");
+  assert.equal(harness.config().websocketEnvironment, "live");
+  assert.equal(harness.config().environmentWebsocketMatch, true);
   harness.event(quote("TQQQ", nowMs, 49.99, 50.01));
   harness.event(trade("TQQQ", nowMs + 1_000, 50));
   harness.event(quote("SQQQ", nowMs, 30, 30.02));

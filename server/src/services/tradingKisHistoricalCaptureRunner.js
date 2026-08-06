@@ -47,6 +47,7 @@ export function createKisHistoricalCaptureRunner(options = {}, dependencies = {}
 
   const reasons = [
     approval?.ready === true ? null : "read_only_approval_not_ready",
+    approval?.environmentWebsocketMatch === true ? null : "environment_websocket_mismatch",
     selectedSymbols.length > 0 ? null : "selected_symbols_required",
     selectedSymbols.length <= 8 ? null : "selected_symbol_limit_exceeded",
     typeof accumulator?.ingestCycle === "function" ? null : "capture_accumulator_required",
@@ -202,6 +203,9 @@ export function createKisHistoricalCaptureRunner(options = {}, dependencies = {}
           appKey: input.appKey,
           appSecret: input.appSecret,
           baseUrlEnvironment: approval.baseUrlEnvironment,
+          credentialEnvironment: approval.credentialEnvironment,
+          websocketEnvironment: approval.websocketEnvironment,
+          environmentWebsocketMatch: approval.environmentWebsocketMatch,
           symbols: selectedSymbols,
           marketBySymbol: KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
           maxReconnectAttempts: input.maxReconnectAttempts,

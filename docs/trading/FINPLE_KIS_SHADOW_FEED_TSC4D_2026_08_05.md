@@ -71,6 +71,19 @@ FINPLE_TRADING_READ_ONLY_REDACTION_VERSION
 
 Credential class is never inferred from App Key or App Secret content. Unknown markers, arbitrary URLs, and paper/live cross-environment combinations fail closed. This PR does not set or change any value.
 
+### Official overseas realtime environment contract
+
+| Environment | REST | WebSocket | `HDFSCNT0` | `HDFSASP0` |
+| --- | --- | --- | --- | --- |
+| paper | `https://openapivts.koreainvestment.com:29443` | `ws://ops.koreainvestment.com:31000/tryitout` | unsupported | unsupported |
+| live | `https://openapi.koreainvestment.com:9443` | `ws://ops.koreainvestment.com:21000/tryitout` | supported | supported |
+
+The KIS Developers public metadata marks both required overseas realtime TRs as unsupported for mock investment. FINPLE therefore resolves the paper WebSocket environment deterministically but blocks paper Shadow/Capture provider activation with safe reason codes. It never routes paper credentials to the live WebSocket.
+
+Official sources: KIS Developers public metadata for `/tryitout/HDFSCNT0` and `/tryitout/HDFSASP0`, plus the official `koreainvestment/open-trading-api` `kis_devlp.yaml` endpoint map.
+
+Staging can validate receipt, credential marker, REST endpoint, and WebSocket environment matching, but it cannot run the current overseas realtime feed with paper credentials. A separately approved follow-up must choose controlled live read-only validation, a REST-based paper fallback, or synthetic/replay Staging with provider validation restricted to controlled Production read-only mode.
+
 ## 3. Completed-bar contract
 
 The runner uses the existing TSC-2 components:

@@ -20,6 +20,9 @@ test("capture is KIS-only, market-data-only, and has no order capability", async
   assert.match(runtime, /assessKisShadowFeedApproval/);
   assert.match(runner, /createKisOverseasRealtimeFeed/);
   assert.match(runner, /baseUrlEnvironment: approval\.baseUrlEnvironment/);
+  assert.match(runner, /credentialEnvironment: approval\.credentialEnvironment/);
+  assert.match(runner, /websocketEnvironment: approval\.websocketEnvironment/);
+  assert.match(runner, /environmentWebsocketMatch: approval\.environmentWebsocketMatch/);
   assert.match(runner, /captureOnly: true/);
   assert.match(runtime, /orderSubmissionAllowed: false/);
   assert.doesNotMatch(runtime, /submitOrder|placeOrder|cancelOrder|accountBalance|positionQuery/);

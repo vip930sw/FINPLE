@@ -8,7 +8,7 @@ import {
   stopKisShadowFeedRuntime,
 } from "./tradingKisShadowFeedRuntimeService.js";
 
-function receipt() {
+function receipt(overrides = {}) {
   return {
     approvalId: "approval-1",
     approvedBy: "operator",
@@ -29,6 +29,7 @@ function receipt() {
     evidenceTicket: "ISSUE-441",
     revocationPlan: "disable feature flag",
     redactionVersion: "v1",
+    ...overrides,
   };
 }
 
@@ -39,6 +40,17 @@ const env = {
   KIS_TRADING_APP_KEY: "ephemeral-key",
   KIS_TRADING_APP_SECRET: "ephemeral-secret",
 };
+
+const liveEnv = {
+  ...env,
+  FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+  KIS_TRADING_BASE_URL: "https://openapi.koreainvestment.com:9443",
+};
+
+const liveReceipt = () => receipt({
+  environment: "production_live",
+  baseUrl: "https://openapi.koreainvestment.com:9443",
+});
 
 const regularSessionMs = Date.parse("2026-08-05T13:35:00Z");
 
@@ -136,7 +148,7 @@ function createSupervisorHarness(runner) {
 
 test.beforeEach(() => resetKisShadowFeedRuntimeForTest());
 
-test("status remains blocked until explicit start but shows market-session readiness", async () => {
+test("paper status remains blocked because the required overseas realtime TRs are unsupported", async () => {
   const result = await readKisShadowFeedRuntimeStatus(
     { env, receipt: receipt(), nowMs: regularSessionMs },
     {
@@ -147,8 +159,8 @@ test("status remains blocked until explicit start but shows market-session readi
   );
   assert.equal(result.active, false);
   assert.equal(result.preflight.providerCallsAllowed, false);
-  assert.equal(result.preflight.startEligible, true);
-  assert.deepEqual(result.preflight.blockingReasons, []);
+  assert.equal(result.preflight.startEligible, false);
+  assert.ok(result.preflight.blockingReasons.includes("paper_shadow_feed_not_supported"));
   assert.equal(result.preflight.marketSession.state, "REGULAR");
   assert.equal(result.strategy.tradeSignalGenerationExpected, false);
   assert.equal(result.safety.orderSubmissionAllowed, false);
@@ -184,7 +196,7 @@ test("starts an approved supervised market-data-only runner and never exposes cr
   };
   const harness = createSupervisorHarness(fakeRunner);
   const dependencies = {
-    env,
+    env: liveEnv,
     now: () => regularSessionMs,
     readShadowStatus: async () => shadow(true),
     getRegistrySnapshot: async () => registry(),
@@ -193,8 +205,8 @@ test("starts an approved supervised market-data-only runner and never exposes cr
     readRecoveryState: async () => noRecovery(),
   };
   const result = await startKisShadowFeedRuntime(
-    { receipt: receipt() },
-    { env, nowMs: regularSessionMs, actor: "admin" },
+    { receipt: liveReceipt() },
+    { env: liveEnv, nowMs: regularSessionMs, actor: "admin" },
     dependencies,
   );
   assert.equal(result.active, true);
@@ -229,7 +241,7 @@ test("stops the active supervisor without touching the Shadow worker", async () 
   };
   const harness = createSupervisorHarness(fakeRunner);
   const dependencies = {
-    env,
+    env: liveEnv,
     now: () => regularSessionMs,
     readShadowStatus: async () => shadow(true),
     getRegistrySnapshot: async () => registry(),
@@ -238,13 +250,13 @@ test("stops the active supervisor without touching the Shadow worker", async () 
     readRecoveryState: async () => noRecovery(),
   };
   await startKisShadowFeedRuntime(
-    { receipt: receipt() },
-    { env, nowMs: regularSessionMs },
+    { receipt: liveReceipt() },
+    { env: liveEnv, nowMs: regularSessionMs },
     dependencies,
   );
   const result = await stopKisShadowFeedRuntime(
     { reason: "operator_stop" },
-    { env, nowMs: regularSessionMs },
+    { env: liveEnv, nowMs: regularSessionMs },
     dependencies,
   );
   assert.equal(harness.stoppedReason, "operator_stop");
@@ -261,7 +273,7 @@ test("reports a tripped runner as inactive until the operator acknowledges and c
   };
   const harness = createSupervisorHarness(fakeRunner);
   const dependencies = {
-    env,
+    env: liveEnv,
     now: () => regularSessionMs,
     readShadowStatus: async () => shadow(true),
     getRegistrySnapshot: async () => registry(),
@@ -270,13 +282,13 @@ test("reports a tripped runner as inactive until the operator acknowledges and c
     readRecoveryState: async () => noRecovery(),
   };
   await startKisShadowFeedRuntime(
-    { receipt: receipt() },
-    { env, nowMs: regularSessionMs },
+    { receipt: liveReceipt() },
+    { env: liveEnv, nowMs: regularSessionMs },
     dependencies,
   );
   harness.trip();
   const tripped = await readKisShadowFeedRuntimeStatus(
-    { env, receipt: receipt(), nowMs: regularSessionMs },
+    { env: liveEnv, receipt: liveReceipt(), nowMs: regularSessionMs },
     dependencies,
   );
   assert.equal(tripped.active, false);
@@ -286,7 +298,7 @@ test("reports a tripped runner as inactive until the operator acknowledges and c
 
   const cleared = await stopKisShadowFeedRuntime(
     { reason: "admin_acknowledged_trip" },
-    { env, nowMs: regularSessionMs },
+    { env: liveEnv, nowMs: regularSessionMs },
     dependencies,
   );
   assert.equal(cleared.acknowledgementRequired, false);

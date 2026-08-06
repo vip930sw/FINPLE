@@ -23,7 +23,13 @@ test("capture runner connects market data only and persists complete cycles", as
   const runner = createKisHistoricalCaptureRunner(
     {
       selectedSymbols: ["TQQQ", "SQQQ"],
-      approval: { ready: true, baseUrlEnvironment: "paper" },
+      approval: {
+        ready: true,
+        baseUrlEnvironment: "live",
+        credentialEnvironment: "live",
+        websocketEnvironment: "live",
+        environmentWebsocketMatch: true,
+      },
       flushIntervalMs: 1000,
     },
     {
@@ -60,7 +66,10 @@ test("capture runner connects market data only and persists complete cycles", as
 
   const started = await runner.start({ appKey: "x", appSecret: "y" });
   assert.equal(started.active, true);
-  assert.equal(feedConfig.baseUrlEnvironment, "paper");
+  assert.equal(feedConfig.baseUrlEnvironment, "live");
+  assert.equal(feedConfig.credentialEnvironment, "live");
+  assert.equal(feedConfig.websocketEnvironment, "live");
+  assert.equal(feedConfig.environmentWebsocketMatch, true);
 
   const makeBar = (symbol) => ({
     symbol,
