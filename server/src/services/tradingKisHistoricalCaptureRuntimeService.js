@@ -1,4 +1,6 @@
 import { getKisHistoricalCapturePersistenceStatus, readLatestKisHistoricalCaptureSummary } from "../db/tradingKisHistoricalCaptureRepository.js";
+import { getDatabasePoolStats } from "../db/database.js";
+import { getDeploymentInfo } from "./deploymentInfo.js";
 import { acquireKisConnectionLease, readKisConnectionLease, releaseKisConnectionLease } from "./tradingKisConnectionLease.js";
 import { createKisHistoricalCaptureAccumulator, KIS_HISTORICAL_CAPTURE_SYMBOLS } from "./tradingKisHistoricalCapture.js";
 import { createKisHistoricalCaptureRunner } from "./tradingKisHistoricalCaptureRunner.js";
@@ -7,6 +9,9 @@ import { readKisShadowFeedRuntimeStatus } from "./tradingKisShadowFeedRuntimeSer
 
 let activeRuntime = null;
 const LEASE_OWNER = "kis_historical_capture";
+export const KIS_HISTORICAL_CAPTURE_STATUS_SCHEMA_VERSION = "1.0.0";
+export const KIS_HISTORICAL_CAPTURE_RUNTIME_VERSION = "1.0.0";
+export const KIS_HISTORICAL_CAPTURE_PERSISTENCE_CONTRACT_VERSION = "20260805";
 
 function clean(value) {
   return String(value ?? "").trim();
@@ -29,6 +34,52 @@ function symbols(value) {
   return [...new Set(source.map((item) => clean(item).toUpperCase()).filter(Boolean))].sort();
 }
 
+function redactedApproval(approval = {}) {
+  const receipt = approval.receipt || {};
+  return {
+    ...approval,
+    receipt: {
+      approvalIdPresent: Boolean(receipt.approvalId),
+      approvedByPresent: Boolean(receipt.approvedBy),
+      approvedAtPresent: Boolean(receipt.approvedAt),
+      expiresAtPresent: Boolean(receipt.expiresAt),
+      scopeConfigured: Boolean(receipt.scope),
+      environmentConfigured: Boolean(receipt.environment),
+      accountIdHashPresent: receipt.accountIdHashPresent === true,
+      evidenceTicketPresent: Boolean(receipt.evidenceTicket),
+      revocationPlanPresent: receipt.revocationPlanPresent === true,
+      redactionVersionPresent: Boolean(receipt.redactionVersion),
+      allowedReadScopes: receipt.allowedReadScopes || [],
+      forbiddenActions: receipt.forbiddenActions || [],
+      rawReceiptStored: false,
+    },
+  };
+}
+
+function unavailablePersistence(env) {
+  return {
+    databaseConfigured: Boolean(clean(env.DATABASE_URL)),
+    databaseAvailable: false,
+    featureEnabled: enabled(env),
+    schemaReady: false,
+    durable: false,
+    mode: "database_unavailable",
+    reason: "database_unavailable",
+  };
+}
+
+function redactedRevision(revision) {
+  if (!revision) return null;
+  return {
+    sessionDate: revision.sessionDate,
+    selectedSymbols: revision.selectedSymbols,
+    coverage: revision.coverage,
+    rowCount: revision.rowCount,
+    immutable: revision.immutable === true,
+    readyForModelResearch: revision.readyForModelResearch === true,
+  };
+}
+
 export function resetKisHistoricalCaptureRuntimeForTest() {
   activeRuntime = null;
   try {
@@ -46,8 +97,29 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
     { receipt: options.receipt, explicitStartRequested: options.explicitStartRequested === true },
     { env, nowMs, appKey, appSecret },
   );
-  const persistence = await (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies);
-  const summary = await (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env }, dependencies);
+  let persistence;
+  let summary;
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
+  const serviceStartedAt = monotonicNow();
+  const poolStats = dependencies.getPoolStats ?? getDatabasePoolStats;
+  const poolBefore = poolStats();
+  let persistenceMs = 0;
+  let summaryMs = 0;
+  try {
+    const persistenceStartedAt = monotonicNow();
+    persistence = await (dependencies.getPersistenceStatus ?? getKisHistoricalCapturePersistenceStatus)({ env }, dependencies);
+    persistenceMs = monotonicNow() - persistenceStartedAt;
+    const summaryStartedAt = monotonicNow();
+    summary = await (dependencies.readSummary ?? readLatestKisHistoricalCaptureSummary)({ env, persistence }, dependencies);
+    summaryMs = monotonicNow() - summaryStartedAt;
+    persistence = {
+      ...persistence,
+      databaseAvailable: persistence.databaseConfigured ? true : false,
+    };
+  } catch {
+    persistence = unavailablePersistence(env);
+    summary = { totalRows: 0, latestCapturedMinute: null, latestRevision: null };
+  }
   const lease = readKisConnectionLease();
   const reasons = [
     enabled(env) ? null : "kis_historical_capture_feature_flag_disabled",
@@ -56,22 +128,39 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
     lease && lease.owner !== LEASE_OWNER ? `kis_connection_owned_by:${lease.owner}` : null,
   ].filter(Boolean);
   const runner = activeRuntime?.runner.status() || null;
+  const deployment = (dependencies.getDeploymentInfo ?? getDeploymentInfo)();
 
   return {
+    schemaVersion: KIS_HISTORICAL_CAPTURE_STATUS_SCHEMA_VERSION,
+    runtimeVersion: KIS_HISTORICAL_CAPTURE_RUNTIME_VERSION,
+    persistenceContractVersion: KIS_HISTORICAL_CAPTURE_PERSISTENCE_CONTRACT_VERSION,
+    deploymentSha: deployment.commitSha || null,
+    checkedAt: new Date(nowMs).toISOString(),
     ok: true,
     active: runner?.active === true,
     selectedSymbols,
     startEligible: reasons.length === 0 && !activeRuntime,
     blockingReasons: reasons,
-    approval,
+    approval: redactedApproval(approval),
     persistence,
     summary: {
       totalRows: summary.totalRows,
       latestCapturedMinute: summary.latestCapturedMinute,
-      latestRevision: summary.latestRevision,
+      latestRevision: redactedRevision(summary.latestRevision),
     },
     runner,
     lease,
+    diagnostics: {
+      timingMs: {
+        persistence: Math.round(persistenceMs),
+        summary: Math.round(summaryMs),
+        service: Math.round(monotonicNow() - serviceStartedAt),
+      },
+      pool: {
+        before: poolBefore,
+        after: poolStats(),
+      },
+    },
     safety: {
       adminOnly: true,
       captureOnly: true,

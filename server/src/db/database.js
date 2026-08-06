@@ -14,6 +14,15 @@ export function getDatabaseMode() {
   return isDatabaseConfigured() ? "postgres" : "disabled";
 }
 
+export function getDatabasePoolStats() {
+  return {
+    initialized: Boolean(pool),
+    totalCount: pool?.totalCount || 0,
+    idleCount: pool?.idleCount || 0,
+    waitingCount: pool?.waitingCount || 0,
+  };
+}
+
 function getSslOption() {
   const value = String(process.env.DATABASE_SSL || "false").toLowerCase();
 

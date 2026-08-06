@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import TradingScalpingAdminPanel from "./TradingScalpingAdminPanel.jsx";
@@ -7,10 +7,33 @@ import TradingScalpingModelSignalPanel from "./TradingScalpingModelSignalPanel.j
 import TradingScalpingKisOpsPanel from "./TradingScalpingKisOpsPanel.jsx";
 import TradingScalpingKisCapturePanel from "./TradingScalpingKisCapturePanel.jsx";
 import { fetchTradingScalpingKisCaptureStatus } from "./tradingScalpingAdminApi.js";
-import { normalizeFinpleApiBaseUrl } from "./portfolio/services/apiBaseUrl.js";
-import { getFinpleApiBaseUrl } from "./portfolio/services/serverPortfolioService.js";
 import "./TradingScalpingRegistryPanel.css";
 import "./TradingScalpingKisFeedPanel.css";
+
+const CAPTURE_STATUS_SCHEMA_VERSION = "1.0.0";
+const CAPTURE_POLL_INTERVAL_MS = 5_000;
+
+const PREFLIGHT_DIAGNOSTIC_LABELS = Object.freeze({
+  READY: "운영 계약 확인 완료",
+  BLOCKED: "차단 조건 확인 필요",
+  FEATURE_FLAG_DISABLED: "Capture 기능 플래그 비활성",
+  ADMIN_AUTH_MISSING: "관리자 인증 토큰 없음",
+  ADMIN_AUTH_INVALID: "관리자 인증 토큰 거부",
+  ADMIN_FORBIDDEN: "관리자 접근 권한 없음",
+  ADMIN_ROUTE_NOT_FOUND: "Capture 상태 route 없음",
+  BACKEND_VERSION_MISMATCH: "백엔드 응답 버전 불일치",
+  DEPLOYMENT_SHA_MISMATCH: "프런트·백엔드 배포 SHA 불일치",
+  TRANSPORT_FAILURE: "백엔드 연결 실패",
+  REQUEST_TIMEOUT: "백엔드 응답 시간 초과",
+  RESPONSE_JSON_PARSE_FAILED: "응답 JSON 해석 실패",
+  RESPONSE_CONTRACT_MISMATCH: "응답 계약 불일치",
+  DATABASE_URL_MISSING: "DATABASE_URL 미설정",
+  DATABASE_UNAVAILABLE: "데이터베이스 연결 불가",
+  CAPTURE_SCHEMA_MISSING: "Capture DB schema 없음",
+  READ_ONLY_APPROVAL_MISSING: "읽기 전용 승인 누락",
+  READ_ONLY_APPROVAL_EXPIRED: "읽기 전용 승인 만료",
+  KIS_CREDENTIAL_MISSING: "KIS credential 누락",
+});
 
 const SCALPING_OPERATION_LINKS = Object.freeze([
   { href: "#trading-scalping-kis-capture", label: "KIS 1분봉 축적" },
@@ -40,21 +63,8 @@ const BLOCKING_REASON_LABELS = Object.freeze({
   apply_20260805_trading_kis_historical_capture_migration: "KIS Capture migration 미적용",
   capture_feature_flag_disabled: "DB Capture 기능 플래그 비활성",
   database_not_configured: "DATABASE_URL 미설정",
+  database_unavailable: "데이터베이스 연결 불가",
 });
-
-function ensureNormalizedTradingApiBaseUrl() {
-  if (typeof window === "undefined") return "";
-  const runtimeConfig = window.FINPLE_ASSET_DATA_CONFIG || {};
-  const normalized = normalizeFinpleApiBaseUrl(runtimeConfig.apiBaseUrl || getFinpleApiBaseUrl());
-  if (!normalized) return "";
-  if (runtimeConfig.apiBaseUrl !== normalized) {
-    window.FINPLE_ASSET_DATA_CONFIG = {
-      ...runtimeConfig,
-      apiBaseUrl: normalized,
-    };
-  }
-  return normalized;
-}
 
 function normalizeCaptureStatusPayload(payload) {
   const candidates = [
@@ -75,16 +85,22 @@ function normalizeCaptureStatusPayload(payload) {
     && typeof candidate.startEligible === "boolean"
   ));
 
+  if (status && status.schemaVersion !== CAPTURE_STATUS_SCHEMA_VERSION) {
+    const error = new Error(
+      `지원하지 않는 Capture 상태 버전입니다. expected=${CAPTURE_STATUS_SCHEMA_VERSION}, actual=${status?.schemaVersion || "missing"}`,
+    );
+    error.code = "BACKEND_VERSION_MISMATCH";
+    throw error;
+  }
+
   if (status) return status;
 
   const error = new Error(
     "KIS Capture 상태 API 계약이 일치하지 않습니다. Render 백엔드 배포와 API Base URL을 확인해 주세요.",
   );
-  error.code = "KIS_CAPTURE_STATUS_CONTRACT_MISMATCH";
+  error.code = "RESPONSE_CONTRACT_MISMATCH";
   throw error;
 }
-
-if (typeof window !== "undefined") ensureNormalizedTradingApiBaseUrl();
 
 function boolLabel(value) {
   if (value === true) return "정상";
@@ -106,43 +122,100 @@ function reasonLabel(reason) {
   return reason;
 }
 
-function dateTime(value) {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleString("ko-KR");
+function frontendDeploymentSha() {
+  return String(globalThis.__FINPLE_DEPLOYMENT_SHA__ || "").trim();
 }
 
-function CaptureOperationalPreflight() {
-  const [status, setStatus] = useState(null);
-  const [loadState, setLoadState] = useState("loading");
-  const [error, setError] = useState("");
+function shortSha(value) {
+  return value ? String(value).slice(0, 7) : "미확인";
+}
+
+function captureDiagnosticCode(status, error) {
+  if (error?.code) return error.code;
+  if (!status) return "BLOCKED";
+
+  const frontendSha = frontendDeploymentSha();
+  if (frontendSha && status.deploymentSha && frontendSha !== status.deploymentSha) {
+    return "DEPLOYMENT_SHA_MISMATCH";
+  }
+
+  const reasons = new Set(status.blockingReasons || []);
+  if (reasons.has("kis_historical_capture_feature_flag_disabled") || reasons.has("capture_feature_flag_disabled")) {
+    return "FEATURE_FLAG_DISABLED";
+  }
+  if (reasons.has("database_not_configured")) return "DATABASE_URL_MISSING";
+  if (reasons.has("database_unavailable")) return "DATABASE_UNAVAILABLE";
+  if (reasons.has("apply_20260805_trading_kis_historical_capture_migration")) return "CAPTURE_SCHEMA_MISSING";
+  if (reasons.has("approval_expired")) return "READ_ONLY_APPROVAL_EXPIRED";
+  if ([...reasons].some((reason) => String(reason).startsWith("approval_") || [
+    "approval_id_required",
+    "approved_by_required",
+    "approved_at_invalid",
+    "expires_at_invalid",
+    "account_id_hash_marker_required",
+    "evidence_ticket_required",
+    "revocation_plan_required",
+    "redaction_version_required",
+  ].includes(reason))) return "READ_ONLY_APPROVAL_MISSING";
+  if (reasons.has("kis_trading_app_key_missing") || reasons.has("kis_trading_app_secret_missing")) {
+    return "KIS_CREDENTIAL_MISSING";
+  }
+  return status.startEligible ? "READY" : "BLOCKED";
+}
+
+function useCaptureStatusSnapshot(enabled) {
+  const [snapshot, setSnapshot] = useState({ status: null, loadState: "loading", error: null });
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const refresh = useCallback(() => setRefreshVersion((current) => current + 1), []);
 
   useEffect(() => {
+    if (!enabled) return undefined;
     let disposed = false;
-    const load = async () => {
+    let timer = null;
+    let controller = null;
+    let polling = false;
+    const poll = async () => {
+      if (polling) return;
+      polling = true;
+      controller = new AbortController();
       try {
-        ensureNormalizedTradingApiBaseUrl();
-        const next = normalizeCaptureStatusPayload(await fetchTradingScalpingKisCaptureStatus());
-        if (!disposed) {
-          setStatus(next);
-          setError("");
-          setLoadState("ready");
+        const status = normalizeCaptureStatusPayload(
+          await fetchTradingScalpingKisCaptureStatus({ signal: controller.signal }),
+        );
+        if (!disposed) setSnapshot({ status, loadState: "ready", error: null });
+      } catch (error) {
+        if (!disposed && error?.code !== "REQUEST_ABORTED") {
+          setSnapshot({ status: null, loadState: "error", error });
         }
-      } catch (nextError) {
-        if (!disposed) {
-          setStatus(null);
-          setError(nextError.message || "Capture 상태 API 오류");
-          setLoadState("error");
-        }
+      } finally {
+        polling = false;
+        if (!disposed && !document.hidden) timer = window.setTimeout(() => void poll(), CAPTURE_POLL_INTERVAL_MS);
       }
     };
-    void load();
-    const timer = window.setInterval(() => void load(), 5_000);
+    const handleVisibilityChange = () => {
+      window.clearTimeout(timer);
+      controller?.abort();
+      if (!document.hidden && !disposed && !polling) void poll();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (!document.hidden) void poll();
     return () => {
       disposed = true;
-      window.clearInterval(timer);
+      controller?.abort();
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [enabled, refreshVersion]);
+
+  return {
+    ...snapshot,
+    diagnosticCode: captureDiagnosticCode(snapshot.status, snapshot.error),
+    refresh,
+  };
+}
+
+function CaptureOperationalPreflight({ snapshot }) {
+  const { status, loadState, error, diagnosticCode } = snapshot;
 
   const persistence = status?.persistence || {};
   const approval = status?.approval || {};
@@ -157,12 +230,13 @@ function CaptureOperationalPreflight() {
     ["DATABASE_URL", persistence.databaseConfigured],
     ["DB schema", persistence.schemaReady],
     ["내구성 저장", persistence.durable],
-    ["읽기 전용 승인", approvalReasons.length === 0 && Boolean(receipt.approvalId)],
+    ["읽기 전용 승인", approvalReasons.length === 0 && receipt.approvalIdPresent === true],
     ["KIS credential", credentials.appKeyConfigured === true && credentials.appSecretConfigured === true],
     ["Pilot 시작 준비", status ? status.startEligible === true : null],
   ];
   const blockingReasons = Array.isArray(status?.blockingReasons) ? status.blockingReasons : [];
-  const ready = loadState === "ready" && status?.startEligible === true;
+  const ready = loadState === "ready" && diagnosticCode === "READY" && status?.startEligible === true;
+  const diagnosticLabel = PREFLIGHT_DIAGNOSTIC_LABELS[diagnosticCode] || "알 수 없는 진단 오류";
 
   return (
     <section
@@ -177,10 +251,13 @@ function CaptureOperationalPreflight() {
     >
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
-          <span style={{ color: "#2563eb", fontSize: 11, fontWeight: 900, letterSpacing: ".06em" }}>TSC-4H3 PREFLIGHT</span>
+          <span style={{ color: "#2563eb", fontSize: 11, fontWeight: 900, letterSpacing: ".06em" }}>TSC-4H4 PREFLIGHT</span>
           <strong style={{ display: "block", marginTop: 4, color: "#172033", fontSize: 15 }}>
-            {ready ? "30분 Pilot 시작 가능" : loadState === "error" ? "상태 API 확인 필요" : "차단 조건 확인 필요"}
+            {loadState === "loading" ? "상태 확인 중" : diagnosticLabel}
           </strong>
+          {loadState !== "loading" ? (
+            <span style={{ display: "block", marginTop: 3, color: "#64748b", fontSize: 10 }}>{diagnosticCode}</span>
+          ) : null}
         </div>
         <em style={{ color: ready ? "#166534" : "#9a3412", fontSize: 11, fontStyle: "normal", fontWeight: 900 }}>
           {loadState === "loading" ? "확인 중" : ready ? "READY" : "BLOCKED"}
@@ -188,7 +265,7 @@ function CaptureOperationalPreflight() {
       </header>
 
       {error ? (
-        <p style={{ margin: "10px 0 0", color: "#991b1b", fontSize: 12 }}>{error}</p>
+        <p style={{ margin: "10px 0 0", color: "#991b1b", fontSize: 12 }}>{error.message || "Capture 상태 API 오류"}</p>
       ) : null}
 
       <div
@@ -224,13 +301,21 @@ function CaptureOperationalPreflight() {
           저장 <strong style={{ color: "#334155" }}>{loadState === "error" ? "API 오류" : persistence.mode || "미확인"}</strong>
         </span>
         <span style={{ padding: "5px 7px", borderRadius: 8, background: "#fff", color: "#64748b", fontSize: 10 }}>
-          승인 <strong style={{ color: "#334155" }}>{receipt.approvalId || "—"}</strong>
+          승인 <strong style={{ color: "#334155" }}>{receipt.approvalIdPresent ? "configured" : "blocked"}</strong>
         </span>
         <span style={{ padding: "5px 7px", borderRadius: 8, background: "#fff", color: "#64748b", fontSize: 10 }}>
-          만료 <strong style={{ color: "#334155" }}>{dateTime(receipt.expiresAt)}</strong>
+          계약 <strong style={{ color: "#334155" }}>{status ? `${status.schemaVersion} / ${status.runtimeVersion}` : "미확인"}</strong>
         </span>
         <span style={{ padding: "5px 7px", borderRadius: 8, background: "#fff", color: "#64748b", fontSize: 10 }}>
           연결 소유권 <strong style={{ color: "#334155" }}>{status?.lease?.owner || "비어 있음"}</strong>
+        </span>
+        <span style={{ padding: "5px 7px", borderRadius: 8, background: "#fff", color: "#64748b", fontSize: 10 }}>
+          배포 <strong style={{ color: diagnosticCode === "DEPLOYMENT_SHA_MISMATCH" ? "#b91c1c" : "#334155" }}>
+            {shortSha(frontendDeploymentSha())} / {shortSha(status?.deploymentSha)}
+          </strong>
+        </span>
+        <span style={{ padding: "5px 7px", borderRadius: 8, background: "#fff", color: "#64748b", fontSize: 10 }}>
+          checked <strong style={{ color: "#334155" }}>{status?.checkedAt ? new Date(status.checkedAt).toLocaleString("ko-KR") : "미확인"}</strong>
         </span>
       </div>
 
@@ -245,13 +330,17 @@ function CaptureOperationalPreflight() {
 
 function ScalpingOperationsDock() {
   const [open, setOpen] = useState(false);
+  const [activeOperation, setActiveOperation] = useState(SCALPING_OPERATION_LINKS[0].href);
   const launcherRef = useRef(null);
   const closeRef = useRef(null);
+  const captureSnapshot = useCaptureStatusSnapshot(open);
   const drawerStyle = useMemo(() => ({
     position: "absolute",
     top: 16,
     right: 16,
     bottom: 16,
+    zIndex: 1,
+    pointerEvents: "auto",
     width: "min(1080px, calc(100vw - 32px))",
     overflowY: "auto",
     overscrollBehavior: "contain",
@@ -274,12 +363,25 @@ function ScalpingOperationsDock() {
     fontWeight: 800,
   }), []);
 
+  const closeDock = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      setOpen(false);
+      window.requestAnimationFrame(() => launcherRef.current?.focus());
+    });
+  }, []);
+
+  const handleCloseClick = useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeDock();
+  }, [closeDock]);
+
   useEffect(() => {
     if (!open || typeof document === "undefined") return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") closeDock();
     };
     window.addEventListener("keydown", handleKeyDown);
     window.requestAnimationFrame(() => closeRef.current?.focus());
@@ -287,12 +389,7 @@ function ScalpingOperationsDock() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
-
-  function closeDock() {
-    setOpen(false);
-    window.setTimeout(() => launcherRef.current?.focus(), 0);
-  }
+  }, [closeDock, open]);
 
   if (typeof document === "undefined") return null;
 
@@ -300,7 +397,7 @@ function ScalpingOperationsDock() {
     <aside
       className="scalpingAdminQuickNav"
       aria-label="실시간 운영 바로가기"
-      style={{ zIndex: 1000 }}
+      style={{ zIndex: 10000 }}
     >
       {!open ? (
         <button
@@ -316,24 +413,37 @@ function ScalpingOperationsDock() {
       ) : (
         <div
           role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeDock();
-          }}
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 1000,
-            background: "rgba(15, 23, 42, .38)",
+            zIndex: 10000,
+            pointerEvents: "none",
           }}
         >
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="실시간 운영 닫기 배경"
+            onClick={handleCloseClick}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              width: "100%",
+              height: "100%",
+              padding: 0,
+              border: 0,
+              background: "rgba(15, 23, 42, .38)",
+              pointerEvents: "auto",
+            }}
+          />
           <section
             role="dialog"
             aria-modal="true"
             aria-label="Trading Lab 실시간 운영"
             style={drawerStyle}
-            onMouseDown={(event) => event.stopPropagation()}
           >
-            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
+            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 12, paddingRight: 72 }}>
               <div>
                 <span style={{ color: "#2563eb", fontSize: 11, fontWeight: 900 }}>대표자 전용</span>
                 <strong style={{ display: "block", marginTop: 3, color: "#172033", fontSize: 18 }}>Trading Lab 실시간 운영</strong>
@@ -345,9 +455,18 @@ function ScalpingOperationsDock() {
                   ref={closeRef}
                   type="button"
                   aria-label="실시간 운영 닫기"
-                  onClick={closeDock}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={handleCloseClick}
                   style={{
-                    minHeight: 34,
+                    position: "fixed",
+                    top: "calc(16px + env(safe-area-inset-top, 0px))",
+                    right: "calc(16px + env(safe-area-inset-right, 0px))",
+                    zIndex: 2,
+                    minWidth: 44,
+                    minHeight: 44,
                     padding: "0 11px",
                     border: "1px solid #cbd5e1",
                     borderRadius: 9,
@@ -362,7 +481,7 @@ function ScalpingOperationsDock() {
               </div>
             </header>
 
-            <CaptureOperationalPreflight />
+            <CaptureOperationalPreflight snapshot={captureSnapshot} />
 
             <nav
               aria-label="Trading Lab 실시간 운영 패널"
@@ -385,26 +504,38 @@ function ScalpingOperationsDock() {
               }}
             >
               {SCALPING_OPERATION_LINKS.map((item) => (
-                <a key={item.href} href={item.href}>{item.label}</a>
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={activeOperation === item.href ? "page" : undefined}
+                  onClick={() => setActiveOperation(item.href)}
+                >
+                  {item.label}
+                </a>
               ))}
             </nav>
 
             <div className="scalpingAdminOperationsStack" data-admin-panel-key="scalping-operations-stack">
-              <section id="trading-scalping-kis-capture" className="scalpingAdminOperationAnchor" aria-label="KIS 완료 1분봉 호가 축적">
-                <TradingScalpingKisCapturePanel />
-              </section>
-              <section id="trading-scalping-kis-operations" className="scalpingAdminOperationAnchor" aria-label="KIS Feed 운영 감시 복구">
+              {activeOperation === "#trading-scalping-kis-capture" ? <section id="trading-scalping-kis-capture" className="scalpingAdminOperationAnchor" aria-label="KIS 완료 1분봉 호가 축적">
+                <TradingScalpingKisCapturePanel
+                  status={captureSnapshot.status}
+                  loadState={captureSnapshot.loadState}
+                  statusError={captureSnapshot.error}
+                  onRefresh={captureSnapshot.refresh}
+                />
+              </section> : null}
+              {activeOperation === "#trading-scalping-kis-operations" ? <section id="trading-scalping-kis-operations" className="scalpingAdminOperationAnchor" aria-label="KIS Feed 운영 감시 복구">
                 <TradingScalpingKisOpsPanel />
-              </section>
-              <section id="trading-scalping-model-signal" className="scalpingAdminOperationAnchor" aria-label="모델 신호 상태 진입 차단">
+              </section> : null}
+              {activeOperation === "#trading-scalping-model-signal" ? <section id="trading-scalping-model-signal" className="scalpingAdminOperationAnchor" aria-label="모델 신호 상태 진입 차단">
                 <TradingScalpingModelSignalPanel />
-              </section>
-              <section id="trading-scalping-shadow" className="scalpingAdminOperationAnchor" aria-label="스캘핑 Shadow 운용">
+              </section> : null}
+              {activeOperation === "#trading-scalping-shadow" ? <section id="trading-scalping-shadow" className="scalpingAdminOperationAnchor" aria-label="스캘핑 Shadow 운용">
                 <TradingScalpingShadowPanel />
-              </section>
-              <section id="trading-scalping-strategy" className="scalpingAdminOperationAnchor" aria-label="스캘핑 전략 관리">
+              </section> : null}
+              {activeOperation === "#trading-scalping-strategy" ? <section id="trading-scalping-strategy" className="scalpingAdminOperationAnchor" aria-label="스캘핑 전략 관리">
                 <TradingScalpingAdminPanel />
-              </section>
+              </section> : null}
             </div>
           </section>
         </div>
