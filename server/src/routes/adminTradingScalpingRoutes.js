@@ -1,7 +1,7 @@
 import express from "express";
 
 import { getDatabasePoolStats, isDatabaseConfigured } from "../db/database.js";
-import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { requireAdminAccess, requireAdminStartAccess } from "../middleware/adminGuard.js";
 import { getDeploymentInfo } from "../services/deploymentInfo.js";
 import { readKisConnectionLease } from "../services/tradingKisConnectionLease.js";
 import {
@@ -266,7 +266,7 @@ router.get("/scalping-shadow-feed", (request, response, next) => {
 });
 
 router.post("/scalping-shadow-feed/start", (request, response, next) => {
-  requireAdminAccess(request, response, () => {
+  requireAdminStartAccess(request, response, (adminStartAuthorization) => {
     const lease = readKisConnectionLease();
     if (lease?.owner === "kis_historical_capture") {
       response.status(409).json({
@@ -280,7 +280,7 @@ router.post("/scalping-shadow-feed/start", (request, response, next) => {
     }
     startKisShadowFeedRuntime(
       feedStartInput(request.body),
-      { actor: adminActor(request) },
+      { actor: adminActor(request), adminStartAuthorization },
     )
       .then((result) => response.status(201).json(result))
       .catch(next);
@@ -327,10 +327,10 @@ export function handleKisHistoricalCaptureStatusRequest(request, response, next,
 router.get("/scalping-kis-capture", handleKisHistoricalCaptureStatusRequest);
 
 router.post("/scalping-kis-capture/start", (request, response, next) => {
-  requireAdminAccess(request, response, () => {
+  requireAdminStartAccess(request, response, (adminStartAuthorization) => {
     startKisHistoricalCaptureRuntime(
       captureStartInput(request.body),
-      { actor: adminActor(request) },
+      { actor: adminActor(request), adminStartAuthorization },
     )
       .then((result) => response.status(201).json(result))
       .catch(next);

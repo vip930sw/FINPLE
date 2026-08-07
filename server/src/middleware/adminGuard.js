@@ -3,6 +3,8 @@ function normalizeBoolean(value, fallback = false) {
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
+const adminStartAuthorizations = new WeakSet();
+
 function readBearerToken(request) {
   const authorization = request.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
@@ -64,4 +66,27 @@ export function requireAdminAccess(request, response, next) {
     code: "ADMIN_TOKEN_NOT_CONFIGURED",
     message: "운영 환경에서는 FINPLE_ADMIN_TOKEN 설정이 필요합니다.",
   });
+}
+
+export function requireAdminStartAccess(request, response, next) {
+  requireAdminAccess(request, response, () => {
+    const providedToken = request.get("x-finple-admin-token") || readBearerToken(request);
+    if (!process.env.FINPLE_ADMIN_TOKEN || providedToken !== process.env.FINPLE_ADMIN_TOKEN) {
+      response.status(403).json({
+        ok: false,
+        code: "ADMIN_TOKEN_REQUIRED",
+        message: "관리자 토큰이 필요합니다.",
+      });
+      return;
+    }
+    const authorization = Object.freeze({});
+    adminStartAuthorizations.add(authorization);
+    next(authorization);
+  });
+}
+
+export function consumeAdminStartAuthorization(authorization) {
+  if (!authorization || !adminStartAuthorizations.has(authorization)) return false;
+  adminStartAuthorizations.delete(authorization);
+  return true;
 }

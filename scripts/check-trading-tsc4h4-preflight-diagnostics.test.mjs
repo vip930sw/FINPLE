@@ -41,8 +41,9 @@ test("TSC-4H4 keeps one abortable capture snapshot and explicit diagnostics", as
 });
 
 test("TSC-4H4 status response is versioned, redacted, and no-store before auth", async () => {
-  const [runtime, routes, vite] = await Promise.all([
+  const [runtime, approval, routes, vite] = await Promise.all([
     source("server/src/services/tradingKisHistoricalCaptureRuntimeService.js"),
+    source("server/src/services/tradingKisReadOnlyApproval.js"),
     source("server/src/routes/adminTradingScalpingRoutes.js"),
     source("vite.config.js"),
   ]);
@@ -50,8 +51,9 @@ test("TSC-4H4 status response is versioned, redacted, and no-store before auth",
   assert.match(runtime, /schemaVersion: KIS_HISTORICAL_CAPTURE_STATUS_SCHEMA_VERSION/);
   assert.match(runtime, /persistenceContractVersion: KIS_HISTORICAL_CAPTURE_PERSISTENCE_CONTRACT_VERSION/);
   assert.match(runtime, /deploymentSha: deployment\.commitSha \|\| null/);
-  assert.match(runtime, /approvalIdPresent: Boolean\(receipt\.approvalId\)/);
-  assert.match(runtime, /rawReceiptStored: false/);
+  assert.match(runtime, /approval: projectKisShadowFeedApprovalPublic\(approval\)/);
+  assert.match(approval, /approvalIdPresent: Boolean\(clean\(receipt\.approvalId\)\)/);
+  assert.match(approval, /rawReceiptStored: false/);
   assert.match(routes, /router\.get\("\/scalping-kis-capture"[\s\S]*setHeader\("Cache-Control", "no-store, max-age=0"\)[\s\S]*requireAdminAccess/);
   assert.match(vite, /globalThis\.__FINPLE_DEPLOYMENT_SHA__/);
 });

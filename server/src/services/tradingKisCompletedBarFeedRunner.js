@@ -2,6 +2,7 @@ import {
   createKisOverseasRealtimeFeed,
   KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
 } from "./tradingKisOverseasRealtimeAdapter.js";
+import { readKisProviderAccessDecision } from "./tradingKisReadOnlyApproval.js";
 import { createOneMinuteMarketAggregator } from "./tradingMinuteBarAggregator.js";
 import { getUsEquityMarketSession } from "./tradingUsEquityMarketCalendar.js";
 
@@ -106,7 +107,8 @@ async function toShadowBar(bar, modelSignalProvider, sessionResolver, calendarOv
 
 export function createKisCompletedBarFeedRunner(options = {}, dependencies = {}) {
   const selectedSymbols = uniqueSymbols(options.selectedSymbols);
-  const approval = options.approval;
+  const providerAccessDecision = options.providerAccessDecision;
+  const access = readKisProviderAccessDecision(providerAccessDecision);
   const activeShadowRun = options.activeShadowRun === true;
   const now = dependencies.now ?? Date.now;
   const setIntervalImpl = dependencies.setIntervalImpl ?? setInterval;
@@ -122,7 +124,9 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
   const flushIntervalMs = finite(options.flushIntervalMs) ?? DEFAULT_FLUSH_INTERVAL_MS;
 
   const configurationReasons = [
-    approval?.ready === true ? null : "read_only_approval_not_ready",
+    access ? null : "provider_authorization_required",
+    ...(access?.authorized ? [] : access?.reasons || []),
+    access?.environmentWebsocketMatch === true ? null : "environment_websocket_mismatch",
     activeShadowRun ? null : "active_shadow_run_required",
     selectedSymbols.length > 0 ? null : "selected_symbols_required",
     selectedSymbols.length <= 8 ? null : "selected_symbol_limit_exceeded",
@@ -171,12 +175,7 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
     bufferedMinuteCount: cycleBuffer.size,
     lastError,
     marketSession: sessionResolver(now(), { overrideByDate: calendarOverrides }),
-    approval: {
-      ready: approval.ready,
-      approvalId: approval.receipt?.approvalId || null,
-      expiresAt: approval.receipt?.expiresAt || null,
-      providerCallsAllowed: approval.providerCallsAllowed === true,
-    },
+    approval: access.publicApproval,
     safety: {
       providerConnectionStarted: active,
       marketDataOnly: true,
@@ -283,7 +282,7 @@ export function createKisCompletedBarFeedRunner(options = {}, dependencies = {})
       });
       connection = await feed.connect(
         {
-          allowProviderCalls: true,
+          providerAccessDecision,
           appKey: input.appKey,
           appSecret: input.appSecret,
           symbols: selectedSymbols,

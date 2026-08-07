@@ -147,8 +147,11 @@ export function createKisFeedOperationalGuard(options = {}, dependencies = {}) {
       startedAt: iso(startedAtMs),
       stoppedAt: iso(stoppedAtMs),
       lastEvaluationAt: iso(lastEvaluationAtMs),
-      approvalExpiresAt: iso(approvalExpiresAtMs),
-      approvalExpiresInMs: approvalExpiresAtMs === null ? null : approvalExpiresAtMs - atMs,
+      approvalExpired: approvalExpiresAtMs !== null && approvalExpiresAtMs <= atMs,
+      approvalExpiresWithinWarningWindow:
+        approvalExpiresAtMs !== null
+        && approvalExpiresAtMs > atMs
+        && approvalExpiresAtMs - atMs <= policy.approvalExpiryWarningMs,
       marketSession: session,
       heartbeat: {
         lastProviderEventAt: iso(lastProviderEventMs),
@@ -179,7 +182,7 @@ export function createKisFeedOperationalGuard(options = {}, dependencies = {}) {
       const atMs = finite(input.nowMs) ?? now();
       startedAtMs = atMs;
       stoppedAtMs = null;
-      approvalExpiresAtMs = epoch(input.approvalExpiresAt);
+      approvalExpiresAtMs = finite(input.approvalExpiresAtMs);
       state = "starting";
       trip = null;
       lastEvaluationAtMs = atMs;
@@ -216,7 +219,7 @@ export function createKisFeedOperationalGuard(options = {}, dependencies = {}) {
       }
       if (approvalExpiresAtMs - atMs <= policy.approvalExpiryWarningMs) {
         addAlert("warning", "read_only_approval_expiring", "읽기전용 승인 만료가 임박했습니다.", atMs, {
-          expiresAt: iso(approvalExpiresAtMs),
+          expiresWithinWarningWindow: true,
         });
       }
 

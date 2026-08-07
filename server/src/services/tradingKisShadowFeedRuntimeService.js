@@ -7,7 +7,11 @@ import {
   createKisFeedOperationalSupervisor,
   readKisFeedRecoveryState,
 } from "./tradingKisFeedOperationalSupervisor.js";
-import { assessKisShadowFeedApproval } from "./tradingKisReadOnlyApproval.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  projectKisShadowFeedApprovalPublic,
+} from "./tradingKisReadOnlyApproval.js";
 import {
   readScalpingModelSignalRuntimeStatus,
   resetScalpingModelSignalRuntimeForTest,
@@ -97,10 +101,7 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
     dependencies,
   );
   const preflight = assessKisShadowFeedApproval(
-    {
-      receipt: options.receipt,
-      explicitStartRequested: options.explicitStartRequested === true,
-    },
+    { receipt: options.receipt },
     {
       env,
       nowMs,
@@ -113,7 +114,6 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
   });
   const allowedPreopen = marketSession.state === "PREOPEN" && Number(marketSession.minutesToOpen) <= 15;
   const marketStartEligible = marketSession.calendarSupported === true && (marketSession.state === "REGULAR" || allowedPreopen);
-  const nonStartReasons = preflight.reasons.filter((reason) => reason !== "explicit_admin_start_required");
   const strategy = approvedVersion ? {
     id: approvedVersion.id,
     versionNumber: approvedVersion.versionNumber,
@@ -149,16 +149,16 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
     },
     recovery: recoveryResult.recovery,
     preflight: {
-      ...preflight,
+      ...projectKisShadowFeedApprovalPublic(preflight),
       marketSession,
       startEligible:
-        nonStartReasons.length === 0 &&
+        preflight.reasons.length === 0 &&
         shadow.active === true &&
         Boolean(approvedVersion) &&
         marketStartEligible &&
         !acknowledgementRequired,
       blockingReasons: [
-        ...nonStartReasons,
+        ...preflight.reasons,
         shadow.active === true ? null : "active_shadow_run_required",
         approvedVersion ? null : "active_shadow_strategy_version_not_approved",
         marketSession.calendarSupported ? null : "calendar_unsupported",
@@ -200,7 +200,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
   const appKey = dependencies.appKey ?? env.KIS_TRADING_APP_KEY;
   const appSecret = dependencies.appSecret ?? env.KIS_TRADING_APP_SECRET;
   const approval = assessKisShadowFeedApproval(
-    { receipt: input.receipt, explicitStartRequested: true },
+    { receipt: input.receipt },
     { env, nowMs, appKey, appSecret },
   );
   if (!approval.ready) {
@@ -209,6 +209,15 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
       "KIS 읽기전용 Shadow feed 승인이 준비되지 않았습니다.",
       409,
       approval.reasons,
+    );
+  }
+  const providerAccessDecision = createKisProviderAccessDecision(approval, options.adminStartAuthorization);
+  if (!providerAccessDecision) {
+    throw runtimeError(
+      "KIS_ADMIN_START_AUTHORIZATION_REQUIRED",
+      "KIS provider start requires an authenticated admin-start authorization.",
+      403,
+      ["authenticated_admin_start_required"],
     );
   }
 
@@ -226,7 +235,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
   const runner = runnerFactory(
     {
       selectedSymbols: approvedVersion.strategy.allowedSymbols,
-      approval,
+      providerAccessDecision,
       activeShadowRun: true,
       maximumCycleLagMs: input.maximumCycleLagMs,
       maximumQuoteAgeMs: input.maximumQuoteAgeMs,
@@ -254,7 +263,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     {
       runner,
       env,
-      approval,
+      providerAccessDecision,
       shadowRunId: shadow.snapshot.runId,
       strategyVersionId: approvedVersion.id,
       strategyVersionNumber: approvedVersion.versionNumber,
@@ -290,14 +299,12 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     supervisor,
     strategyVersionId: approvedVersion.id,
     startedBy: clean(options.actor) || "admin_console",
-    receipt: input.receipt,
     modelSignalRuntimeActive: modelRuntime.status?.active === true,
   };
   return readKisShadowFeedRuntimeStatus(
     {
       env,
       receipt: input.receipt,
-      explicitStartRequested: true,
       nowMs,
       calendarOverrides: input.calendarOverrides,
     },

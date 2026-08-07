@@ -3,6 +3,7 @@ import {
   saveKisFeedCheckpoint,
 } from "../db/tradingKisFeedCheckpointRepository.js";
 import { createKisFeedOperationalGuard } from "./tradingKisFeedOperationalGuard.js";
+import { readKisProviderAccessDecision } from "./tradingKisReadOnlyApproval.js";
 import { getUsEquityMarketSession } from "./tradingUsEquityMarketCalendar.js";
 
 export const KIS_FEED_OPERATIONAL_SUPERVISOR_VERSION = "kis-shadow-feed-operational-supervisor-v1";
@@ -72,6 +73,7 @@ export function createKisFeedOperationalSupervisor(options = {}, dependencies = 
   const marketSessionResolver = dependencies.marketSessionResolver ?? getUsEquityMarketSession;
   const saveCheckpoint = dependencies.saveCheckpoint ?? saveKisFeedCheckpoint;
   const guardFactory = dependencies.guardFactory ?? createKisFeedOperationalGuard;
+  const providerAccess = readKisProviderAccessDecision(options.providerAccessDecision);
   const watchdogIntervalMs = finite(options.watchdogIntervalMs, DEFAULT_WATCHDOG_INTERVAL_MS);
   const checkpointIntervalMs = finite(options.checkpointIntervalMs, DEFAULT_CHECKPOINT_INTERVAL_MS);
   const preopenStartWindowMinutes = finite(
@@ -108,12 +110,7 @@ export function createKisFeedOperationalSupervisor(options = {}, dependencies = 
     operationalState: latestGuardStatus.state || latestRunnerStatus.state || "unknown",
     runner: latestRunnerStatus,
     guard: latestGuardStatus,
-    approval: {
-      approvalId: options.approval?.receipt?.approvalId,
-      expiresAt: options.approval?.receipt?.expiresAt,
-      scope: options.approval?.receipt?.scope,
-      environment: options.approval?.receipt?.environment,
-    },
+    approval: providerAccess?.publicApproval || null,
     selectedSymbols: options.selectedSymbols || [],
     stopReason: stoppedReason,
     manualResumeRequired: true,
@@ -208,7 +205,7 @@ export function createKisFeedOperationalSupervisor(options = {}, dependencies = 
       }
 
       latestGuardStatus = guard.start({
-        approvalExpiresAt: options.approval?.receipt?.expiresAt,
+        approvalExpiresAtMs: providerAccess?.approvalExpiresAtMs,
         nowMs: startMs,
         runnerStatus: latestRunnerStatus,
       });

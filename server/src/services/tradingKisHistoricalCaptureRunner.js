@@ -2,6 +2,7 @@ import {
   createKisOverseasRealtimeFeed,
   KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
 } from "./tradingKisOverseasRealtimeAdapter.js";
+import { readKisProviderAccessDecision } from "./tradingKisReadOnlyApproval.js";
 import { createOneMinuteMarketAggregator } from "./tradingMinuteBarAggregator.js";
 import { getUsEquityMarketSession } from "./tradingUsEquityMarketCalendar.js";
 
@@ -32,7 +33,8 @@ function quoteFresh(bar, maximumQuoteAgeMs) {
 
 export function createKisHistoricalCaptureRunner(options = {}, dependencies = {}) {
   const selectedSymbols = uniqueSymbols(options.selectedSymbols);
-  const approval = options.approval;
+  const providerAccessDecision = options.providerAccessDecision;
+  const access = readKisProviderAccessDecision(providerAccessDecision);
   const now = dependencies.now ?? Date.now;
   const setIntervalImpl = dependencies.setIntervalImpl ?? setInterval;
   const clearIntervalImpl = dependencies.clearIntervalImpl ?? clearInterval;
@@ -46,7 +48,9 @@ export function createKisHistoricalCaptureRunner(options = {}, dependencies = {}
   const calendarOverrides = options.calendarOverrides || {};
 
   const reasons = [
-    approval?.ready === true ? null : "read_only_approval_not_ready",
+    access ? null : "provider_authorization_required",
+    ...(access?.authorized ? [] : access?.reasons || []),
+    access?.environmentWebsocketMatch === true ? null : "environment_websocket_mismatch",
     selectedSymbols.length > 0 ? null : "selected_symbols_required",
     selectedSymbols.length <= 8 ? null : "selected_symbol_limit_exceeded",
     typeof accumulator?.ingestCycle === "function" ? null : "capture_accumulator_required",
@@ -198,7 +202,7 @@ export function createKisHistoricalCaptureRunner(options = {}, dependencies = {}
       });
       connection = await feed.connect(
         {
-          allowProviderCalls: true,
+          providerAccessDecision,
           appKey: input.appKey,
           appSecret: input.appSecret,
           symbols: selectedSymbols,

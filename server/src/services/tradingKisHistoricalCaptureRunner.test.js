@@ -1,7 +1,64 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import process from "node:process";
 
+import { requireAdminStartAccess } from "../middleware/adminGuard.js";
 import { createKisHistoricalCaptureRunner } from "./tradingKisHistoricalCaptureRunner.js";
+import {
+  assessKisShadowFeedApproval,
+  createKisProviderAccessDecision,
+  KIS_READ_ONLY_BASE_URLS,
+  readKisProviderAccessDecision,
+  REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
+  REQUIRED_KIS_SHADOW_READ_SCOPES,
+} from "./tradingKisReadOnlyApproval.js";
+
+function authenticatedAdminStartAuthorization() {
+  const previousToken = process.env.FINPLE_ADMIN_TOKEN;
+  process.env.FINPLE_ADMIN_TOKEN = "test-admin-token";
+  let authorization;
+  try {
+    requireAdminStartAccess(
+      { get: (name) => name === "x-finple-admin-token" ? "test-admin-token" : "" },
+      { status() { return this; }, json(payload) { assert.fail(payload.code); } },
+      (value) => { authorization = value; },
+    );
+  } finally {
+    if (previousToken === undefined) delete process.env.FINPLE_ADMIN_TOKEN;
+    else process.env.FINPLE_ADMIN_TOKEN = previousToken;
+  }
+  return authorization;
+}
+
+function providerDecision() {
+  const approval = assessKisShadowFeedApproval({
+    receipt: {
+      approvalId: "approval-1",
+      approvedBy: "operator",
+      approvedAt: "2026-08-01T00:00:00Z",
+      expiresAt: "2026-09-01T00:00:00Z",
+      scope: "trading_read_only_market_data",
+      environment: "production_live",
+      baseUrl: KIS_READ_ONLY_BASE_URLS.live,
+      accountIdHash: "market-data-only",
+      allowedReadScopes: [...REQUIRED_KIS_SHADOW_READ_SCOPES],
+      forbiddenActions: [...REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS],
+      evidenceTicket: "ISSUE-465",
+      revocationPlan: "disable",
+      redactionVersion: "v1",
+    },
+  }, {
+    nowMs: Date.parse("2026-08-05T00:00:00Z"),
+    env: {
+      FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+      FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+      KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      KIS_TRADING_APP_KEY: "configured",
+      KIS_TRADING_APP_SECRET: "configured",
+    },
+  });
+  return createKisProviderAccessDecision(approval, authenticatedAdminStartAuthorization());
+}
 
 function fakeAggregator() {
   return {
@@ -16,13 +73,14 @@ function fakeAggregator() {
 
 test("capture runner connects market data only and persists complete cycles", async () => {
   let handlers;
+  let feedConfig;
   const captured = [];
   const intervals = [];
   const minuteStartMs = Date.parse("2026-08-04T13:30:00.000Z");
   const runner = createKisHistoricalCaptureRunner(
     {
       selectedSymbols: ["TQQQ", "SQQQ"],
-      approval: { ready: true },
+      providerAccessDecision: providerDecision(),
       flushIntervalMs: 1000,
     },
     {
@@ -43,7 +101,8 @@ test("capture runner connects market data only and persists complete cycles", as
         status: () => ({ acceptedCycles: captured.length }),
       },
       feedFactory: () => ({
-        connect: async (_config, nextHandlers) => {
+        connect: async (config, nextHandlers) => {
+          feedConfig = config;
           handlers = nextHandlers;
           return { connected: true, close() {} };
         },
@@ -58,6 +117,11 @@ test("capture runner connects market data only and persists complete cycles", as
 
   const started = await runner.start({ appKey: "x", appSecret: "y" });
   assert.equal(started.active, true);
+  const access = readKisProviderAccessDecision(feedConfig.providerAccessDecision);
+  assert.equal(access.baseUrlEnvironment, "live");
+  assert.equal(access.credentialEnvironment, "live");
+  assert.equal(access.websocketEnvironment, "live");
+  assert.equal(access.environmentWebsocketMatch, true);
 
   const makeBar = (symbol) => ({
     symbol,
@@ -77,4 +141,20 @@ test("capture runner connects market data only and persists complete cycles", as
   assert.equal(captured[0].length, 2);
   assert.equal(runner.status().safety.orderSubmissionAllowed, false);
   await runner.stop();
+});
+
+test("capture runner rejects fabricated approval before creating a provider feed", () => {
+  let feedFactoryCalls = 0;
+  assert.throws(
+    () => createKisHistoricalCaptureRunner({
+      selectedSymbols: ["TQQQ"],
+      providerAccessDecision: { ready: true, environmentWebsocketMatch: true },
+    }, {
+      accumulator: { ingestCycle: async () => ({ accepted: true }) },
+      feedFactory: () => { feedFactoryCalls += 1; return {}; },
+    }),
+    (error) => error.code === "INVALID_KIS_HISTORICAL_CAPTURE_CONFIGURATION"
+      && error.details.includes("provider_authorization_required"),
+  );
+  assert.equal(feedFactoryCalls, 0);
 });

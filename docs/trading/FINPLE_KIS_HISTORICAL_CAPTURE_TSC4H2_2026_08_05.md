@@ -64,9 +64,13 @@ It requires:
 - the existing KIS read-only approval receipt;
 - `KIS_TRADING_APP_KEY`;
 - `KIS_TRADING_APP_SECRET`;
+- `KIS_TRADING_BASE_URL` matching the receipt environment;
+- `FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT=paper|live` matching the receipt environment;
 - `FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED=true`;
 - `FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED=true`;
 - durable PostgreSQL schema.
+
+`virtual_shadow` uses only the paper REST endpoint `https://openapivts.koreainvestment.com:29443`. `production_live` uses only the live REST endpoint `https://openapi.koreainvestment.com:9443`. The credential marker, receipt base URL, and runtime base URL must all select the same environment; arbitrary endpoints fail closed.
 
 The capture runtime and Shadow runtime must not own the KIS WebSocket at the same time. The process-level KIS connection lease blocks concurrent ownership.
 

@@ -9,12 +9,29 @@ test("read-only approval gate requires scoped, expiring, revocable evidence", as
   for (const token of [
     "trading_read_only_market_data",
     "virtual_shadow",
+    "production_live",
+    "openapivts.koreainvestment.com:29443",
+    "openapi.koreainvestment.com:9443",
+    "ops.koreainvestment.com:31000/tryitout",
+    "ops.koreainvestment.com:21000/tryitout",
+    "FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT",
+    "KIS_TRADING_BASE_URL",
+    "credentialEnvironment",
+    "baseUrlEnvironment",
+    "environmentCredentialMatch",
+    "environmentBaseUrlMatch",
+    "websocketEnvironment",
+    "environmentWebsocketMatch",
+    "paper_realtime_trade_scope_unsupported",
+    "paper_realtime_quote_scope_unsupported",
+    "paper_shadow_feed_not_supported",
     "current_quotes",
     "market_session_state",
     "provider_rate_limit_state",
     "order_submission",
     "raw_provider_response_persistence",
-    "explicit_admin_start_required",
+    "explicitStartRequired",
+    "consumeAdminStartAuthorization",
     "approval_expired",
   ]) {
     assert.match(source, new RegExp(token));
@@ -37,6 +54,9 @@ test("completed-bar runner composes KIS feed, minute aggregation, and internal S
   assert.match(source, /forwardFilled: false/);
   assert.match(source, /rawProviderPayloadStored: false/);
   assert.match(source, /brokerOrderAdapterPresent: false/);
+  assert.match(source, /readKisProviderAccessDecision/);
+  assert.match(source, /providerAccessDecision/);
+  assert.doesNotMatch(source, /allowProviderCalls:\s*true/);
   assert.doesNotMatch(source, /submitOrder\s*\(|placeOrder\s*\(|cancelOrder\s*\(|modifyOrder\s*\(/);
 });
 
@@ -46,6 +66,8 @@ test("admin API exposes only status, start, and stop for the KIS feed", async ()
   assert.match(route, /router\.post\("\/scalping-shadow-feed\/start"/);
   assert.match(route, /router\.post\("\/scalping-shadow-feed\/stop"/);
   assert.match(route, /KIS_SHADOW_FEED_ACTIVE/);
+  assert.match(route, /requireAdminStartAccess/);
+  assert.match(route, /adminStartAuthorization/);
   assert.doesNotMatch(route, /scalping-shadow-feed\/cycle/);
   assert.doesNotMatch(route, /scalping-shadow-feed\/(order|account|balance|position|cancel|modify)/);
   assert.doesNotMatch(route, /request\.body\?\.receipt|request\.body\.receipt/);
@@ -57,6 +79,18 @@ test("Admin Console shows approval, credential, completeness, and safety states"
   const group = await read("src/components/TradingAiMlPanelGroup.jsx");
   assert.match(panel, /KIS 읽기전용 Completed-Bar Feed/);
   assert.match(panel, /읽기전용 승인/);
+  assert.match(panel, /approvalIdPresent \? "등록됨" : "미등록"/);
+  assert.match(panel, /approvalExpiryLabel\(feedPreflight\.receipt\?\.expiryStatus\)/);
+  for (const [status, label] of [
+    ["ACTIVE", "유효"],
+    ["EXPIRING_SOON", "만료 임박"],
+    ["EXPIRED", "만료"],
+    ["NOT_ACTIVE_YET", "아직 유효하지 않음"],
+    ["INVALID", "확인 필요"],
+  ]) {
+    assert.match(panel, new RegExp(`${status}: "${label}"`));
+  }
+  assert.doesNotMatch(panel, /receipt\?\.(?:approvalId|expiresAt)\b/);
   assert.match(panel, /KIS 자격증명/);
   assert.match(panel, /불완전 Cycle/);
   assert.match(panel, /Feed 먼저 정지/);

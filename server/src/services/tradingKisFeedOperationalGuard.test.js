@@ -22,7 +22,7 @@ function runningStatus(at, overrides = {}) {
 test("stays in market-closed standby without stale-feed trips", () => {
   const nowMs = Date.parse("2026-07-03T15:00:00Z");
   const guard = createKisFeedOperationalGuard({}, { now: () => nowMs });
-  guard.start({ approvalExpiresAt: "2026-08-01T00:00:00Z", nowMs });
+  guard.start({ approvalExpiresAtMs: Date.parse("2026-08-01T00:00:00Z"), nowMs });
   const snapshot = guard.evaluate({
     active: false,
     state: "closed",
@@ -38,7 +38,7 @@ test("stays in market-closed standby without stale-feed trips", () => {
 test("trips when provider heartbeat exceeds the regular-session threshold", () => {
   const startMs = Date.parse("2026-08-05T13:35:00Z");
   const guard = createKisFeedOperationalGuard({}, { now: () => startMs });
-  guard.start({ approvalExpiresAt: "2026-09-01T00:00:00Z", nowMs: startMs });
+  guard.start({ approvalExpiresAtMs: Date.parse("2026-09-01T00:00:00Z"), nowMs: startMs });
   const atMs = startMs + DEFAULT_KIS_FEED_OPERATIONAL_POLICY.providerHeartbeatTripMs + 2_000;
   const snapshot = guard.evaluate(runningStatus(atMs, {
     lastProviderEventAt: new Date(startMs).toISOString(),
@@ -55,7 +55,7 @@ test("trips after repeated protocol issues inside the configured window", () => 
   const guard = createKisFeedOperationalGuard({
     policy: { maximumProtocolIssuesPerWindow: 3 },
   }, { now: () => startMs });
-  guard.start({ approvalExpiresAt: "2026-09-01T00:00:00Z", nowMs: startMs });
+  guard.start({ approvalExpiresAtMs: Date.parse("2026-09-01T00:00:00Z"), nowMs: startMs });
   const snapshot = guard.evaluate(runningStatus(startMs + 2_000, {
     protocolIssueCount: 3,
   }), startMs + 2_000);
@@ -66,7 +66,7 @@ test("trips after repeated protocol issues inside the configured window", () => 
 test("classifies recent isolated quality issues as degraded rather than tripped", () => {
   const startMs = Date.parse("2026-08-05T13:35:00Z");
   const guard = createKisFeedOperationalGuard({}, { now: () => startMs });
-  guard.start({ approvalExpiresAt: "2026-09-01T00:00:00Z", nowMs: startMs });
+  guard.start({ approvalExpiresAtMs: Date.parse("2026-09-01T00:00:00Z"), nowMs: startMs });
   const snapshot = guard.evaluate(runningStatus(startMs + 2_000, {
     incompleteCycleCount: 1,
   }), startMs + 2_000);
@@ -78,7 +78,7 @@ test("classifies recent isolated quality issues as degraded rather than tripped"
 test("trips immediately when the read-only approval expires", () => {
   const startMs = Date.parse("2026-08-05T13:35:00Z");
   const guard = createKisFeedOperationalGuard({}, { now: () => startMs });
-  guard.start({ approvalExpiresAt: new Date(startMs + 1_000).toISOString(), nowMs: startMs });
+  guard.start({ approvalExpiresAtMs: startMs + 1_000, nowMs: startMs });
   const snapshot = guard.evaluate(runningStatus(startMs + 2_000), startMs + 2_000);
   assert.equal(snapshot.state, "tripped");
   assert.equal(snapshot.trip.code, "read_only_approval_expired");
@@ -87,7 +87,7 @@ test("trips immediately when the read-only approval expires", () => {
 test("fails closed when the exchange calendar year is unsupported", () => {
   const startMs = Date.parse("2029-01-03T15:00:00Z");
   const guard = createKisFeedOperationalGuard({}, { now: () => startMs });
-  guard.start({ approvalExpiresAt: "2029-02-01T00:00:00Z", nowMs: startMs });
+  guard.start({ approvalExpiresAtMs: Date.parse("2029-02-01T00:00:00Z"), nowMs: startMs });
   const snapshot = guard.evaluate(runningStatus(startMs), startMs);
   assert.equal(snapshot.state, "tripped");
   assert.equal(snapshot.trip.code, "calendar_unsupported");
