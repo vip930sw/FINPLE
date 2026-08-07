@@ -97,7 +97,7 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
   const appKey = dependencies.appKey ?? env.KIS_TRADING_APP_KEY;
   const appSecret = dependencies.appSecret ?? env.KIS_TRADING_APP_SECRET;
   const approval = assessKisShadowFeedApproval(
-    { receipt: options.receipt, explicitStartRequested: options.explicitStartRequested === true },
+    { receipt: options.receipt },
     { env, nowMs, appKey, appSecret },
   );
   let persistence;
@@ -167,7 +167,7 @@ export async function readKisHistoricalCaptureRuntimeStatus(options = {}, depend
   const lease = readKisConnectionLease();
   const reasons = [
     enabled(env) ? null : "kis_historical_capture_feature_flag_disabled",
-    ...approval.reasons.filter((reason) => reason !== "explicit_admin_start_required"),
+    ...approval.reasons,
     persistence.schemaReady ? null : persistence.reason,
     lease && lease.owner !== LEASE_OWNER ? `kis_connection_owned_by:${lease.owner}` : null,
   ].filter(Boolean);
@@ -234,7 +234,7 @@ export async function startKisHistoricalCaptureRuntime(input = {}, options = {},
   const appKey = dependencies.appKey ?? env.KIS_TRADING_APP_KEY;
   const appSecret = dependencies.appSecret ?? env.KIS_TRADING_APP_SECRET;
   const approval = assessKisShadowFeedApproval(
-    { receipt: input.receipt, explicitStartRequested: true },
+    { receipt: input.receipt },
     { env, nowMs, appKey, appSecret },
   );
   const shadowFeed = await (dependencies.readShadowFeedStatus ?? readKisShadowFeedRuntimeStatus)({ env, nowMs }, dependencies);
@@ -248,7 +248,14 @@ export async function startKisHistoricalCaptureRuntime(input = {}, options = {},
   if (reasons.length > 0) {
     throw runtimeError("KIS_HISTORICAL_CAPTURE_START_BLOCKED", "KIS historical capture preflight is not ready.", reasons);
   }
-  const providerAccessDecision = createKisProviderAccessDecision(approval);
+  const providerAccessDecision = createKisProviderAccessDecision(approval, options.adminStartAuthorization);
+  if (!providerAccessDecision) {
+    throw runtimeError(
+      "KIS_ADMIN_START_AUTHORIZATION_REQUIRED",
+      "KIS provider start requires an authenticated admin-start authorization.",
+      ["authenticated_admin_start_required"],
+    );
+  }
 
   acquireKisConnectionLease(LEASE_OWNER, { mode: "capture_only", selectedSymbols });
   const accumulatorFactory = dependencies.accumulatorFactory ?? createKisHistoricalCaptureAccumulator;
@@ -290,7 +297,7 @@ export async function startKisHistoricalCaptureRuntime(input = {}, options = {},
     }
     activeRuntime = { runner, accumulator, selectedSymbols, startedBy: clean(options.actor) || "admin_console" };
     return readKisHistoricalCaptureRuntimeStatus(
-      { env, receipt: input.receipt, explicitStartRequested: true, nowMs },
+      { env, receipt: input.receipt, nowMs },
       dependencies,
     );
   } catch (nextError) {

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import { createKisHistoricalCaptureRunner } from "./tradingKisHistoricalCaptureRunner.js";
 import {
   assessKisShadowFeedApproval,
@@ -13,7 +14,6 @@ import {
 
 function providerDecision() {
   const approval = assessKisShadowFeedApproval({
-    explicitStartRequested: true,
     receipt: {
       approvalId: "approval-1",
       approvedBy: "operator",
@@ -39,7 +39,7 @@ function providerDecision() {
       KIS_TRADING_APP_SECRET: "configured",
     },
   });
-  return createKisProviderAccessDecision(approval);
+  return createKisProviderAccessDecision(approval, authenticatedAdminStartAuthorization());
 }
 
 function fakeAggregator() {

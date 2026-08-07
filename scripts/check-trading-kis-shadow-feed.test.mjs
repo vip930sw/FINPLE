@@ -30,7 +30,8 @@ test("read-only approval gate requires scoped, expiring, revocable evidence", as
     "provider_rate_limit_state",
     "order_submission",
     "raw_provider_response_persistence",
-    "explicit_admin_start_required",
+    "explicitStartRequired",
+    "consumeAdminStartAuthorization",
     "approval_expired",
   ]) {
     assert.match(source, new RegExp(token));
@@ -65,6 +66,8 @@ test("admin API exposes only status, start, and stop for the KIS feed", async ()
   assert.match(route, /router\.post\("\/scalping-shadow-feed\/start"/);
   assert.match(route, /router\.post\("\/scalping-shadow-feed\/stop"/);
   assert.match(route, /KIS_SHADOW_FEED_ACTIVE/);
+  assert.match(route, /requireAdminStartAccess/);
+  assert.match(route, /adminStartAuthorization/);
   assert.doesNotMatch(route, /scalping-shadow-feed\/cycle/);
   assert.doesNotMatch(route, /scalping-shadow-feed\/(order|account|balance|position|cancel|modify)/);
   assert.doesNotMatch(route, /request\.body\?\.receipt|request\.body\.receipt/);

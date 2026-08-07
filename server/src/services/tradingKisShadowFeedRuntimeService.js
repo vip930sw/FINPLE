@@ -101,10 +101,7 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
     dependencies,
   );
   const preflight = assessKisShadowFeedApproval(
-    {
-      receipt: options.receipt,
-      explicitStartRequested: options.explicitStartRequested === true,
-    },
+    { receipt: options.receipt },
     {
       env,
       nowMs,
@@ -117,7 +114,6 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
   });
   const allowedPreopen = marketSession.state === "PREOPEN" && Number(marketSession.minutesToOpen) <= 15;
   const marketStartEligible = marketSession.calendarSupported === true && (marketSession.state === "REGULAR" || allowedPreopen);
-  const nonStartReasons = preflight.reasons.filter((reason) => reason !== "explicit_admin_start_required");
   const strategy = approvedVersion ? {
     id: approvedVersion.id,
     versionNumber: approvedVersion.versionNumber,
@@ -156,13 +152,13 @@ export async function readKisShadowFeedRuntimeStatus(options = {}, dependencies 
       ...projectKisShadowFeedApprovalPublic(preflight),
       marketSession,
       startEligible:
-        nonStartReasons.length === 0 &&
+        preflight.reasons.length === 0 &&
         shadow.active === true &&
         Boolean(approvedVersion) &&
         marketStartEligible &&
         !acknowledgementRequired,
       blockingReasons: [
-        ...nonStartReasons,
+        ...preflight.reasons,
         shadow.active === true ? null : "active_shadow_run_required",
         approvedVersion ? null : "active_shadow_strategy_version_not_approved",
         marketSession.calendarSupported ? null : "calendar_unsupported",
@@ -204,7 +200,7 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
   const appKey = dependencies.appKey ?? env.KIS_TRADING_APP_KEY;
   const appSecret = dependencies.appSecret ?? env.KIS_TRADING_APP_SECRET;
   const approval = assessKisShadowFeedApproval(
-    { receipt: input.receipt, explicitStartRequested: true },
+    { receipt: input.receipt },
     { env, nowMs, appKey, appSecret },
   );
   if (!approval.ready) {
@@ -215,7 +211,15 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
       approval.reasons,
     );
   }
-  const providerAccessDecision = createKisProviderAccessDecision(approval);
+  const providerAccessDecision = createKisProviderAccessDecision(approval, options.adminStartAuthorization);
+  if (!providerAccessDecision) {
+    throw runtimeError(
+      "KIS_ADMIN_START_AUTHORIZATION_REQUIRED",
+      "KIS provider start requires an authenticated admin-start authorization.",
+      403,
+      ["authenticated_admin_start_required"],
+    );
+  }
 
   const modelRuntime = await startModelSignalRuntime(
     {
@@ -301,7 +305,6 @@ export async function startKisShadowFeedRuntime(input = {}, options = {}, depend
     {
       env,
       receipt: input.receipt,
-      explicitStartRequested: true,
       nowMs,
       calendarOverrides: input.calendarOverrides,
     },

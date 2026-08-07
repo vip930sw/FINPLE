@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   buildKisFeedRecoveryState,
   createKisFeedOperationalSupervisor,
@@ -15,7 +16,6 @@ import {
 
 function providerDecision(receiptOverrides = {}) {
   const approval = assessKisShadowFeedApproval({
-    explicitStartRequested: true,
     receipt: {
       approvalId: "approval-1",
       approvedBy: "operator",
@@ -42,7 +42,7 @@ function providerDecision(receiptOverrides = {}) {
       KIS_TRADING_APP_SECRET: "configured",
     },
   });
-  return createKisProviderAccessDecision(approval);
+  return createKisProviderAccessDecision(approval, authenticatedAdminStartAuthorization());
 }
 
 function createRunner(nowRef) {

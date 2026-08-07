@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   KIS_OVERSEAS_REALTIME_TR_IDS,
   KIS_OVERSEAS_REALTIME_ENDPOINTS,
@@ -22,12 +23,12 @@ import {
 
 const approvalNowMs = Date.parse("2026-08-05T00:00:00Z");
 
-function providerDecision(environment = "live") {
+function providerAssessment(environment = "live", input = {}) {
   const live = environment === "live";
   const receiptEnvironment = live ? "production_live" : "virtual_shadow";
   const baseUrl = KIS_READ_ONLY_BASE_URLS[environment];
   const approval = assessKisShadowFeedApproval({
-    explicitStartRequested: true,
+    ...input,
     receipt: {
       approvalId: "approval-1",
       approvedBy: "operator",
@@ -53,7 +54,14 @@ function providerDecision(environment = "live") {
       KIS_TRADING_APP_SECRET: "s",
     },
   });
-  return createKisProviderAccessDecision(approval);
+  return approval;
+}
+
+function providerDecision(environment = "live") {
+  return createKisProviderAccessDecision(
+    providerAssessment(environment),
+    authenticatedAdminStartAuthorization(),
+  );
 }
 
 function makeTradePayload(overrides = {}) {
@@ -158,6 +166,29 @@ test("direct caller booleans cannot authorize provider access", async () => {
   assert.equal(fetchCalls, 0);
   assert.equal(socketCalls, 0);
   assert.equal(timerCalls, 0);
+});
+
+test("canonical assessment with a caller-asserted start flag cannot reach provider I/O", async () => {
+  let approvalKeyRequests = 0;
+  let socketCalls = 0;
+  const assessment = providerAssessment("live", { explicitStartRequested: true });
+  const providerAccessDecision = createKisProviderAccessDecision(assessment);
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => { approvalKeyRequests += 1; return {}; },
+    webSocketFactory: () => { socketCalls += 1; return {}; },
+  });
+  const session = await feed.connect({
+    providerAccessDecision,
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+  });
+  assert.equal(providerAccessDecision, null);
+  assert.equal(session.connected, false);
+  assert.ok(session.reasons.includes("provider_authorization_required"));
+  assert.equal(approvalKeyRequests, 0);
+  assert.equal(socketCalls, 0);
 });
 
 test("feed obtains ephemeral approval, subscribes trade+quote, parses events and clears on close", async () => {

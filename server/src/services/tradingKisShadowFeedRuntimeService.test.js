@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   readKisShadowFeedRuntimeStatus,
   resetKisShadowFeedRuntimeForTest,
@@ -230,7 +231,12 @@ test("starts an approved supervised market-data-only runner and never exposes cr
   };
   const result = await startKisShadowFeedRuntime(
     { receipt: liveReceipt() },
-    { env: liveEnv, nowMs: regularSessionMs, actor: "admin" },
+    {
+      env: liveEnv,
+      nowMs: regularSessionMs,
+      actor: "admin",
+      adminStartAuthorization: authenticatedAdminStartAuthorization(),
+    },
     dependencies,
   );
   assert.equal(result.active, true);
@@ -240,6 +246,28 @@ test("starts an approved supervised market-data-only runner and never exposes cr
   assert.equal(result.operations.guard.state, "healthy");
   assert.equal(result.safety.accountCallsAllowed, false);
   assert.equal(result.safety.orderSubmissionAllowed, false);
+});
+
+test("direct runtime start without authenticated admin authorization fails before provider setup", async () => {
+  let modelStarts = 0;
+  let runnerFactories = 0;
+  await assert.rejects(
+    () => startKisShadowFeedRuntime(
+      { receipt: liveReceipt() },
+      { env: liveEnv, nowMs: regularSessionMs },
+      {
+        env: liveEnv,
+        readShadowStatus: async () => shadow(true),
+        getRegistrySnapshot: async () => registry(),
+        startModelSignalRuntime: async () => { modelStarts += 1; return {}; },
+        runnerFactory: () => { runnerFactories += 1; return {}; },
+      },
+    ),
+    (error) => error.code === "KIS_ADMIN_START_AUTHORIZATION_REQUIRED"
+      && error.details.includes("authenticated_admin_start_required"),
+  );
+  assert.equal(modelStarts, 0);
+  assert.equal(runnerFactories, 0);
 });
 
 test("blocks start when the Shadow run is inactive", async () => {
@@ -275,7 +303,7 @@ test("stops the active supervisor without touching the Shadow worker", async () 
   };
   await startKisShadowFeedRuntime(
     { receipt: liveReceipt() },
-    { env: liveEnv, nowMs: regularSessionMs },
+    { env: liveEnv, nowMs: regularSessionMs, adminStartAuthorization: authenticatedAdminStartAuthorization() },
     dependencies,
   );
   const result = await stopKisShadowFeedRuntime(
@@ -307,7 +335,7 @@ test("reports a tripped runner as inactive until the operator acknowledges and c
   };
   await startKisShadowFeedRuntime(
     { receipt: liveReceipt() },
-    { env: liveEnv, nowMs: regularSessionMs },
+    { env: liveEnv, nowMs: regularSessionMs, adminStartAuthorization: authenticatedAdminStartAuthorization() },
     dependencies,
   );
   harness.trip();

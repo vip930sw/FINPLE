@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { requireAdminStartAccess } from "../middleware/adminGuard.js";
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   assessKisShadowFeedApproval,
   createKisProviderAccessDecision,
@@ -55,19 +57,61 @@ const receiptSentinels = {
   redactionVersion: "SENSITIVE_REDACTION_VERSION_SENTINEL",
 };
 
-test("requires explicit admin start for an otherwise valid paper contract", () => {
+test("configuration assessment never authorizes provider calls", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: false },
-    { env: enabledEnv(), nowMs },
+    {
+      receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }),
+      explicitStartRequested: true,
+    },
+    {
+      env: enabledEnv({
+        FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+        KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      }),
+      nowMs,
+    },
   );
-  assert.equal(result.ready, false);
-  assert.ok(result.reasons.includes("explicit_admin_start_required"));
+  assert.equal(result.ready, true);
+  assert.equal(result.explicitStartRequired, undefined);
   assert.equal(result.providerCallsAllowed, false);
+  assert.equal(createKisProviderAccessDecision(result), null);
+  assert.equal(createKisProviderAccessDecision(result, {}), null);
+});
+
+test("admin-start authorization is not issued by dev-open or an invalid token", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousPreview = process.env.FINPLE_ADMIN_PREVIEW_ENABLED;
+  const previousToken = process.env.FINPLE_ADMIN_TOKEN;
+  const attempts = [];
+  try {
+    process.env.NODE_ENV = "test";
+    process.env.FINPLE_ADMIN_PREVIEW_ENABLED = "true";
+    delete process.env.FINPLE_ADMIN_TOKEN;
+    requireAdminStartAccess(
+      { get: () => "" },
+      { status(code) { this.code = code; return this; }, json(payload) { attempts.push([this.code, payload.code]); } },
+      () => assert.fail("dev-open must not mint an admin-start authorization"),
+    );
+    process.env.FINPLE_ADMIN_TOKEN = "expected-test-token";
+    requireAdminStartAccess(
+      { get: (name) => name === "x-finple-admin-token" ? "wrong-test-token" : "" },
+      { status(code) { this.code = code; return this; }, json(payload) { attempts.push([this.code, payload.code]); } },
+      () => assert.fail("an invalid token must not mint an admin-start authorization"),
+    );
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousPreview === undefined) delete process.env.FINPLE_ADMIN_PREVIEW_ENABLED;
+    else process.env.FINPLE_ADMIN_PREVIEW_ENABLED = previousPreview;
+    if (previousToken === undefined) delete process.env.FINPLE_ADMIN_TOKEN;
+    else process.env.FINPLE_ADMIN_TOKEN = previousToken;
+  }
+  assert.deepEqual(attempts, [[403, "ADMIN_TOKEN_REQUIRED"], [403, "ADMIN_TOKEN_REQUIRED"]]);
 });
 
 test("blocks the unsupported Staging paper realtime feed even with a matching contract", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv(), nowMs },
   );
   assert.equal(result.ready, false);
@@ -89,7 +133,7 @@ test("blocks the unsupported Staging paper realtime feed even with a matching co
 
 test("blocks a Staging paper receipt with the live endpoint", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt({ baseUrl: KIS_READ_ONLY_BASE_URLS.live }), explicitStartRequested: true },
+    { receipt: validReceipt({ baseUrl: KIS_READ_ONLY_BASE_URLS.live }) },
     { env: enabledEnv({ KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live }), nowMs },
   );
   assert.equal(result.ready, false);
@@ -101,7 +145,7 @@ test("blocks a Staging paper receipt with the live endpoint", () => {
 
 test("blocks a Staging paper receipt with a live credential marker", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv({ FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live" }), nowMs },
   );
   assert.equal(result.ready, false);
@@ -115,7 +159,6 @@ test("allows a Production live receipt, endpoint, and credential marker", () => 
   const result = assessKisShadowFeedApproval(
     {
       receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }),
-      explicitStartRequested: true,
     },
     {
       env: enabledEnv({
@@ -142,7 +185,6 @@ test("blocks a Production live receipt with the paper endpoint", () => {
   const result = assessKisShadowFeedApproval(
     {
       receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.paper }),
-      explicitStartRequested: true,
     },
     {
       env: enabledEnv({
@@ -158,7 +200,7 @@ test("blocks a Production live receipt with the paper endpoint", () => {
 
 test("blocks arbitrary endpoints and missing credential-environment markers", () => {
   const arbitrary = assessKisShadowFeedApproval(
-    { receipt: validReceipt({ baseUrl: "https://example.invalid" }), explicitStartRequested: true },
+    { receipt: validReceipt({ baseUrl: "https://example.invalid" }) },
     { env: enabledEnv({ KIS_TRADING_BASE_URL: "https://example.invalid" }), nowMs },
   );
   assert.equal(arbitrary.baseUrlEnvironment, "invalid");
@@ -166,21 +208,21 @@ test("blocks arbitrary endpoints and missing credential-environment markers", ()
   assert.ok(arbitrary.reasons.includes("approval_base_url_not_allowed"));
 
   const missingMarker = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv({ FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "" }), nowMs },
   );
   assert.equal(missingMarker.credentialEnvironment, "unknown");
   assert.ok(missingMarker.reasons.includes("kis_credential_environment_required"));
 
   const invalidMarker = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv({ FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "sandbox" }), nowMs },
   );
   assert.equal(invalidMarker.credentialEnvironment, "invalid");
   assert.ok(invalidMarker.reasons.includes("kis_credential_environment_invalid"));
 
   const invalidReceiptEnvironment = assessKisShadowFeedApproval(
-    { receipt: validReceipt({ environment: "sandbox" }), explicitStartRequested: true },
+    { receipt: validReceipt({ environment: "sandbox" }) },
     { env: enabledEnv(), nowMs },
   );
   assert.equal(invalidReceiptEnvironment.websocketEnvironment, "invalid");
@@ -193,7 +235,7 @@ test("fails closed when approval expired or a forbidden action is missing", () =
     forbiddenActions: REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS.filter((item) => item !== "order_submission"),
   });
   const result = assessKisShadowFeedApproval(
-    { receipt, explicitStartRequested: true },
+    { receipt },
     { env: enabledEnv(), nowMs },
   );
   assert.equal(result.ready, false);
@@ -203,7 +245,7 @@ test("fails closed when approval expired or a forbidden action is missing", () =
 
 test("never serializes credential values", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv(), nowMs },
   );
   const serialized = JSON.stringify(result);
@@ -215,7 +257,7 @@ test("never serializes credential values", () => {
 
 test("public approval projections never serialize raw receipt metadata", () => {
   const result = assessKisShadowFeedApproval(
-    { receipt: validReceipt(receiptSentinels), explicitStartRequested: true },
+    { receipt: validReceipt(receiptSentinels) },
     { env: enabledEnv(), nowMs },
   );
   const serialized = JSON.stringify(projectKisShadowFeedApprovalPublic(result));
@@ -231,15 +273,13 @@ test("provider access decisions reject fabricated objects and preserve canonical
   assert.equal(createKisProviderAccessDecision({
     ready: true,
     providerCallsAllowed: true,
-    explicitStartRequested: true,
     environmentWebsocketMatch: true,
-  }), null);
+  }, authenticatedAdminStartAuthorization()), null);
   assert.equal(readKisProviderAccessDecision({}), null);
 
   const liveApproval = assessKisShadowFeedApproval(
     {
       receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }),
-      explicitStartRequested: true,
     },
     {
       env: enabledEnv({
@@ -249,16 +289,20 @@ test("provider access decisions reject fabricated objects and preserve canonical
       nowMs,
     },
   );
-  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(liveApproval));
+  const authorization = authenticatedAdminStartAuthorization();
+  const decision = createKisProviderAccessDecision(liveApproval, authorization);
+  const access = readKisProviderAccessDecision(decision);
   assert.equal(access.authorized, true);
   assert.equal(access.baseUrlEnvironment, "live");
   assert.equal(access.credentialEnvironment, "live");
   assert.equal(access.websocketEnvironment, "live");
+  assert.deepEqual(JSON.parse(JSON.stringify(authorization)), {});
+  assert.equal(createKisProviderAccessDecision(liveApproval, authorization), null);
 });
 
 test("mutating a returned assessment cannot forge provider authorization", () => {
   const paperApproval = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv(), nowMs },
   );
   paperApproval.ready = true;
@@ -267,7 +311,10 @@ test("mutating a returned assessment cannot forge provider authorization", () =>
   paperApproval.baseUrlEnvironment = "live";
   paperApproval.credentialEnvironment = "live";
   paperApproval.websocketEnvironment = "live";
-  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(paperApproval));
+  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(
+    paperApproval,
+    authenticatedAdminStartAuthorization(),
+  ));
   assert.equal(access.authorized, false);
   assert.equal(access.baseUrlEnvironment, "paper");
   assert.ok(access.reasons.includes("paper_shadow_feed_not_supported"));
@@ -275,10 +322,13 @@ test("mutating a returned assessment cannot forge provider authorization", () =>
 
 test("canonical paper access remains configuration-valid but provider-unsupported", () => {
   const paperApproval = assessKisShadowFeedApproval(
-    { receipt: validReceipt(), explicitStartRequested: true },
+    { receipt: validReceipt() },
     { env: enabledEnv(), nowMs },
   );
-  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(paperApproval));
+  const access = readKisProviderAccessDecision(createKisProviderAccessDecision(
+    paperApproval,
+    authenticatedAdminStartAuthorization(),
+  ));
   assert.equal(access.authorized, false);
   assert.equal(access.environmentWebsocketMatch, true);
   assert.ok(access.reasons.includes("paper_realtime_trade_scope_unsupported"));

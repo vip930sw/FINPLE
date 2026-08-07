@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   buildUsRegularSessionForMinute,
   createKisCompletedBarFeedRunner,
@@ -14,9 +15,9 @@ import {
   REQUIRED_KIS_SHADOW_READ_SCOPES,
 } from "./tradingKisReadOnlyApproval.js";
 
-function providerDecision(receiptOverrides = {}) {
+function providerAssessment(receiptOverrides = {}, input = {}) {
   const approval = assessKisShadowFeedApproval({
-    explicitStartRequested: true,
+    ...input,
     receipt: {
       approvalId: "approval-1",
       approvedBy: "operator",
@@ -43,7 +44,14 @@ function providerDecision(receiptOverrides = {}) {
       KIS_TRADING_APP_SECRET: "configured",
     },
   });
-  return createKisProviderAccessDecision(approval);
+  return approval;
+}
+
+function providerDecision(receiptOverrides = {}) {
+  return createKisProviderAccessDecision(
+    providerAssessment(receiptOverrides),
+    authenticatedAdminStartAuthorization(),
+  );
 }
 
 function createFeedHarness() {
@@ -218,19 +226,24 @@ test("fails fail-closed when a completed bar quote is stale", async () => {
   assert.equal(status.staleQuoteBarCount, 1);
 });
 
-test("fails closed for fabricated approval state or an inactive Shadow run", () => {
+test("fails closed for fabricated or unapproved assessment state and an inactive Shadow run", () => {
   let feedFactoryCalls = 0;
-  assert.throws(
-    () => createKisCompletedBarFeedRunner({
-      selectedSymbols: ["TQQQ"],
-      providerAccessDecision: { ready: true, environmentWebsocketMatch: true },
-      activeShadowRun: true,
-    }, {
-      ingestShadowCycle: async () => {},
-      feedFactory: () => { feedFactoryCalls += 1; return {}; },
-    }),
-    (error) => error.code === "INVALID_KIS_SHADOW_FEED_CONFIGURATION" && error.details.includes("provider_authorization_required"),
-  );
+  for (const providerAccessDecision of [
+    { ready: true, environmentWebsocketMatch: true },
+    providerAssessment({}, { explicitStartRequested: true }),
+  ]) {
+    assert.throws(
+      () => createKisCompletedBarFeedRunner({
+        selectedSymbols: ["TQQQ"],
+        providerAccessDecision,
+        activeShadowRun: true,
+      }, {
+        ingestShadowCycle: async () => {},
+        feedFactory: () => { feedFactoryCalls += 1; return {}; },
+      }),
+      (error) => error.code === "INVALID_KIS_SHADOW_FEED_CONFIGURATION" && error.details.includes("provider_authorization_required"),
+    );
+  }
   assert.equal(feedFactoryCalls, 0);
   assert.throws(
     () => createKisCompletedBarFeedRunner({ selectedSymbols: ["TQQQ"], providerAccessDecision: providerDecision(), activeShadowRun: false }, { ingestShadowCycle: async () => {} }),

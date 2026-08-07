@@ -1,3 +1,5 @@
+import { consumeAdminStartAuthorization } from "../middleware/adminGuard.js";
+
 export const KIS_SHADOW_FEED_APPROVAL_VERSION = "kis-shadow-feed-read-only-approval-v1";
 
 export const REQUIRED_KIS_SHADOW_READ_SCOPES = Object.freeze([
@@ -94,7 +96,7 @@ export function projectKisShadowFeedApprovalPublic(approval = {}) {
     ready: approval.ready === true,
     reasons: Array.isArray(approval.reasons) ? [...approval.reasons] : [],
     featureEnabled: approval.featureEnabled === true,
-    explicitStartRequested: approval.explicitStartRequested === true,
+    explicitStartRequired: true,
     providerCallsAllowed: approval.providerCallsAllowed === true,
     credentialEnvironment: approval.credentialEnvironment || "unknown",
     baseUrlEnvironment: approval.baseUrlEnvironment || "invalid",
@@ -137,9 +139,10 @@ export function projectKisShadowFeedApprovalPublic(approval = {}) {
   };
 }
 
-export function createKisProviderAccessDecision(approval) {
+export function createKisProviderAccessDecision(approval, adminStartAuthorization) {
+  if (!consumeAdminStartAuthorization(adminStartAuthorization)) return null;
   const assessment = approvalAssessments.get(approval);
-  if (!assessment || assessment.explicitStartRequested !== true) return null;
+  if (!assessment) return null;
   const decision = Object.freeze({});
   providerAccessDecisions.set(decision, Object.freeze({
     authorized: assessment.authorized,
@@ -209,7 +212,6 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
   const appSecret = clean(options.appSecret ?? env.KIS_TRADING_APP_SECRET);
   const appKeyConfigured = Boolean(appKey);
   const appSecretConfigured = Boolean(appSecret);
-  const explicitStartRequested = input.explicitStartRequested === true;
   const expectedEnvironment = KIS_READ_ONLY_ENVIRONMENTS[clean(receipt.environment)] || null;
   const resolvedCredentialEnvironment = credentialEnvironment(env.FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT);
   const resolvedBaseUrlEnvironment = baseUrlEnvironment(env.KIS_TRADING_BASE_URL);
@@ -234,7 +236,6 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
 
   const reasons = [
     featureEnabled ? null : "kis_shadow_feed_feature_flag_disabled",
-    explicitStartRequested ? null : "explicit_admin_start_required",
     clean(receipt.approvalId) ? null : "approval_id_required",
     clean(receipt.approvedBy) ? null : "approved_by_required",
     approvedAtMs !== null ? null : "approved_at_invalid",
@@ -274,7 +275,6 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     ready: reasons.length === 0,
     reasons,
     featureEnabled,
-    explicitStartRequested,
     credentialEnvironment: resolvedCredentialEnvironment,
     baseUrlEnvironment: resolvedBaseUrlEnvironment,
     environmentCredentialMatch,
@@ -305,14 +305,13 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
       redactionVersionPresent: Boolean(clean(receipt.redactionVersion)),
       rawReceiptStored: false,
     },
-    providerCallsAllowed: reasons.length === 0,
+    providerCallsAllowed: false,
     accountCallsAllowed: false,
     orderSubmissionAllowed: false,
     liveActivationAllowed: false,
   };
   approvalAssessments.set(result, Object.freeze({
-    authorized: result.ready === true && result.providerCallsAllowed === true,
-    explicitStartRequested: result.explicitStartRequested,
+    authorized: result.ready === true,
     reasons: Object.freeze([...result.reasons]),
     baseUrlEnvironment: result.baseUrlEnvironment,
     credentialEnvironment: result.credentialEnvironment,

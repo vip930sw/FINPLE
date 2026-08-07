@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   readKisHistoricalCaptureRuntimeStatus,
   resetKisHistoricalCaptureRuntimeForTest,
+  startKisHistoricalCaptureRuntime,
 } from "./tradingKisHistoricalCaptureRuntimeService.js";
 
 const summary = {
@@ -217,4 +218,57 @@ test("capture status does not normalize database timeouts into a healthy status"
   );
   assert.ok(events.includes("persistence_failed"));
   assert.ok(events.includes("service_failed"));
+});
+
+test("direct capture start without authenticated admin authorization fails before lease or runner setup", async () => {
+  resetKisHistoricalCaptureRuntimeForTest();
+  let accumulatorFactories = 0;
+  let runnerFactories = 0;
+  const env = {
+    FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "true",
+    FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "true",
+    FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+    KIS_TRADING_BASE_URL: "https://openapi.koreainvestment.com:9443",
+    KIS_TRADING_APP_KEY: "configured",
+    KIS_TRADING_APP_SECRET: "configured",
+  };
+  const receipt = {
+    approvalId: "approval-1",
+    approvedBy: "operator",
+    approvedAt: "2026-08-01T00:00:00Z",
+    expiresAt: "2026-09-01T00:00:00Z",
+    scope: "trading_read_only_market_data",
+    environment: "production_live",
+    baseUrl: "https://openapi.koreainvestment.com:9443",
+    accountIdHash: "market-data-only",
+    allowedReadScopes: ["current_quotes", "market_session_state", "provider_rate_limit_state"],
+    forbiddenActions: [
+      "order_submission",
+      "order_cancellation",
+      "position_mutation",
+      "live_trading_endpoint",
+      "raw_provider_response_persistence",
+    ],
+    evidenceTicket: "ISSUE-465",
+    revocationPlan: "disable",
+    redactionVersion: "v1",
+  };
+
+  await assert.rejects(
+    () => startKisHistoricalCaptureRuntime(
+      { receipt, selectedSymbols: ["TQQQ"] },
+      { env, nowMs: Date.parse("2026-08-05T00:00:00Z") },
+      {
+        env,
+        readShadowFeedStatus: async () => ({ active: false }),
+        getPersistenceStatus: async () => ({ schemaReady: true, reason: null }),
+        accumulatorFactory: () => { accumulatorFactories += 1; return {}; },
+        runnerFactory: () => { runnerFactories += 1; return {}; },
+      },
+    ),
+    (error) => error.code === "KIS_ADMIN_START_AUTHORIZATION_REQUIRED"
+      && error.details.includes("authenticated_admin_start_required"),
+  );
+  assert.equal(accumulatorFactories, 0);
+  assert.equal(runnerFactories, 0);
 });
