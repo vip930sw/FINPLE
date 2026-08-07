@@ -61,15 +61,15 @@ function liveEnv(overrides = {}) {
   };
 }
 
-function makeTradePayload() {
+function makeTradePayload(symbol = "TQQQ") {
   return [
-    "TQQQ", "4", "20260805", "20260804", "103001", "20260805", "233001", "80", "82", "79",
+    symbol, "4", "20260805", "20260804", "103001", "20260805", "233001", "80", "82", "79",
     "81.25", "2", "1.2", "1.5", "81.24", "81.26", "100", "120", "15", "1000015",
     "81000000", "500", "600", "112.5", "1",
   ].join("^");
 }
 
-function providerHarness({ emitMessage = true, sendImpl = () => {} } = {}) {
+function providerHarness({ emitMessage = true, eventSymbol = "TQQQ", sendImpl = () => {} } = {}) {
   let socket;
   let closeCount = 0;
   const handlers = {};
@@ -88,7 +88,7 @@ function providerHarness({ emitMessage = true, sendImpl = () => {} } = {}) {
         queueMicrotask(() => {
           handlers.open?.();
           handlers.message?.({ data: JSON.stringify({ body: { rt_cd: "0" }, header: { tr_id: "HDFSCNT0" } }) });
-          if (emitMessage) handlers.message?.({ data: `0|HDFSCNT0|1|${makeTradePayload()}` });
+          if (emitMessage) handlers.message?.({ data: `0|HDFSCNT0|1|${makeTradePayload(eventSymbol)}` });
         });
         return socket;
       },
@@ -173,6 +173,30 @@ test("successful smoke uses one symbol, one approval request and one socket then
   const serialized = JSON.stringify(result);
   for (const sentinel of [...secretSentinels, "SENSITIVE_EPHEMERAL_KEY", makeTradePayload(), "TQQQ"]) {
     assert.equal(serialized.includes(sentinel), false);
+  }
+});
+
+test("prefixed provider event reaches MESSAGE_VALIDATED while wrong-market and wrong-symbol events stay rejected", async () => {
+  const prefixed = providerHarness({ eventSymbol: "DNASTQQQ" });
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    prefixed.dependencies,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().schemaAccepted, true);
+  assert.equal(readKisProviderSmokeRuntimeStatus().lifecycle.includes("MESSAGE_VALIDATED"), true);
+
+  for (const eventSymbol of ["DAMSTQQQ", "DNASSQQQ"]) {
+    resetKisProviderSmokeRuntimeForTest();
+    const wrong = providerHarness({ eventSymbol });
+    await startKisProviderSmokeRuntime(
+      { adminStartAuthorization: adminStartAuthorization(), nowMs },
+      wrong.dependencies,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(readKisProviderSmokeRuntimeStatus().schemaAccepted, false);
+    assert.equal(readKisProviderSmokeRuntimeStatus().lifecycle.includes("MESSAGE_VALIDATED"), false);
+    stopKisProviderSmokeRuntime("test_cleanup");
   }
 });
 

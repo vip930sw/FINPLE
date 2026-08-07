@@ -68,6 +68,12 @@ function normalizeSymbol(value) {
   return clean(value).toUpperCase();
 }
 
+export function normalizeKisOverseasRealtimeEventSymbol(value) {
+  const symbol = normalizeSymbol(value);
+  const match = symbol.match(/^D(NAS|NYS|AMS)([A-Z0-9._-]{1,20})$/);
+  return match && KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL[match[2]] === match[1] ? match[2] : symbol;
+}
+
 function normalizeMarket(value) {
   return KIS_OVERSEAS_MARKET_CODES[clean(value).toUpperCase()] ?? "";
 }
@@ -174,7 +180,7 @@ export function buildKisApprovalRequest({ appKey, appSecret, baseUrlEnvironment 
 }
 
 function normalizeTrade(record, receivedAtMs) {
-  const symbol = normalizeSymbol(record.SYMB);
+  const symbol = normalizeKisOverseasRealtimeEventSymbol(record.SYMB);
   return {
     type: "trade",
     provider: "KIS",
@@ -203,7 +209,7 @@ function normalizeTrade(record, receivedAtMs) {
 }
 
 function normalizeQuote(record, receivedAtMs) {
-  const symbol = normalizeSymbol(record.symb);
+  const symbol = normalizeKisOverseasRealtimeEventSymbol(record.symb);
   const bid = toFinite(record.pbid1);
   const ask = toFinite(record.pask1);
   const mid = bid !== null && ask !== null && bid > 0 && ask >= bid ? (bid + ask) / 2 : null;
