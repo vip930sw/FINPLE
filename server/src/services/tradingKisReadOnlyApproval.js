@@ -1,3 +1,5 @@
+import process from "node:process";
+
 import { consumeAdminStartAuthorization } from "../middleware/adminGuard.js";
 
 export const KIS_SHADOW_FEED_APPROVAL_VERSION = "kis-shadow-feed-read-only-approval-v1";
@@ -37,6 +39,7 @@ const KIS_READ_ONLY_ENVIRONMENTS = Object.freeze({
 });
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
+const PROVIDER_SMOKE_IGNORED_REASONS = new Set(["kis_shadow_feed_feature_flag_disabled"]);
 const approvalAssessments = new WeakMap();
 const providerAccessDecisions = new WeakMap();
 
@@ -147,6 +150,39 @@ export function createKisProviderAccessDecision(approval, adminStartAuthorizatio
   providerAccessDecisions.set(decision, Object.freeze({
     authorized: assessment.authorized,
     reasons: assessment.reasons,
+    baseUrlEnvironment: assessment.baseUrlEnvironment,
+    credentialEnvironment: assessment.credentialEnvironment,
+    websocketEnvironment: assessment.websocketEnvironment,
+    environmentWebsocketMatch: assessment.environmentWebsocketMatch,
+    approvalExpiresAtMs: assessment.expiresAtMs,
+    publicApproval: assessment.publicApproval,
+    appKey: assessment.appKey,
+    appSecret: assessment.appSecret,
+  }));
+  return decision;
+}
+
+export function createKisProviderSmokeAccessDecision(approval, adminStartAuthorization) {
+  if (!consumeAdminStartAuthorization(adminStartAuthorization)) return null;
+  const assessment = approvalAssessments.get(approval);
+  if (!assessment) return null;
+  const receipt = assessment.publicApproval.receipt;
+  const reasons = [
+    ...assessment.reasons.filter((reason) => !PROVIDER_SMOKE_IGNORED_REASONS.has(reason)),
+    assessment.credentialEnvironment === "live" ? null : "provider_smoke_live_credentials_required",
+    assessment.baseUrlEnvironment === "live" ? null : "provider_smoke_live_rest_required",
+    assessment.websocketEnvironment === "live" ? null : "provider_smoke_live_websocket_required",
+    assessment.environmentCredentialMatch ? null : "provider_smoke_credential_environment_mismatch",
+    assessment.environmentBaseUrlMatch ? null : "provider_smoke_rest_environment_mismatch",
+    assessment.environmentWebsocketMatch ? null : "provider_smoke_websocket_environment_mismatch",
+    receipt.approvalActive ? null : "provider_smoke_approval_inactive",
+    receipt.expiryStatus === "ACTIVE" ? null : "provider_smoke_approval_not_active",
+    receipt.expiresWithin7Days ? "provider_smoke_approval_expires_within_7_days" : null,
+  ].filter(Boolean);
+  const decision = Object.freeze({});
+  providerAccessDecisions.set(decision, Object.freeze({
+    authorized: reasons.length === 0,
+    reasons: Object.freeze(reasons),
     baseUrlEnvironment: assessment.baseUrlEnvironment,
     credentialEnvironment: assessment.credentialEnvironment,
     websocketEnvironment: assessment.websocketEnvironment,
@@ -316,6 +352,8 @@ export function assessKisShadowFeedApproval(input = {}, options = {}) {
     baseUrlEnvironment: result.baseUrlEnvironment,
     credentialEnvironment: result.credentialEnvironment,
     websocketEnvironment: result.websocketEnvironment,
+    environmentCredentialMatch: result.environmentCredentialMatch,
+    environmentBaseUrlMatch: result.environmentBaseUrlMatch,
     environmentWebsocketMatch: result.environmentWebsocketMatch,
     expiresAtMs,
     publicApproval: projectKisShadowFeedApprovalPublic(result),

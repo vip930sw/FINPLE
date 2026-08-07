@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import {
   KIS_OVERSEAS_REALTIME_SUPPORT,
   KIS_READ_ONLY_BASE_URLS,
@@ -440,6 +442,9 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
             if (!parsed.valid) {
               handlers.onProtocolIssue?.({ kind: parsed.kind, reasons: parsed.reasons, trId: parsed.trId ?? "", rawStored: false });
               return;
+            }
+            if (parsed.kind === "control") {
+              handlers.onControl?.({ trId: parsed.trId, controlStatus: parsed.controlStatus, rawStored: false });
             }
             for (const event of parsed.events) handlers.onEvent?.(event);
           });

@@ -7,6 +7,7 @@ import { requireAdminStartAccess } from "../middleware/adminGuard.js";
 import {
   assessKisShadowFeedApproval,
   createKisProviderAccessDecision,
+  createKisProviderSmokeAccessDecision,
   KIS_READ_ONLY_BASE_URLS,
   KIS_READ_ONLY_WEBSOCKET_URLS,
   projectKisShadowFeedApprovalPublic,
@@ -94,6 +95,58 @@ test("configuration assessment never authorizes provider calls", () => {
   assert.equal(result.providerCallsAllowed, false);
   assert.equal(createKisProviderAccessDecision(result), null);
   assert.equal(createKisProviderAccessDecision(result, {}), null);
+});
+
+test("provider smoke capability requires canonical live approval and one-time admin-start proof", () => {
+  const liveEnv = enabledEnv({
+    FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "false",
+    FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+    KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+  });
+  const approval = assessKisShadowFeedApproval(
+    { receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }) },
+    { env: liveEnv, nowMs },
+  );
+  assert.deepEqual(approval.reasons, ["kis_shadow_feed_feature_flag_disabled"]);
+  const authorization = authenticatedAdminStartAuthorization();
+  const decision = createKisProviderSmokeAccessDecision(approval, authorization);
+  assert.equal(readKisProviderAccessDecision(decision).authorized, true);
+  assert.equal(createKisProviderSmokeAccessDecision(approval, authorization), null);
+  assert.equal(createKisProviderSmokeAccessDecision(JSON.parse(JSON.stringify(approval)), authenticatedAdminStartAuthorization()), null);
+  assert.equal(createKisProviderSmokeAccessDecision(approval, {}), null);
+});
+
+test("provider smoke capability fails closed for paper and expiring live approvals", () => {
+  const paper = assessKisShadowFeedApproval({ receipt: validReceipt() }, { env: enabledEnv(), nowMs });
+  const paperAccess = readKisProviderAccessDecision(
+    createKisProviderSmokeAccessDecision(paper, authenticatedAdminStartAuthorization()),
+  );
+  assert.equal(paperAccess.authorized, false);
+  assert.ok(paperAccess.reasons.includes("provider_smoke_live_credentials_required"));
+
+  const expiring = assessKisShadowFeedApproval(
+    {
+      receipt: validReceipt({
+        environment: "production_live",
+        baseUrl: KIS_READ_ONLY_BASE_URLS.live,
+        expiresAt: "2026-08-10T00:00:00Z",
+      }),
+    },
+    {
+      env: enabledEnv({
+        FINPLE_TRADING_KIS_SHADOW_FEED_ENABLED: "false",
+        FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+        KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      }),
+      nowMs,
+    },
+  );
+  const expiringAccess = readKisProviderAccessDecision(
+    createKisProviderSmokeAccessDecision(expiring, authenticatedAdminStartAuthorization()),
+  );
+  assert.equal(expiringAccess.authorized, false);
+  assert.ok(expiringAccess.reasons.includes("provider_smoke_approval_not_active"));
+  assert.ok(expiringAccess.reasons.includes("provider_smoke_approval_expires_within_7_days"));
 });
 
 test("no importable test utility can mint an admin-start provider capability", async () => {
