@@ -307,3 +307,82 @@ test("canonical authorization cannot be reused with different credentials", asyn
   assert.ok(session.reasons.includes("provider_credentials_mismatch"));
   assert.equal(fetchCalls, 0);
 });
+
+test("closing during Approval response handling discards the key before opening a socket", async () => {
+  let resolveBody;
+  let socketCalls = 0;
+  const protocolIssues = [];
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => ({
+      ok: true,
+      json: () => new Promise((resolve) => { resolveBody = resolve; }),
+    }),
+    webSocketFactory: () => { socketCalls += 1; return {}; },
+  });
+  const session = await feed.connect({
+    providerAccessDecision: providerDecision("live"),
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+    maxReconnectAttempts: 0,
+  }, {
+    onProtocolIssue: (issue) => protocolIssues.push(issue),
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  session.close();
+  resolveBody({ approval_key: "LATE_SENSITIVE_KEY" });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(socketCalls, 0);
+  assert.equal(protocolIssues.length, 0);
+  assert.equal(session.status(), "closed");
+});
+
+test("late socket callbacks after close cannot subscribe, reconnect or emit provider data", async () => {
+  const socketHandlers = {};
+  const statuses = [];
+  const controls = [];
+  const events = [];
+  const protocolIssues = [];
+  let sendCalls = 0;
+  let reconnectTimers = 0;
+  const feed = createKisOverseasRealtimeFeed({
+    fetchImpl: async () => ({ ok: true, json: async () => ({ approval_key: "SENSITIVE_EPHEMERAL_KEY" }) }),
+    webSocketFactory: () => ({
+      on(name, handler) { socketHandlers[name] = handler; },
+      send() { sendCalls += 1; },
+      close() {},
+    }),
+    setTimeoutImpl() { reconnectTimers += 1; return 1; },
+  });
+  const session = await feed.connect({
+    providerAccessDecision: providerDecision("live"),
+    symbols: ["TQQQ"],
+    market: "NASDAQ",
+    appKey: "k",
+    appSecret: "s",
+  }, {
+    onStatus: (value) => statuses.push(value),
+    onControl: (value) => controls.push(value),
+    onEvent: (value) => events.push(value),
+    onProtocolIssue: (value) => protocolIssues.push(value),
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  session.close();
+  const stoppedStatuses = statuses.length;
+
+  socketHandlers.open();
+  socketHandlers.message({ data: JSON.stringify({ body: { rt_cd: "0" }, header: { tr_id: "HDFSCNT0" } }) });
+  socketHandlers.message({ data: `0|HDFSCNT0|1|${makeTradePayload()}` });
+  socketHandlers.error();
+  socketHandlers.close();
+
+  assert.equal(sendCalls, 0);
+  assert.equal(reconnectTimers, 0);
+  assert.equal(statuses.length, stoppedStatuses);
+  assert.equal(controls.length, 0);
+  assert.equal(events.length, 0);
+  assert.equal(protocolIssues.length, 0);
+  assert.equal(session.status(), "closed");
+  assert.equal(JSON.stringify(statuses).includes("SENSITIVE_EPHEMERAL_KEY"), false);
+});

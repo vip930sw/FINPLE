@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import {
   KIS_OVERSEAS_REALTIME_SUPPORT,
   KIS_READ_ONLY_BASE_URLS,
@@ -365,6 +367,7 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
   const setTimeoutImpl = dependencies.setTimeoutImpl ?? setTimeout;
   const clearTimeoutImpl = dependencies.clearTimeoutImpl ?? clearTimeout;
   const now = dependencies.now ?? Date.now;
+  const onApprovalRequestSettled = dependencies.onApprovalRequestSettled;
 
   return {
     async connect(config = {}, handlers = {}) {
@@ -389,13 +392,19 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
       };
 
       const requestApprovalKey = async () => {
-        const request = validation.approvalRequest;
-        const response = await fetchImpl(request.url, request.init);
-        if (!response?.ok) throw Object.assign(new Error("approval_request_failed"), { code: `http_${response?.status ?? "unknown"}` });
-        const body = await response.json();
-        const key = clean(body?.approval_key);
-        if (!key) throw Object.assign(new Error("approval_key_missing"), { code: "approval_key_missing" });
-        return key;
+        try {
+          const request = validation.approvalRequest;
+          const response = await fetchImpl(request.url, request.init);
+          if (!active) return "";
+          if (!response?.ok) throw Object.assign(new Error("approval_request_failed"), { code: `http_${response?.status ?? "unknown"}` });
+          const body = await response.json();
+          if (!active) return "";
+          const key = clean(body?.approval_key);
+          if (!key) throw Object.assign(new Error("approval_key_missing"), { code: "approval_key_missing" });
+          return key;
+        } finally {
+          onApprovalRequestSettled?.();
+        }
       };
 
       const subscribeAll = () => {
@@ -423,33 +432,62 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
         if (!active) return;
         try {
           emitStatus("authorizing", { attempt: reconnectAttempt });
-          approvalKey = await requestApprovalKey();
-          if (!active) return;
+          const nextApprovalKey = await requestApprovalKey();
+          if (!active || !nextApprovalKey) return;
+          approvalKey = nextApprovalKey;
+          if (!active) {
+            approvalKey = "";
+            return;
+          }
           socket = webSocketFactory(validation.websocketUrl);
           bindSocketEvent(socket, "open", () => {
+            if (!active) return;
             reconnectAttempt = 0;
             emitStatus("subscribing");
-            subscribeAll();
+            try {
+              subscribeAll();
+            } catch {
+              approvalKey = "";
+              handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_subscription_send_failed"], rawStored: false });
+              return;
+            }
             emitStatus("connected", { subscriptionCount: validation.symbolEntries.length * 2 });
           });
           bindSocketEvent(socket, "message", (message) => {
+            if (!active) return;
             const rawValue = message?.data ?? message;
             const raw = typeof rawValue === "string" ? rawValue : Buffer.isBuffer(rawValue) ? rawValue.toString("utf8") : clean(rawValue);
             const parsed = parseKisOverseasRealtimeFrame(raw, { receivedAtMs: now() });
-            if (parsed.echoRequired && socket?.readyState === 1) socket.send(raw);
+            if (parsed.echoRequired && socket?.readyState === 1) {
+              try {
+                socket.send(raw);
+              } catch {
+                approvalKey = "";
+                handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_echo_send_failed"], rawStored: false });
+                return;
+              }
+            }
             if (!parsed.valid) {
               handlers.onProtocolIssue?.({ kind: parsed.kind, reasons: parsed.reasons, trId: parsed.trId ?? "", rawStored: false });
               return;
             }
+            if (parsed.kind === "control") {
+              handlers.onControl?.({ trId: parsed.trId, controlStatus: parsed.controlStatus, rawStored: false });
+            }
             for (const event of parsed.events) handlers.onEvent?.(event);
           });
-          bindSocketEvent(socket, "error", () => handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_error"], rawStored: false }));
+          bindSocketEvent(socket, "error", () => {
+            if (!active) return;
+            handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_error"], rawStored: false });
+          });
           bindSocketEvent(socket, "close", () => {
             approvalKey = "";
+            socket = null;
             if (active) scheduleReconnect("websocket_closed");
           });
         } catch (error) {
           approvalKey = "";
+          if (!active) return;
           handlers.onProtocolIssue?.({ kind: "authorization_error", reasons: [maskError(error, "kis_realtime_connect_failed")], rawStored: false });
           scheduleReconnect("authorization_failed");
         }
@@ -460,11 +498,14 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
         connected: true,
         reasons: [],
         close() {
+          if (!active) return;
           active = false;
           approvalKey = "";
           if (reconnectTimer) clearTimeoutImpl(reconnectTimer);
           reconnectTimer = null;
-          if (socket && typeof socket.close === "function") socket.close();
+          const socketToClose = socket;
+          socket = null;
+          if (socketToClose && typeof socketToClose.close === "function") socketToClose.close();
           emitStatus("closed", { reason: "operator_close" });
         },
         status() {

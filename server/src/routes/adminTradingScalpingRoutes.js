@@ -16,6 +16,11 @@ import {
   stopKisShadowFeedRuntime,
 } from "../services/tradingKisShadowFeedRuntimeService.js";
 import {
+  readKisProviderSmokeRuntimeStatus,
+  startKisProviderSmokeRuntime,
+  stopKisProviderSmokeRuntime,
+} from "../services/tradingKisProviderSmokeRuntimeService.js";
+import {
   acknowledgeScalpingModelSignalCircuitBreaker,
   readScalpingModelSignalRuntimeStatus,
 } from "../services/tradingScalpingModelSignalRuntimeService.js";
@@ -297,6 +302,39 @@ router.post("/scalping-shadow-feed/stop", (request, response, next) => {
       .catch(next);
   });
 });
+
+export function handleKisProviderSmokeStartRequest(request, response, next) {
+  requireAdminStartAccess(request, response, (adminStartAuthorization) => {
+    startKisProviderSmokeRuntime({ adminStartAuthorization })
+      .then((result) => response.status(201).json(result))
+      .catch(next);
+  });
+}
+
+export function handleKisProviderSmokeStatusRequest(request, response, next) {
+  requireAdminAccess(request, response, () => {
+    try {
+      response.setHeader("Cache-Control", "no-store, max-age=0");
+      response.json(readKisProviderSmokeRuntimeStatus());
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
+export function handleKisProviderSmokeStopRequest(request, response, next) {
+  requireAdminAccess(request, response, () => {
+    try {
+      response.json(stopKisProviderSmokeRuntime(request.body?.reason));
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
+router.post("/scalping-kis-provider-smoke/start", handleKisProviderSmokeStartRequest);
+router.get("/scalping-kis-provider-smoke/status", handleKisProviderSmokeStatusRequest);
+router.post("/scalping-kis-provider-smoke/stop", handleKisProviderSmokeStopRequest);
 
 export function handleKisHistoricalCaptureStatusRequest(request, response, next, dependencies = {}) {
   response.setHeader("Cache-Control", "no-store, max-age=0");
