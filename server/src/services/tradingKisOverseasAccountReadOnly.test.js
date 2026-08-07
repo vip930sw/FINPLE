@@ -42,6 +42,7 @@ function page(overrides = {}) {
   return {
     ok: true,
     trCont: "",
+    ...overrides,
     body: {
       rt_cd: "0",
       output1: [],
@@ -50,7 +51,6 @@ function page(overrides = {}) {
       ctx_area_nk200: "",
       ...overrides.body,
     },
-    ...overrides,
   };
 }
 
@@ -219,6 +219,29 @@ test("provider and HTTP errors are reduced to safe codes", async () => {
   await assert.rejects(requestKisOverseasAccountBalance(requestInput({ transport: async () => page({ body: { rt_cd: "1" } }) })), { code: "KIS_ACCOUNT_PROVIDER_REJECTED" });
   await assert.rejects(requestKisOverseasAccountBalance(requestInput({ transport: async () => ({ ok: false }) })), { code: "KIS_ACCOUNT_PROVIDER_HTTP_ERROR" });
   await assert.rejects(requestKisOverseasAccountBalance(requestInput({ transport: async () => { throw new Error("raw provider secret"); } })), { code: "KIS_ACCOUNT_PROVIDER_REQUEST_FAILED" });
+});
+
+test("provider success envelope and output containers fail closed before pagination", async () => {
+  for (const body of [
+    {},
+    { rt_cd: ["0"], output1: [], output2: {} },
+    { output1: [], output2: {} },
+    { rt_cd: "0", output1: "unexpected", output2: {} },
+    { rt_cd: "0", output1: 123, output2: {} },
+    { rt_cd: "0", output1: true, output2: {} },
+    { rt_cd: "0", output1: [], output2: "unexpected" },
+    { rt_cd: "0", output1: [], output2: 123 },
+    { rt_cd: "0", output1: [], output2: true },
+  ]) {
+    let calls = 0;
+    await assert.rejects(requestKisOverseasAccountBalance(requestInput({
+      transport: async () => {
+        calls += 1;
+        return { ok: true, trCont: "M", body };
+      },
+    })), { code: "KIS_ACCOUNT_PROVIDER_SCHEMA_INVALID" });
+    assert.equal(calls, 1);
+  }
 });
 
 test("AbortSignal stops the transport contract with a redacted error", async () => {

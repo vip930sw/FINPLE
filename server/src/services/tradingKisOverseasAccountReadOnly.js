@@ -70,6 +70,10 @@ function records(value) {
   return value && typeof value === "object" ? [value] : [];
 }
 
+function isRecordContainer(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object");
+}
+
 function normalizePosition(record, index, reasons) {
   const symbol = clean(record?.ovrs_pdno).toUpperCase();
   const exchange = clean(record?.ovrs_excg_cd).toUpperCase();
@@ -171,7 +175,13 @@ export async function requestKisOverseasAccountBalance(input = {}) {
     if (!response || typeof response !== "object" || response.ok !== true) fail("KIS_ACCOUNT_PROVIDER_HTTP_ERROR");
     const body = response.body;
     if (!body || typeof body !== "object") fail("KIS_ACCOUNT_PROVIDER_SCHEMA_INVALID");
-    if (body.rt_cd !== undefined && clean(body.rt_cd) !== "0") fail("KIS_ACCOUNT_PROVIDER_REJECTED");
+    if (typeof body.rt_cd !== "string" && typeof body.rt_cd !== "number") fail("KIS_ACCOUNT_PROVIDER_SCHEMA_INVALID");
+    const rtCd = clean(body.rt_cd);
+    if (!rtCd) fail("KIS_ACCOUNT_PROVIDER_SCHEMA_INVALID");
+    if (rtCd !== "0") fail("KIS_ACCOUNT_PROVIDER_REJECTED");
+    if (!isRecordContainer(body.output1) || !isRecordContainer(body.output2)) {
+      fail("KIS_ACCOUNT_PROVIDER_SCHEMA_INVALID");
+    }
 
     pageCount += 1;
     for (const record of records(body.output1)) {
