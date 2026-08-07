@@ -12,6 +12,7 @@ import {
   createKisOverseasRealtimeFeed,
   evaluateKisRealtimeFreshness,
   getKisReconnectDelayMs,
+  normalizeKisOverseasRealtimeEventSymbol,
   parseKisOverseasRealtimeFrame,
 } from "./tradingKisOverseasRealtimeAdapter.js";
 import {
@@ -93,9 +94,18 @@ function makeTradePayload(overrides = {}) {
   return Object.values(values).join("^");
 }
 
-function makeQuotePayload() {
-  return ["TQQQ", "4", "20260804", "103001", "20260805", "233001", "1", "1", "0", "0", "81.24", "81.26", "100", "120", "0", "0"].join("^");
+function makeQuotePayload(symbol = "TQQQ") {
+  return [symbol, "4", "20260804", "103001", "20260805", "233001", "1", "1", "0", "0", "81.24", "81.26", "100", "120", "0", "0"].join("^");
 }
+
+test("normalizes only canonical KIS overseas realtime symbol prefixes", () => {
+  for (const [input, expected] of [
+    ["TQQQ", "TQQQ"], ["tqqq", "TQQQ"], ["DNASTQQQ", "TQQQ"],
+    ["DNASSQQQ", "SQQQ"], ["DAMSSOXL", "SOXL"], ["DNYSSPXU", "SPXU"],
+    ["XTQQQ", "XTQQQ"], ["ABCTQQQ", "ABCTQQQ"],
+    ["UNKNOWN:TQQQ", "UNKNOWN:TQQQ"], ["FOODNASTQQQ", "FOODNASTQQQ"],
+  ]) assert.equal(normalizeKisOverseasRealtimeEventSymbol(input), expected);
+});
 
 test("builds official regular-session subscription key", () => {
   assert.deepEqual(buildKisOverseasSubscriptionKey({ market: "NASDAQ", symbol: "tqqq" }), {
@@ -131,6 +141,26 @@ test("parses official HDFSCNT0 trade frame", () => {
   assert.equal(parsed.events[0].rawStored, false);
 });
 
+test("normalizes prefixed trade symbols without changing market data", () => {
+  const parsed = parseKisOverseasRealtimeFrame(`0|HDFSCNT0|1|${makeTradePayload({ SYMB: "DNASTQQQ" })}`, { receivedAtMs: 123456 });
+  assert.equal(parsed.events[0].symbol, "TQQQ");
+  assert.equal(parsed.events[0].last, 81.25);
+  assert.equal(parsed.events[0].eventVolume, 15);
+  assert.equal(parsed.events[0].rawStored, false);
+});
+
+test("keeps prefixed trade identity exact and malformed prefixes unmodified", () => {
+  for (const [input, expected] of [
+    ["DNASSQQQ", "SQQQ"], ["DAMSSOXL", "SOXL"],
+    ["XTQQQ", "XTQQQ"], ["ABCTQQQ", "ABCTQQQ"],
+    ["UNKNOWN:TQQQ", "UNKNOWN:TQQQ"], ["FOODNASTQQQ", "FOODNASTQQQ"],
+  ]) {
+    const parsed = parseKisOverseasRealtimeFrame(`0|HDFSCNT0|1|${makeTradePayload({ SYMB: input })}`);
+    assert.equal(parsed.events[0].symbol, expected);
+    assert.notEqual(parsed.events[0].symbol, "TQQQ");
+  }
+});
+
 test("parses official HDFSASP0 quote frame and spread", () => {
   const parsed = parseKisOverseasRealtimeFrame(`0|HDFSASP0|1|${makeQuotePayload()}`, { receivedAtMs: 1000 });
   assert.equal(parsed.valid, true);
@@ -138,6 +168,14 @@ test("parses official HDFSASP0 quote frame and spread", () => {
   assert.equal(quote.bid, 81.24);
   assert.equal(quote.ask, 81.26);
   assert.ok(quote.spreadBps > 2 && quote.spreadBps < 3);
+});
+
+test("normalizes prefixed quote symbols without changing market data", () => {
+  const parsed = parseKisOverseasRealtimeFrame(`0|HDFSASP0|1|${makeQuotePayload("DNASTQQQ")}`, { receivedAtMs: 1000 });
+  assert.equal(parsed.events[0].symbol, "TQQQ");
+  assert.equal(parsed.events[0].bid, 81.24);
+  assert.equal(parsed.events[0].ask, 81.26);
+  assert.equal(parsed.events[0].rawStored, false);
 });
 
 test("recognizes pingpong control frame", () => {
