@@ -77,6 +77,10 @@ function parseList(value, options = {}) {
   };
 }
 
+export function parseTradingAllowedSymbols(value) {
+  return parseList(value, { allowWildcard: true, symbols: true });
+}
+
 function parseAllowedAssetTypesByMarket(value) {
   const raw = clean(value);
   if (!raw) return { value: {}, reasons: ["missing_allowed_asset_types_by_market"] };
@@ -156,7 +160,7 @@ export function validateTradingEnvConfig(env = {}) {
   const killSwitch = parseBooleanFlag(env[TRADING_ENV_NAMES.killSwitch], true);
   const allowedMarkets = parseList(env[TRADING_ENV_NAMES.allowedMarkets]);
   const allowedAssetTypesByMarket = parseAllowedAssetTypesByMarket(env[TRADING_ENV_NAMES.allowedAssetTypesByMarket]);
-  const allowedSymbols = parseList(env[TRADING_ENV_NAMES.allowedSymbols], { allowWildcard: true, symbols: true });
+  const allowedSymbols = parseTradingAllowedSymbols(env[TRADING_ENV_NAMES.allowedSymbols]);
   const accountId = clean(env[TRADING_ENV_NAMES.accountId]);
   const baseUrl = parseKisBaseUrl(env[TRADING_ENV_NAMES.baseUrl]);
   const approvedAt = parseApprovalTimestamp(env[TRADING_ENV_NAMES.orderPermissionApprovedAt]);
