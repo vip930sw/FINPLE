@@ -79,6 +79,18 @@ test("Admin Console shows approval, credential, completeness, and safety states"
   const group = await read("src/components/TradingAiMlPanelGroup.jsx");
   assert.match(panel, /KIS 읽기전용 Completed-Bar Feed/);
   assert.match(panel, /읽기전용 승인/);
+  assert.match(panel, /approvalIdPresent \? "등록됨" : "미등록"/);
+  assert.match(panel, /approvalExpiryLabel\(feedPreflight\.receipt\?\.expiryStatus\)/);
+  for (const [status, label] of [
+    ["ACTIVE", "유효"],
+    ["EXPIRING_SOON", "만료 임박"],
+    ["EXPIRED", "만료"],
+    ["NOT_ACTIVE_YET", "아직 유효하지 않음"],
+    ["INVALID", "확인 필요"],
+  ]) {
+    assert.match(panel, new RegExp(`${status}: "${label}"`));
+  }
+  assert.doesNotMatch(panel, /receipt\?\.(?:approvalId|expiresAt)\b/);
   assert.match(panel, /KIS 자격증명/);
   assert.match(panel, /불완전 Cycle/);
   assert.match(panel, /Feed 먼저 정지/);

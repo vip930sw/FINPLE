@@ -1,13 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import process from "node:process";
 
-import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
+import { requireAdminStartAccess } from "../middleware/adminGuard.js";
 import {
   readKisShadowFeedRuntimeStatus,
   resetKisShadowFeedRuntimeForTest,
   startKisShadowFeedRuntime,
   stopKisShadowFeedRuntime,
 } from "./tradingKisShadowFeedRuntimeService.js";
+
+function authenticatedAdminStartAuthorization() {
+  const previousToken = process.env.FINPLE_ADMIN_TOKEN;
+  process.env.FINPLE_ADMIN_TOKEN = "test-admin-token";
+  let authorization;
+  try {
+    requireAdminStartAccess(
+      { get: (name) => name === "x-finple-admin-token" ? "test-admin-token" : "" },
+      { status() { return this; }, json(payload) { assert.fail(payload.code); } },
+      (value) => { authorization = value; },
+    );
+  } finally {
+    if (previousToken === undefined) delete process.env.FINPLE_ADMIN_TOKEN;
+    else process.env.FINPLE_ADMIN_TOKEN = previousToken;
+  }
+  return authorization;
+}
 
 function receipt(overrides = {}) {
   return {

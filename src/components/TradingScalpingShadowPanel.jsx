@@ -50,6 +50,16 @@ function statusLabel(value) {
   }[value] || value || "미실행";
 }
 
+function approvalExpiryLabel(value) {
+  return {
+    ACTIVE: "유효",
+    EXPIRING_SOON: "만료 임박",
+    EXPIRED: "만료",
+    NOT_ACTIVE_YET: "아직 유효하지 않음",
+    INVALID: "확인 필요",
+  }[value] || "확인 필요";
+}
+
 function approvedVersionsFromDashboard(dashboard) {
   return (dashboard?.registry?.versions || [])
     .filter((version) => version.status === "approved")
@@ -234,8 +244,8 @@ function TradingScalpingShadowPanel() {
         {feedError ? <div className="scalpingShadowError">{feedError}</div> : null}
         <div className="scalpingShadowFeedGateGrid">
           <article><span>기능 플래그</span><strong>{feedPreflight.featureEnabled ? "활성" : "비활성"}</strong></article>
-          <article><span>읽기전용 승인</span><strong>{feedPreflight.receipt?.approvalId || "미등록"}</strong></article>
-          <article><span>승인 만료</span><strong>{dateTime(feedPreflight.receipt?.expiresAt)}</strong></article>
+          <article><span>읽기전용 승인</span><strong>{feedPreflight.receipt?.approvalIdPresent ? "등록됨" : "미등록"}</strong></article>
+          <article><span>승인 만료</span><strong>{approvalExpiryLabel(feedPreflight.receipt?.expiryStatus)}</strong></article>
           <article><span>KIS 자격증명</span><strong>{credentialReady ? "설정됨" : "미설정"}</strong></article>
           <article><span>활성 Shadow</span><strong>{feedStatus?.shadow?.active ? "확인" : "필요"}</strong></article>
           <article><span>시작 가능</span><strong>{feedPreflight.startEligible ? "가능" : "차단"}</strong></article>

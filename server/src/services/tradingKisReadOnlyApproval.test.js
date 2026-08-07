@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
+import process from "node:process";
 
 import { requireAdminStartAccess } from "../middleware/adminGuard.js";
-import { authenticatedAdminStartAuthorization } from "../../test-utils/adminStartAuthorization.js";
 import {
   assessKisShadowFeedApproval,
   createKisProviderAccessDecision,
@@ -13,6 +14,23 @@ import {
   REQUIRED_KIS_SHADOW_FORBIDDEN_ACTIONS,
   REQUIRED_KIS_SHADOW_READ_SCOPES,
 } from "./tradingKisReadOnlyApproval.js";
+
+function authenticatedAdminStartAuthorization() {
+  const previousToken = process.env.FINPLE_ADMIN_TOKEN;
+  process.env.FINPLE_ADMIN_TOKEN = "test-admin-token";
+  let authorization;
+  try {
+    requireAdminStartAccess(
+      { get: (name) => name === "x-finple-admin-token" ? "test-admin-token" : "" },
+      { status() { return this; }, json(payload) { assert.fail(payload.code); } },
+      (value) => { authorization = value; },
+    );
+  } finally {
+    if (previousToken === undefined) delete process.env.FINPLE_ADMIN_TOKEN;
+    else process.env.FINPLE_ADMIN_TOKEN = previousToken;
+  }
+  return authorization;
+}
 
 function validReceipt(overrides = {}) {
   return {
@@ -76,6 +94,32 @@ test("configuration assessment never authorizes provider calls", () => {
   assert.equal(result.providerCallsAllowed, false);
   assert.equal(createKisProviderAccessDecision(result), null);
   assert.equal(createKisProviderAccessDecision(result, {}), null);
+});
+
+test("no importable test utility can mint an admin-start provider capability", async () => {
+  await assert.rejects(
+    access(new URL("../../test-utils/adminStartAuthorization.js", import.meta.url)),
+    (error) => error.code === "ENOENT",
+  );
+  const approval = assessKisShadowFeedApproval(
+    { receipt: validReceipt({ environment: "production_live", baseUrl: KIS_READ_ONLY_BASE_URLS.live }) },
+    {
+      env: enabledEnv({
+        FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+        KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+      }),
+      nowMs,
+    },
+  );
+  const previousToken = process.env.FINPLE_ADMIN_TOKEN;
+  try {
+    process.env.FINPLE_ADMIN_TOKEN = "ordinary-helper-token";
+    const ordinaryHelperResult = Object.freeze({});
+    assert.equal(createKisProviderAccessDecision(approval, ordinaryHelperResult), null);
+  } finally {
+    if (previousToken === undefined) delete process.env.FINPLE_ADMIN_TOKEN;
+    else process.env.FINPLE_ADMIN_TOKEN = previousToken;
+  }
 });
 
 test("admin-start authorization is not issued by dev-open or an invalid token", () => {
