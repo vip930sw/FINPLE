@@ -101,7 +101,10 @@ function makeQuotePayload(symbol = "TQQQ") {
 test("normalizes only canonical KIS overseas realtime symbol prefixes", () => {
   for (const [input, expected] of [
     ["TQQQ", "TQQQ"], ["tqqq", "TQQQ"], ["DNASTQQQ", "TQQQ"],
-    ["DNASSQQQ", "SQQQ"], ["DAMSSOXL", "SOXL"], ["DNYSSPXU", "SPXU"],
+    ["DNASSQQQ", "SQQQ"], ["DAMSSOXL", "SOXL"], ["DAMSUPRO", "UPRO"],
+    ["DAMSTQQQ", "DAMSTQQQ"], ["DAMSSQQQ", "DAMSSQQQ"],
+    ["DNASSOXL", "DNASSOXL"], ["DNASUPRO", "DNASUPRO"],
+    ["DNASAAPL", "DNASAAPL"], ["DNYSSPXU", "DNYSSPXU"],
     ["XTQQQ", "XTQQQ"], ["ABCTQQQ", "ABCTQQQ"],
     ["UNKNOWN:TQQQ", "UNKNOWN:TQQQ"], ["FOODNASTQQQ", "FOODNASTQQQ"],
   ]) assert.equal(normalizeKisOverseasRealtimeEventSymbol(input), expected);
@@ -152,6 +155,8 @@ test("normalizes prefixed trade symbols without changing market data", () => {
 test("keeps prefixed trade identity exact and malformed prefixes unmodified", () => {
   for (const [input, expected] of [
     ["DNASSQQQ", "SQQQ"], ["DAMSSOXL", "SOXL"],
+    ["DAMSTQQQ", "DAMSTQQQ"], ["DAMSSQQQ", "DAMSSQQQ"],
+    ["DNASSOXL", "DNASSOXL"], ["DNASUPRO", "DNASUPRO"], ["DNASAAPL", "DNASAAPL"],
     ["XTQQQ", "XTQQQ"], ["ABCTQQQ", "ABCTQQQ"],
     ["UNKNOWN:TQQQ", "UNKNOWN:TQQQ"], ["FOODNASTQQQ", "FOODNASTQQQ"],
   ]) {

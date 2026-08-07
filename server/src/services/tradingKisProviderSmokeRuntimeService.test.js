@@ -176,7 +176,7 @@ test("successful smoke uses one symbol, one approval request and one socket then
   }
 });
 
-test("prefixed provider event reaches MESSAGE_VALIDATED while a wrong symbol stays rejected", async () => {
+test("prefixed provider event reaches MESSAGE_VALIDATED while wrong-market and wrong-symbol events stay rejected", async () => {
   const prefixed = providerHarness({ eventSymbol: "DNASTQQQ" });
   await startKisProviderSmokeRuntime(
     { adminStartAuthorization: adminStartAuthorization(), nowMs },
@@ -186,16 +186,18 @@ test("prefixed provider event reaches MESSAGE_VALIDATED while a wrong symbol sta
   assert.equal(readKisProviderSmokeRuntimeStatus().schemaAccepted, true);
   assert.equal(readKisProviderSmokeRuntimeStatus().lifecycle.includes("MESSAGE_VALIDATED"), true);
 
-  resetKisProviderSmokeRuntimeForTest();
-  const wrong = providerHarness({ eventSymbol: "DNASSQQQ" });
-  await startKisProviderSmokeRuntime(
-    { adminStartAuthorization: adminStartAuthorization(), nowMs },
-    wrong.dependencies,
-  );
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(readKisProviderSmokeRuntimeStatus().schemaAccepted, false);
-  assert.equal(readKisProviderSmokeRuntimeStatus().lifecycle.includes("MESSAGE_VALIDATED"), false);
-  stopKisProviderSmokeRuntime("test_cleanup");
+  for (const eventSymbol of ["DAMSTQQQ", "DNASSQQQ"]) {
+    resetKisProviderSmokeRuntimeForTest();
+    const wrong = providerHarness({ eventSymbol });
+    await startKisProviderSmokeRuntime(
+      { adminStartAuthorization: adminStartAuthorization(), nowMs },
+      wrong.dependencies,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(readKisProviderSmokeRuntimeStatus().schemaAccepted, false);
+    assert.equal(readKisProviderSmokeRuntimeStatus().lifecycle.includes("MESSAGE_VALIDATED"), false);
+    stopKisProviderSmokeRuntime("test_cleanup");
+  }
 });
 
 test("plain, JSON and generic caller assertions cannot reach provider I/O", async () => {

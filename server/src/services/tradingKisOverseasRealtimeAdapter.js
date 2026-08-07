@@ -70,7 +70,8 @@ function normalizeSymbol(value) {
 
 export function normalizeKisOverseasRealtimeEventSymbol(value) {
   const symbol = normalizeSymbol(value);
-  return symbol.match(/^D(?:NAS|NYS|AMS)([A-Z0-9._-]{1,20})$/)?.[1] ?? symbol;
+  const match = symbol.match(/^D(NAS|NYS|AMS)([A-Z0-9._-]{1,20})$/);
+  return match && KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL[match[2]] === match[1] ? match[2] : symbol;
 }
 
 function normalizeMarket(value) {
