@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { TRADING_ENV_NAMES, validateTradingEnvConfig } from "./tradingEnvConfig.js";
+import {
+  TRADING_ENV_NAMES,
+  isKisTradingAccountIdValid,
+  validateTradingEnvConfig,
+} from "./tradingEnvConfig.js";
 
 function renderVirtualShadowEnv(overrides = {}) {
   return {
@@ -96,4 +100,10 @@ test("requires asset-type mappings to match allowed markets", () => {
   );
   assert.equal(extraMarket.validShape, false);
   assert.match(extraMarket.shapeReasons.join("|"), /asset_type_market_not_allowlisted_US/);
+});
+
+test("validates the canonical KIS account identifier without exposing account parts", () => {
+  assert.equal(isKisTradingAccountIdValid("12345678-01"), true);
+  assert.equal(isKisTradingAccountIdValid("1234567801"), false);
+  assert.equal(isKisTradingAccountIdValid("12345678-001"), false);
 });
