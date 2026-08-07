@@ -274,3 +274,185 @@ test("protocol exception always ends STOPPED and closes the socket", async () =>
   assert.equal(readKisProviderSmokeRuntimeStatus().cleanShutdown, true);
   assert.equal(closed, 1);
 });
+
+test("timeout aborts a hanging Approval request with AbortError", async () => {
+  let timeoutCallback;
+  let observedInit;
+  let abortCount = 0;
+  let abortErrorName;
+  let socketCalls = 0;
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      env: liveEnv(),
+      timeoutMs: 10,
+      setTimeoutImpl(callback) { timeoutCallback = callback; return 1; },
+      clearTimeoutImpl() {},
+      fetchImpl: (url, init) => {
+        observedInit = init;
+        return new Promise((resolve, reject) => {
+          init.signal.addEventListener("abort", () => {
+            abortCount += 1;
+            const error = Object.assign(new Error("aborted"), { name: "AbortError" });
+            abortErrorName = error.name;
+            reject(error);
+          }, { once: true });
+        });
+      },
+      webSocketFactory: () => { socketCalls += 1; return {}; },
+    },
+  );
+  assert.equal(observedInit.method, "POST");
+  assert.equal(observedInit.headers["content-type"], "application/json");
+  assert.equal(typeof observedInit.body, "string");
+  assert.equal(observedInit.signal.aborted, false);
+
+  timeoutCallback();
+  assert.equal(observedInit.signal.aborted, true);
+  assert.equal(abortCount, 1);
+  assert.equal(abortErrorName, "AbortError");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const result = readKisProviderSmokeRuntimeStatus();
+  assert.equal(result.state, "STOPPED");
+  assert.equal(result.lifecycle.at(-1), "STOPPED");
+  assert.equal(result.reason, "provider_smoke_timeout");
+  assert.equal(result.approvalKeyRequestSucceeded, false);
+  assert.equal(socketCalls, 0);
+});
+
+test("late successful Approval response after timeout is discarded", async () => {
+  let timeoutCallback;
+  let resolveFetch;
+  let socketCalls = 0;
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      env: liveEnv(),
+      timeoutMs: 10,
+      setTimeoutImpl(callback) { timeoutCallback = callback; return 1; },
+      clearTimeoutImpl() {},
+      fetchImpl: () => new Promise((resolve) => { resolveFetch = resolve; }),
+      webSocketFactory: () => { socketCalls += 1; return {}; },
+    },
+  );
+  timeoutCallback();
+  const stopped = readKisProviderSmokeRuntimeStatus();
+  resolveFetch({ ok: true, json: async () => ({ approval_key: "LATE_SENSITIVE_KEY" }) });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(readKisProviderSmokeRuntimeStatus(), stopped);
+  assert.equal(socketCalls, 0);
+  assert.equal(JSON.stringify(stopped).includes("LATE_SENSITIVE_KEY"), false);
+});
+
+test("operator stop aborts the Approval request before a new run starts", async () => {
+  let firstSignal;
+  let firstRequestTerminated = false;
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      env: liveEnv(),
+      fetchImpl: (url, init) => {
+        firstSignal = init.signal;
+        return new Promise((resolve, reject) => {
+          init.signal.addEventListener("abort", () => {
+            firstRequestTerminated = true;
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          }, { once: true });
+        });
+      },
+      webSocketFactory: () => assert.fail("stopped run must not open a socket"),
+    },
+  );
+  const stopped = stopKisProviderSmokeRuntime("operator_stop");
+  assert.equal(firstSignal.aborted, true);
+  assert.equal(firstRequestTerminated, true);
+  assert.equal(stopped.reason, "operator_stop");
+  assert.equal(stopped.cleanShutdown, true);
+
+  const next = providerHarness();
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      ...next.dependencies,
+      fetchImpl: async (...args) => {
+        assert.equal(firstRequestTerminated, true);
+        return next.dependencies.fetchImpl(...args);
+      },
+    },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().reason, "provider_smoke_message_validated");
+});
+
+test("exception shutdown aborts an active Approval request", async () => {
+  let signal;
+  let abortCount = 0;
+  let closeCount = 0;
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      env: liveEnv(),
+      fetchImpl: (url, init) => {
+        signal = init.signal;
+        return new Promise((resolve, reject) => {
+          init.signal.addEventListener("abort", () => {
+            abortCount += 1;
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          }, { once: true });
+        });
+      },
+      webSocketFactory: () => assert.fail("failed run must not open a socket"),
+      feedFactory: ({ fetchImpl }) => ({
+        async connect(config, handlers) {
+          void fetchImpl("https://provider.invalid/approval", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}",
+          }).catch(() => {});
+          queueMicrotask(() => handlers.onProtocolIssue({ kind: "socket_error", reasons: ["websocket_error"] }));
+          return { connected: true, close() { closeCount += 1; } };
+        },
+      }),
+    },
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const result = readKisProviderSmokeRuntimeStatus();
+  assert.equal(signal.aborted, true);
+  assert.equal(abortCount, 1);
+  assert.equal(closeCount, 1);
+  assert.equal(result.state, "STOPPED");
+  assert.equal(result.reason, "websocket_error");
+});
+
+test("late provider callbacks cannot mutate a STOPPED run", async () => {
+  let providerHandlers;
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    {
+      env: liveEnv(),
+      fetchImpl: async () => ({ ok: true }),
+      webSocketFactory: () => ({}),
+      feedFactory: () => ({
+        async connect(config, handlers) {
+          providerHandlers = handlers;
+          return { connected: true, close() {} };
+        },
+      }),
+    },
+  );
+  stopKisProviderSmokeRuntime("operator_stop");
+  const stopped = readKisProviderSmokeRuntimeStatus();
+
+  providerHandlers.onStatus({ state: "subscribing" });
+  providerHandlers.onStatus({ state: "connected" });
+  providerHandlers.onStatus({ state: "closed", reason: "late_close" });
+  providerHandlers.onControl({ controlStatus: "0" });
+  providerHandlers.onEvent({ type: "trade", symbol: "TQQQ", rawStored: false });
+  providerHandlers.onProtocolIssue({ kind: "socket_error", reasons: ["late_error"] });
+
+  assert.deepEqual(readKisProviderSmokeRuntimeStatus(), stopped);
+  assert.equal(stopped.lifecycle.at(-1), "STOPPED");
+  assert.equal(stopped.reason, "operator_stop");
+});

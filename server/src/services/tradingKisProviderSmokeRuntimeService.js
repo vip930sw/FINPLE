@@ -88,6 +88,7 @@ function status(run = currentRun, env = process.env) {
 }
 
 function transition(run, state) {
+  if (run.finished && state !== "STOPPED") return;
   run.state = state;
   if (run.lifecycle.at(-1) !== state) run.lifecycle.push(state);
 }
@@ -97,17 +98,20 @@ function finish(run, reason) {
   run.finished = true;
   run.endedAtMs = run.now();
   run.reason = safeReason(reason);
-  transition(run, "STOPPED");
+  run.abortController.abort();
+  run.abortController = null;
   if (run.timeout) run.clearTimeout(run.timeout);
   run.timeout = null;
+  const connection = run.connection;
+  run.connection = null;
   try {
-    run.connection?.close?.();
+    connection?.close?.();
     run.cleanShutdown = true;
   } catch {
     run.cleanShutdown = false;
     run.reason = "provider_smoke_close_failed";
   }
-  run.connection = null;
+  transition(run, "STOPPED");
 }
 
 export function readKisProviderSmokeRuntimeStatus(options = {}) {
@@ -169,6 +173,7 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
     endedAtMs: null,
     now,
     clearTimeout: clearTimeoutImpl,
+    abortController: new AbortController(),
     timeout: null,
     connection: null,
     reason: null,
@@ -192,14 +197,16 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
     timeoutMs,
   );
 
-  const fetchOnce = async (...args) => {
+  const fetchOnce = async (input, init = {}) => {
+    if (run.finished) throw Object.assign(new Error("provider_smoke_stopped"), { name: "AbortError" });
     if (run.approvalKeyRequestCount >= 1) throw runtimeError("KIS_PROVIDER_SMOKE_APPROVAL_KEY_LIMIT");
     run.approvalKeyRequestCount += 1;
-    const response = await nativeFetch(...args);
-    run.approvalKeyRequestSucceeded = response?.ok === true;
+    const response = await nativeFetch(input, { ...init, signal: run.abortController.signal });
+    if (!run.finished) run.approvalKeyRequestSucceeded = response?.ok === true;
     return response;
   };
   const websocketOnce = (url) => {
+    if (run.finished) throw runtimeError("KIS_PROVIDER_SMOKE_STOPPED");
     if (run.websocketConnectionCount >= 1) throw runtimeError("KIS_PROVIDER_SMOKE_WEBSOCKET_LIMIT");
     run.websocketConnectionCount += 1;
     return nativeWebSocketFactory(url);
@@ -225,14 +232,17 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
       },
       {
         onStatus(next) {
+          if (run.finished) return;
           if (next?.state === "subscribing") run.websocketConnected = true;
           if (next?.state === "connected") transition(run, "SUBSCRIBED");
-          if (next?.state === "closed" && !run.finished) finish(run, next.reason || "provider_socket_closed");
+          if (next?.state === "closed") finish(run, next.reason || "provider_socket_closed");
         },
         onControl(control) {
+          if (run.finished) return;
           if (clean(control?.controlStatus) === "0") run.subscriptionAccepted = true;
         },
         onEvent(event) {
+          if (run.finished) return;
           run.messageReceived = true;
           run.messageCount += 1;
           run.schemaAccepted = ["trade", "quote"].includes(event?.type)
@@ -245,12 +255,16 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
           }
         },
         onProtocolIssue(issue) {
+          if (run.finished) return;
           finish(run, issue?.reasons?.[0] || issue?.kind || "provider_smoke_protocol_issue");
         },
       },
     );
     run.connection = connection;
-    if (run.finished) connection?.close?.();
+    if (run.finished) {
+      run.connection = null;
+      connection?.close?.();
+    }
     else if (!connection?.connected) finish(run, connection?.reasons?.[0] || "provider_smoke_connection_blocked");
   } catch (error) {
     finish(run, error?.code || error?.name || "provider_smoke_failed");

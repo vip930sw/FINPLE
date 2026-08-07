@@ -393,8 +393,10 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
       const requestApprovalKey = async () => {
         const request = validation.approvalRequest;
         const response = await fetchImpl(request.url, request.init);
+        if (!active) return "";
         if (!response?.ok) throw Object.assign(new Error("approval_request_failed"), { code: `http_${response?.status ?? "unknown"}` });
         const body = await response.json();
+        if (!active) return "";
         const key = clean(body?.approval_key);
         if (!key) throw Object.assign(new Error("approval_key_missing"), { code: "approval_key_missing" });
         return key;
@@ -425,16 +427,23 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
         if (!active) return;
         try {
           emitStatus("authorizing", { attempt: reconnectAttempt });
-          approvalKey = await requestApprovalKey();
-          if (!active) return;
+          const nextApprovalKey = await requestApprovalKey();
+          if (!active || !nextApprovalKey) return;
+          approvalKey = nextApprovalKey;
+          if (!active) {
+            approvalKey = "";
+            return;
+          }
           socket = webSocketFactory(validation.websocketUrl);
           bindSocketEvent(socket, "open", () => {
+            if (!active) return;
             reconnectAttempt = 0;
             emitStatus("subscribing");
             subscribeAll();
             emitStatus("connected", { subscriptionCount: validation.symbolEntries.length * 2 });
           });
           bindSocketEvent(socket, "message", (message) => {
+            if (!active) return;
             const rawValue = message?.data ?? message;
             const raw = typeof rawValue === "string" ? rawValue : Buffer.isBuffer(rawValue) ? rawValue.toString("utf8") : clean(rawValue);
             const parsed = parseKisOverseasRealtimeFrame(raw, { receivedAtMs: now() });
@@ -448,13 +457,18 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
             }
             for (const event of parsed.events) handlers.onEvent?.(event);
           });
-          bindSocketEvent(socket, "error", () => handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_error"], rawStored: false }));
+          bindSocketEvent(socket, "error", () => {
+            if (!active) return;
+            handlers.onProtocolIssue?.({ kind: "socket_error", reasons: ["websocket_error"], rawStored: false });
+          });
           bindSocketEvent(socket, "close", () => {
             approvalKey = "";
+            socket = null;
             if (active) scheduleReconnect("websocket_closed");
           });
         } catch (error) {
           approvalKey = "";
+          if (!active) return;
           handlers.onProtocolIssue?.({ kind: "authorization_error", reasons: [maskError(error, "kis_realtime_connect_failed")], rawStored: false });
           scheduleReconnect("authorization_failed");
         }
@@ -465,11 +479,14 @@ export function createKisOverseasRealtimeFeed(dependencies = {}) {
         connected: true,
         reasons: [],
         close() {
+          if (!active) return;
           active = false;
           approvalKey = "";
           if (reconnectTimer) clearTimeoutImpl(reconnectTimer);
           reconnectTimer = null;
-          if (socket && typeof socket.close === "function") socket.close();
+          const socketToClose = socket;
+          socket = null;
+          if (socketToClose && typeof socketToClose.close === "function") socketToClose.close();
           emitStatus("closed", { reason: "operator_close" });
         },
         status() {
