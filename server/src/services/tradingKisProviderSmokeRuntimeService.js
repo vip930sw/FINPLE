@@ -10,6 +10,7 @@ import {
   createKisProviderSmokeAccessDecision,
   readKisProviderAccessDecision,
 } from "./tradingKisReadOnlyApproval.js";
+import { parseTradingAllowedSymbols } from "./tradingEnvConfig.js";
 
 export const KIS_PROVIDER_SMOKE_RUNTIME_VERSION = "kis-provider-smoke-v1";
 export const KIS_PROVIDER_SMOKE_MAX_RUNTIME_MS = 60_000;
@@ -40,15 +41,13 @@ function runtimeError(code, details = [], statusCode = 409) {
 function resolveSmokeSymbol(env, marketBySymbol = KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL) {
   const configured = clean(env.FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL);
   const symbol = configured.toUpperCase();
-  const allowed = new Set(
-    clean(env.FINPLE_TRADING_ALLOWED_SYMBOLS)
-      .split(",")
-      .map((symbol) => clean(symbol).toUpperCase())
-      .filter(Boolean),
-  );
+  const allowed = parseTradingAllowedSymbols(env.FINPLE_TRADING_ALLOWED_SYMBOLS);
   const isSingle = !configured.includes(",");
   const valid = Boolean(configured) && isSingle && symbol !== "*" && SYMBOL_PATTERN.test(symbol);
-  const globallyAllowed = valid && (allowed.has("*") || allowed.has(symbol));
+  const globalAllowlistValid = allowed.reasons.length === 0;
+  const globallyAllowed = valid
+    && globalAllowlistValid
+    && (allowed.wildcard || allowed.values.includes(symbol));
   const market = clean(marketBySymbol[symbol]).toUpperCase();
   const supported = valid && Boolean(KIS_OVERSEAS_MARKET_CODES[market]);
   let reason = null;
@@ -56,6 +55,7 @@ function resolveSmokeSymbol(env, marketBySymbol = KIS_LEVERAGED_ETF_MARKET_BY_SY
   else if (symbol === "*") reason = "kis_provider_smoke_symbol_wildcard_not_allowed";
   else if (!isSingle) reason = "kis_provider_smoke_symbol_must_be_single";
   else if (!SYMBOL_PATTERN.test(symbol)) reason = "kis_provider_smoke_symbol_invalid";
+  else if (!globalAllowlistValid) reason = "kis_provider_smoke_global_allowlist_invalid";
   else if (!globallyAllowed) reason = "kis_provider_smoke_symbol_not_globally_allowed";
   else if (!supported) reason = "kis_provider_smoke_symbol_not_supported";
   return {

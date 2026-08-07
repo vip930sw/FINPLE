@@ -221,6 +221,26 @@ test("dedicated smoke symbol fails closed with deterministic reasons before prov
       "kis_provider_smoke_symbol_not_globally_allowed",
     ],
     [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "*,TQQQ" },
+      "kis_provider_smoke_global_allowlist_invalid",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "TQQQ,*" },
+      "kis_provider_smoke_global_allowlist_invalid",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "*,SQQQ" },
+      "kis_provider_smoke_global_allowlist_invalid",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "TQQQ,$BAD" },
+      "kis_provider_smoke_global_allowlist_invalid",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "" },
+      "kis_provider_smoke_global_allowlist_invalid",
+    ],
+    [
       { FINPLE_TRADING_ALLOWED_SYMBOLS: "SPY", FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "SPY" },
       "kis_provider_smoke_symbol_not_supported",
     ],
@@ -244,19 +264,21 @@ test("dedicated smoke symbol fails closed with deterministic reasons before prov
   }
 });
 
-test("global wildcard authorizes only the explicit dedicated smoke symbol", async () => {
-  const harness = providerHarness();
-  harness.dependencies.env = liveEnv({ FINPLE_TRADING_ALLOWED_SYMBOLS: "*" });
-  await startKisProviderSmokeRuntime(
-    { adminStartAuthorization: adminStartAuthorization(), nowMs },
-    harness.dependencies,
-  );
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  const result = readKisProviderSmokeRuntimeStatus({ env: harness.dependencies.env });
-  assert.equal(result.state, "STOPPED");
-  assert.equal(result.selectedSymbolCount, 1);
-  assert.equal(result.smokeSymbolGloballyAllowed, true);
-  assert.equal(result.smokeSymbolSupported, true);
+test("canonical wildcard and explicit global allowlists authorize the dedicated symbol", async () => {
+  for (const allowedSymbols of ["*", "TQQQ", "TQQQ,SQQQ"]) {
+    const harness = providerHarness();
+    harness.dependencies.env = liveEnv({ FINPLE_TRADING_ALLOWED_SYMBOLS: allowedSymbols });
+    await startKisProviderSmokeRuntime(
+      { adminStartAuthorization: adminStartAuthorization(), nowMs },
+      harness.dependencies,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const result = readKisProviderSmokeRuntimeStatus({ env: harness.dependencies.env });
+    assert.equal(result.state, "STOPPED");
+    assert.equal(result.selectedSymbolCount, 1);
+    assert.equal(result.smokeSymbolGloballyAllowed, true);
+    assert.equal(result.smokeSymbolSupported, true);
+  }
 });
 
 test("supported smoke symbol without a valid adapter mapping fails before provider I/O", async () => {
