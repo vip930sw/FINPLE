@@ -81,6 +81,10 @@ export function parseTradingAllowedSymbols(value) {
   return parseList(value, { allowWildcard: true, symbols: true });
 }
 
+export function isKisTradingAccountIdValid(value) {
+  return KIS_ACCOUNT_ID_PATTERN.test(clean(value));
+}
+
 function parseAllowedAssetTypesByMarket(value) {
   const raw = clean(value);
   if (!raw) return { value: {}, reasons: ["missing_allowed_asset_types_by_market"] };
@@ -183,7 +187,7 @@ export function validateTradingEnvConfig(env = {}) {
     ...allowedAssetTypesByMarket.reasons,
     ...allowedSymbols.reasons.map((reason) => `allowed_symbols_${reason}`),
     accountId ? null : "missing_kis_trading_account_id",
-    accountId && !KIS_ACCOUNT_ID_PATTERN.test(accountId) ? "invalid_kis_trading_account_id_format" : null,
+    accountId && !isKisTradingAccountIdValid(accountId) ? "invalid_kis_trading_account_id_format" : null,
     ...baseUrl.reasons,
     ...approvedAt.reasons,
     approvedBy ? null : "missing_order_permission_approved_by",
@@ -225,7 +229,7 @@ export function validateTradingEnvConfig(env = {}) {
       allowedAssetTypesByMarket: allowedAssetTypesByMarket.value,
       allowedSymbols: allowedSymbols.values,
       wildcardAllowedSymbols: wildcardSymbols,
-      kisTradingAccountIdFormatValid: KIS_ACCOUNT_ID_PATTERN.test(accountId),
+      kisTradingAccountIdFormatValid: isKisTradingAccountIdValid(accountId),
       kisTradingBaseUrlMode: baseUrl.mode,
       kisTradingBaseUrlHost: baseUrl.host,
       orderPermissionApprovedAt: approvedAt.normalized,
