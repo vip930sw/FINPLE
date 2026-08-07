@@ -40,6 +40,7 @@ function liveEnv(overrides = {}) {
     FINPLE_TRADING_KIS_HISTORICAL_CAPTURE_ENABLED: "false",
     FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
     FINPLE_TRADING_ALLOWED_SYMBOLS: "TQQQ",
+    FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "TQQQ",
     KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
     KIS_TRADING_APP_KEY: secretSentinels[0],
     KIS_TRADING_APP_SECRET: secretSentinels[1],
@@ -149,6 +150,9 @@ test("successful smoke uses one symbol, one approval request and one socket then
   assert.equal(result.state, "STOPPED");
   assert.deepEqual(result.lifecycle, ["AUTHORIZED", "CONNECTING", "SUBSCRIBED", "MESSAGE_VALIDATED", "STOPPED"]);
   assert.equal(result.active, false);
+  assert.equal(result.smokeSymbolConfigured, true);
+  assert.equal(result.smokeSymbolGloballyAllowed, true);
+  assert.equal(result.smokeSymbolSupported, true);
   assert.equal(result.selectedSymbolCount, 1);
   assert.equal(result.approvalKeyRequestCount, 1);
   assert.equal(result.approvalKeyRequestSucceeded, true);
@@ -167,7 +171,7 @@ test("successful smoke uses one symbol, one approval request and one socket then
   assert.equal(result.safety.orderSubmissionAllowed, false);
   assert.equal(result.safety.liveActivationAllowed, false);
   const serialized = JSON.stringify(result);
-  for (const sentinel of [...secretSentinels, "SENSITIVE_EPHEMERAL_KEY", makeTradePayload()]) {
+  for (const sentinel of [...secretSentinels, "SENSITIVE_EPHEMERAL_KEY", makeTradePayload(), "TQQQ"]) {
     assert.equal(serialized.includes(sentinel), false);
   }
 });
@@ -190,18 +194,86 @@ test("plain, JSON and generic caller assertions cannot reach provider I/O", asyn
   assert.equal(calls, 0);
 });
 
-test("non-allowlisted symbols fail closed before provider I/O", async () => {
+test("dedicated smoke symbol fails closed with deterministic reasons before provider I/O", async () => {
+  const cases = [
+    [
+      { FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "" },
+      "kis_provider_smoke_symbol_required",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "*", FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "" },
+      "kis_provider_smoke_symbol_required",
+    ],
+    [
+      { FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "*" },
+      "kis_provider_smoke_symbol_wildcard_not_allowed",
+    ],
+    [
+      { FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "TQQQ,SQQQ" },
+      "kis_provider_smoke_symbol_must_be_single",
+    ],
+    [
+      { FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "TQ QQ" },
+      "kis_provider_smoke_symbol_invalid",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "SQQQ", FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "TQQQ" },
+      "kis_provider_smoke_symbol_not_globally_allowed",
+    ],
+    [
+      { FINPLE_TRADING_ALLOWED_SYMBOLS: "SPY", FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL: "SPY" },
+      "kis_provider_smoke_symbol_not_supported",
+    ],
+  ];
+  for (const [overrides, expectedReason] of cases) {
+    let calls = 0;
+    await assert.rejects(
+      startKisProviderSmokeRuntime(
+        { adminStartAuthorization: adminStartAuthorization(), nowMs },
+        {
+          env: liveEnv(overrides),
+          fetchImpl: async () => { calls += 1; },
+          webSocketFactory: () => { calls += 1; },
+        },
+      ),
+      (error) => error.code === "KIS_PROVIDER_SMOKE_SYMBOL_BLOCKED"
+        && error.details.length === 1
+        && error.details[0] === expectedReason,
+    );
+    assert.equal(calls, 0);
+  }
+});
+
+test("global wildcard authorizes only the explicit dedicated smoke symbol", async () => {
+  const harness = providerHarness();
+  harness.dependencies.env = liveEnv({ FINPLE_TRADING_ALLOWED_SYMBOLS: "*" });
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    harness.dependencies,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const result = readKisProviderSmokeRuntimeStatus({ env: harness.dependencies.env });
+  assert.equal(result.state, "STOPPED");
+  assert.equal(result.selectedSymbolCount, 1);
+  assert.equal(result.smokeSymbolGloballyAllowed, true);
+  assert.equal(result.smokeSymbolSupported, true);
+});
+
+test("supported smoke symbol without a valid adapter mapping fails before provider I/O", async () => {
   let calls = 0;
   await assert.rejects(
     startKisProviderSmokeRuntime(
       { adminStartAuthorization: adminStartAuthorization(), nowMs },
       {
-        env: liveEnv({ FINPLE_TRADING_ALLOWED_SYMBOLS: "SPY,*" }),
+        env: liveEnv(),
+        marketBySymbol: {},
         fetchImpl: async () => { calls += 1; },
         webSocketFactory: () => { calls += 1; },
       },
     ),
-    (error) => error.code === "KIS_PROVIDER_SMOKE_SYMBOL_BLOCKED",
+    (error) => error.code === "KIS_PROVIDER_SMOKE_SYMBOL_BLOCKED"
+      && error.details.length === 1
+      && error.details[0] === "kis_provider_smoke_symbol_not_supported",
   );
   assert.equal(calls, 0);
 });

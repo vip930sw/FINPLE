@@ -1,6 +1,7 @@
 import process from "node:process";
 
 import {
+  KIS_OVERSEAS_MARKET_CODES,
   KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
   createKisOverseasRealtimeFeed,
 } from "./tradingKisOverseasRealtimeAdapter.js";
@@ -12,6 +13,7 @@ import {
 
 export const KIS_PROVIDER_SMOKE_RUNTIME_VERSION = "kis-provider-smoke-v1";
 export const KIS_PROVIDER_SMOKE_MAX_RUNTIME_MS = 60_000;
+const SYMBOL_PATTERN = /^[A-Z0-9._-]+$/;
 
 let currentRun = null;
 
@@ -35,17 +37,38 @@ function runtimeError(code, details = [], statusCode = 409) {
   return error;
 }
 
-function selectedSymbol(env) {
+function resolveSmokeSymbol(env, marketBySymbol = KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL) {
+  const configured = clean(env.FINPLE_TRADING_KIS_PROVIDER_SMOKE_SYMBOL);
+  const symbol = configured.toUpperCase();
   const allowed = new Set(
     clean(env.FINPLE_TRADING_ALLOWED_SYMBOLS)
       .split(",")
       .map((symbol) => clean(symbol).toUpperCase())
       .filter(Boolean),
   );
-  return Object.keys(KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL).sort().find((symbol) => allowed.has(symbol)) || null;
+  const isSingle = !configured.includes(",");
+  const valid = Boolean(configured) && isSingle && symbol !== "*" && SYMBOL_PATTERN.test(symbol);
+  const globallyAllowed = valid && (allowed.has("*") || allowed.has(symbol));
+  const market = clean(marketBySymbol[symbol]).toUpperCase();
+  const supported = valid && Boolean(KIS_OVERSEAS_MARKET_CODES[market]);
+  let reason = null;
+  if (!configured) reason = "kis_provider_smoke_symbol_required";
+  else if (symbol === "*") reason = "kis_provider_smoke_symbol_wildcard_not_allowed";
+  else if (!isSingle) reason = "kis_provider_smoke_symbol_must_be_single";
+  else if (!SYMBOL_PATTERN.test(symbol)) reason = "kis_provider_smoke_symbol_invalid";
+  else if (!globallyAllowed) reason = "kis_provider_smoke_symbol_not_globally_allowed";
+  else if (!supported) reason = "kis_provider_smoke_symbol_not_supported";
+  return {
+    symbol: reason ? null : symbol,
+    configured: Boolean(configured),
+    globallyAllowed,
+    supported,
+    reasons: reason ? [reason] : [],
+  };
 }
 
 function status(run = currentRun, env = process.env) {
+  const smokeSymbol = resolveSmokeSymbol(env);
   return {
     ok: true,
     version: KIS_PROVIDER_SMOKE_RUNTIME_VERSION,
@@ -53,6 +76,9 @@ function status(run = currentRun, env = process.env) {
     lifecycle: run ? [...run.lifecycle] : ["IDLE"],
     active: Boolean(run && !run.finished),
     featureEnabled: enabled(env),
+    smokeSymbolConfigured: smokeSymbol.configured,
+    smokeSymbolGloballyAllowed: smokeSymbol.globallyAllowed,
+    smokeSymbolSupported: smokeSymbol.supported,
     selectedSymbolCount: run ? 1 : 0,
     providerIoPending: run?.providerIoPending === true,
     approvalKeyRequestCount: run?.approvalKeyRequestCount || 0,
@@ -155,10 +181,12 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
     throw runtimeError("KIS_PROVIDER_SMOKE_APPROVAL_BLOCKED", access.reasons);
   }
 
-  const symbol = selectedSymbol(env);
-  if (!symbol) {
-    throw runtimeError("KIS_PROVIDER_SMOKE_SYMBOL_BLOCKED", ["allowlisted_provider_smoke_symbol_required"]);
+  const marketBySymbol = dependencies.marketBySymbol ?? KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL;
+  const smokeSymbol = resolveSmokeSymbol(env, marketBySymbol);
+  if (!smokeSymbol.symbol) {
+    throw runtimeError("KIS_PROVIDER_SMOKE_SYMBOL_BLOCKED", smokeSymbol.reasons);
   }
+  const symbol = smokeSymbol.symbol;
 
   const nativeFetch = dependencies.fetchImpl ?? globalThis.fetch?.bind(globalThis);
   const nativeWebSocketFactory = dependencies.webSocketFactory
@@ -239,7 +267,7 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
         appKey,
         appSecret,
         symbols: [symbol],
-        marketBySymbol: KIS_LEVERAGED_ETF_MARKET_BY_SYMBOL,
+        marketBySymbol,
         maxReconnectAttempts: 0,
       },
       {
