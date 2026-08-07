@@ -187,6 +187,7 @@ export async function requestKisOverseasAccountBalance(input = {}) {
     if (trCont !== "M" && trCont !== "F") break;
     if (pageCount >= maxPages) fail("KIS_ACCOUNT_PAGINATION_LIMIT_REACHED");
     const next = continuationPair({ fk200: body.ctx_area_fk200, nk200: body.ctx_area_nk200 });
+    if (!next.fk200) fail("KIS_ACCOUNT_CONTINUATION_INVALID");
     const key = `${next.fk200}\u0000${next.nk200}`;
     if (seenContinuation.has(key)) fail("KIS_ACCOUNT_CONTINUATION_REPEATED");
     seenContinuation.add(key);

@@ -263,6 +263,22 @@ test("pagination rejects repeated and malformed continuation keys", async () => 
   await assert.rejects(requestKisOverseasAccountBalance(requestInput({
     transport: async () => page({ trCont: "F", body: { ctx_area_fk200: "FK_ONLY" } }),
   })), { code: "KIS_ACCOUNT_CONTINUATION_INVALID" });
+  await assert.rejects(requestKisOverseasAccountBalance(requestInput({
+    transport: async () => page({ trCont: "M", body: { ctx_area_fk200: "FK\u0001", ctx_area_nk200: "NK1" } }),
+  })), { code: "KIS_ACCOUNT_CONTINUATION_INVALID" });
+});
+
+test("pagination rejects blank M/F continuation before a second transport call", async () => {
+  for (const trCont of ["M", "F"]) {
+    let calls = 0;
+    await assert.rejects(requestKisOverseasAccountBalance(requestInput({
+      transport: async () => {
+        calls += 1;
+        return page({ trCont, body: { ctx_area_fk200: "", ctx_area_nk200: "" } });
+      },
+    })), { code: "KIS_ACCOUNT_CONTINUATION_INVALID" });
+    assert.equal(calls, 1);
+  }
 });
 
 test("pagination rejects duplicate positions instead of accumulating them", async () => {
