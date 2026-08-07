@@ -54,6 +54,7 @@ function status(run = currentRun, env = process.env) {
     active: Boolean(run && !run.finished),
     featureEnabled: enabled(env),
     selectedSymbolCount: run ? 1 : 0,
+    providerIoPending: run?.providerIoPending === true,
     approvalKeyRequestCount: run?.approvalKeyRequestCount || 0,
     approvalKeyRequestSucceeded: run?.approvalKeyRequestSucceeded === true,
     websocketConnectionCount: run?.websocketConnectionCount || 0,
@@ -122,6 +123,9 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
   if (currentRun && !currentRun.finished) {
     throw runtimeError("KIS_PROVIDER_SMOKE_ALREADY_ACTIVE", ["provider_smoke_single_flight_required"]);
   }
+  if (currentRun?.providerIoPending) {
+    throw runtimeError("KIS_PROVIDER_SMOKE_PREVIOUS_IO_PENDING", ["previous_provider_io_settlement_required"]);
+  }
 
   const env = options.env ?? dependencies.env ?? process.env;
   const now = dependencies.now ?? Date.now;
@@ -177,6 +181,7 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
     timeout: null,
     connection: null,
     reason: null,
+    providerIoPending: false,
     approvalKeyRequestCount: 0,
     approvalKeyRequestSucceeded: false,
     websocketConnectionCount: 0,
@@ -201,9 +206,15 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
     if (run.finished) throw Object.assign(new Error("provider_smoke_stopped"), { name: "AbortError" });
     if (run.approvalKeyRequestCount >= 1) throw runtimeError("KIS_PROVIDER_SMOKE_APPROVAL_KEY_LIMIT");
     run.approvalKeyRequestCount += 1;
-    const response = await nativeFetch(input, { ...init, signal: run.abortController.signal });
-    if (!run.finished) run.approvalKeyRequestSucceeded = response?.ok === true;
-    return response;
+    run.providerIoPending = true;
+    try {
+      const response = await nativeFetch(input, { ...init, signal: run.abortController.signal });
+      if (!run.finished) run.approvalKeyRequestSucceeded = response?.ok === true;
+      return response;
+    } catch (error) {
+      run.providerIoPending = false;
+      throw error;
+    }
   };
   const websocketOnce = (url) => {
     if (run.finished) throw runtimeError("KIS_PROVIDER_SMOKE_STOPPED");
@@ -220,6 +231,7 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
       setTimeoutImpl,
       clearTimeoutImpl,
       now,
+      onApprovalRequestSettled() { run.providerIoPending = false; },
     });
     const connection = await feed.connect(
       {
@@ -233,8 +245,10 @@ export async function startKisProviderSmokeRuntime(options = {}, dependencies = 
       {
         onStatus(next) {
           if (run.finished) return;
-          if (next?.state === "subscribing") run.websocketConnected = true;
-          if (next?.state === "connected") transition(run, "SUBSCRIBED");
+          if (next?.state === "connected") {
+            run.websocketConnected = true;
+            transition(run, "SUBSCRIBED");
+          }
           if (next?.state === "closed") finish(run, next.reason || "provider_socket_closed");
         },
         onControl(control) {
@@ -279,5 +293,5 @@ export function stopKisProviderSmokeRuntime(reason = "admin_operator_stop") {
 
 export function resetKisProviderSmokeRuntimeForTest() {
   if (currentRun && !currentRun.finished) finish(currentRun, "test_reset");
-  currentRun = null;
+  if (!currentRun?.providerIoPending) currentRun = null;
 }

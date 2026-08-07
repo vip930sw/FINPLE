@@ -68,7 +68,7 @@ function makeTradePayload() {
   ].join("^");
 }
 
-function providerHarness({ emitMessage = true } = {}) {
+function providerHarness({ emitMessage = true, sendImpl = () => {} } = {}) {
   let socket;
   let closeCount = 0;
   const handlers = {};
@@ -81,7 +81,7 @@ function providerHarness({ emitMessage = true } = {}) {
         socket = {
           readyState: 1,
           on(name, handler) { handlers[name] = handler; },
-          send() {},
+          send(value) { sendImpl(value); },
           close() { closeCount += 1; handlers.close?.(); },
         };
         queueMicrotask(() => {
@@ -93,7 +93,25 @@ function providerHarness({ emitMessage = true } = {}) {
       },
     },
     closeCount: () => closeCount,
+    emit: (name, value) => handlers[name]?.(value),
   };
+}
+
+async function assertPreviousProviderIoBlocksStart() {
+  let providerCalls = 0;
+  await assert.rejects(
+    startKisProviderSmokeRuntime(
+      { adminStartAuthorization: adminStartAuthorization(), nowMs },
+      {
+        env: liveEnv(),
+        fetchImpl: async () => { providerCalls += 1; },
+        webSocketFactory: () => { providerCalls += 1; },
+      },
+    ),
+    (error) => error.code === "KIS_PROVIDER_SMOKE_PREVIOUS_IO_PENDING"
+      && error.details.includes("previous_provider_io_settlement_required"),
+  );
+  assert.equal(providerCalls, 0);
 }
 
 test.beforeEach(() => resetKisProviderSmokeRuntimeForTest());
@@ -311,14 +329,25 @@ test("timeout aborts a hanging Approval request with AbortError", async () => {
   assert.equal(observedInit.signal.aborted, true);
   assert.equal(abortCount, 1);
   assert.equal(abortErrorName, "AbortError");
+  assert.equal(readKisProviderSmokeRuntimeStatus().providerIoPending, true);
+  await assertPreviousProviderIoBlocksStart();
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   const result = readKisProviderSmokeRuntimeStatus();
   assert.equal(result.state, "STOPPED");
   assert.equal(result.lifecycle.at(-1), "STOPPED");
   assert.equal(result.reason, "provider_smoke_timeout");
+  assert.equal(result.providerIoPending, false);
   assert.equal(result.approvalKeyRequestSucceeded, false);
   assert.equal(socketCalls, 0);
+
+  const next = providerHarness();
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    next.dependencies,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().reason, "provider_smoke_message_validated");
 });
 
 test("late successful Approval response after timeout is discarded", async () => {
@@ -338,12 +367,22 @@ test("late successful Approval response after timeout is discarded", async () =>
   );
   timeoutCallback();
   const stopped = readKisProviderSmokeRuntimeStatus();
+  assert.equal(stopped.providerIoPending, true);
+  await assertPreviousProviderIoBlocksStart();
   resolveFetch({ ok: true, json: async () => ({ approval_key: "LATE_SENSITIVE_KEY" }) });
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.deepEqual(readKisProviderSmokeRuntimeStatus(), stopped);
+  assert.deepEqual(readKisProviderSmokeRuntimeStatus(), { ...stopped, providerIoPending: false });
   assert.equal(socketCalls, 0);
   assert.equal(JSON.stringify(stopped).includes("LATE_SENSITIVE_KEY"), false);
+
+  const next = providerHarness();
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    next.dependencies,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().reason, "provider_smoke_message_validated");
 });
 
 test("operator stop aborts the Approval request before a new run starts", async () => {
@@ -370,6 +409,10 @@ test("operator stop aborts the Approval request before a new run starts", async 
   assert.equal(firstRequestTerminated, true);
   assert.equal(stopped.reason, "operator_stop");
   assert.equal(stopped.cleanShutdown, true);
+  assert.equal(stopped.providerIoPending, true);
+  await assertPreviousProviderIoBlocksStart();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().providerIoPending, false);
 
   const next = providerHarness();
   await startKisProviderSmokeRuntime(
@@ -388,42 +431,102 @@ test("operator stop aborts the Approval request before a new run starts", async 
 
 test("exception shutdown aborts an active Approval request", async () => {
   let signal;
-  let abortCount = 0;
+  let resolveFetch;
   let closeCount = 0;
+  let providerHandlers;
   await startKisProviderSmokeRuntime(
     { adminStartAuthorization: adminStartAuthorization(), nowMs },
     {
       env: liveEnv(),
       fetchImpl: (url, init) => {
         signal = init.signal;
-        return new Promise((resolve, reject) => {
-          init.signal.addEventListener("abort", () => {
-            abortCount += 1;
-            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
-          }, { once: true });
-        });
+        return new Promise((resolve) => { resolveFetch = resolve; });
       },
       webSocketFactory: () => assert.fail("failed run must not open a socket"),
-      feedFactory: ({ fetchImpl }) => ({
+      feedFactory: ({ fetchImpl, onApprovalRequestSettled }) => ({
         async connect(config, handlers) {
+          providerHandlers = handlers;
           void fetchImpl("https://provider.invalid/approval", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}",
-          }).catch(() => {});
-          queueMicrotask(() => handlers.onProtocolIssue({ kind: "socket_error", reasons: ["websocket_error"] }));
+          }).finally(onApprovalRequestSettled);
           return { connected: true, close() { closeCount += 1; } };
         },
       }),
     },
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  providerHandlers.onProtocolIssue({ kind: "socket_error", reasons: ["websocket_error"] });
   const result = readKisProviderSmokeRuntimeStatus();
   assert.equal(signal.aborted, true);
-  assert.equal(abortCount, 1);
   assert.equal(closeCount, 1);
   assert.equal(result.state, "STOPPED");
   assert.equal(result.reason, "websocket_error");
+  assert.equal(result.providerIoPending, true);
+  await assertPreviousProviderIoBlocksStart();
+  resolveFetch({ ok: true });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().providerIoPending, false);
+});
+
+for (const failureAt of [1, 2]) {
+  test(`subscription send failure ${failureAt} ends STOPPED without connected success`, async () => {
+    let sendCount = 0;
+    const harness = providerHarness({
+      sendImpl() {
+        sendCount += 1;
+        if (sendCount === failureAt) throw new Error("SENSITIVE_SEND_FAILURE");
+      },
+    });
+    await startKisProviderSmokeRuntime(
+      { adminStartAuthorization: adminStartAuthorization(), nowMs },
+      harness.dependencies,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const result = readKisProviderSmokeRuntimeStatus();
+    assert.equal(sendCount, failureAt);
+    assert.equal(result.state, "STOPPED");
+    assert.deepEqual(result.lifecycle, ["AUTHORIZED", "CONNECTING", "STOPPED"]);
+    assert.equal(result.reason, "websocket_subscription_send_failed");
+    assert.equal(result.websocketConnected, false);
+    assert.equal(result.messageCount, 0);
+    assert.equal(result.schemaAccepted, false);
+    assert.equal(result.cleanShutdown, true);
+    assert.equal(harness.closeCount(), 1);
+    assert.equal(JSON.stringify(result).includes("SENSITIVE_SEND_FAILURE"), false);
+  });
+}
+
+test("pingpong send failure ends STOPPED and ignores all late callbacks", async () => {
+  let sendCount = 0;
+  const harness = providerHarness({
+    emitMessage: false,
+    sendImpl() {
+      sendCount += 1;
+      if (sendCount === 3) throw new Error("SENSITIVE_ECHO_FAILURE");
+    },
+  });
+  await startKisProviderSmokeRuntime(
+    { adminStartAuthorization: adminStartAuthorization(), nowMs },
+    harness.dependencies,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readKisProviderSmokeRuntimeStatus().state, "SUBSCRIBED");
+
+  harness.emit("message", { data: JSON.stringify({ header: { tr_id: "PINGPONG" } }) });
+  const stopped = readKisProviderSmokeRuntimeStatus();
+  assert.equal(stopped.state, "STOPPED");
+  assert.equal(stopped.reason, "websocket_echo_send_failed");
+  assert.equal(stopped.messageCount, 0);
+  assert.equal(harness.closeCount(), 1);
+
+  harness.emit("message", { data: JSON.stringify({ body: { rt_cd: "0" }, header: { tr_id: "HDFSCNT0" } }) });
+  harness.emit("message", { data: `0|HDFSCNT0|1|${makeTradePayload()}` });
+  harness.emit("error");
+  harness.emit("open");
+  assert.deepEqual(readKisProviderSmokeRuntimeStatus(), stopped);
+  assert.equal(JSON.stringify(stopped).includes("SENSITIVE_ECHO_FAILURE"), false);
 });
 
 test("late provider callbacks cannot mutate a STOPPED run", async () => {
