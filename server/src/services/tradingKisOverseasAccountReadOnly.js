@@ -128,6 +128,38 @@ export function buildKisOverseasBalanceRequest(input = {}) {
   });
 }
 
+export function assertKisOverseasBalanceRequestContract(request, expected = {}) {
+  const environment = clean(expected.environment).toLowerCase();
+  const trId = KIS_OVERSEAS_BALANCE_TR_IDS[environment];
+  const { cano, accountProductCode } = accountParts(expected.accountId);
+  const query = request?.query;
+  const allowedKeys = [
+    "ACNT_PRDT_CD",
+    "CANO",
+    "CTX_AREA_FK200",
+    "CTX_AREA_NK200",
+    "OVRS_EXCG_CD",
+    "TR_CRCY_CD",
+  ];
+  const actualKeys = query && typeof query === "object" ? Object.keys(query).sort() : [];
+  const continuation = continuationPair({ fk200: query?.CTX_AREA_FK200, nk200: query?.CTX_AREA_NK200 });
+  if (
+    request?.method !== "GET"
+    || request?.path !== KIS_OVERSEAS_BALANCE_ENDPOINT
+    || request?.trId !== trId
+    || actualKeys.length !== allowedKeys.length
+    || actualKeys.some((key, index) => key !== allowedKeys[index])
+    || clean(query.CANO) !== cano
+    || clean(query.ACNT_PRDT_CD) !== accountProductCode
+    || clean(query.OVRS_EXCG_CD).toUpperCase() !== clean(expected.exchange).toUpperCase()
+    || clean(query.TR_CRCY_CD).toUpperCase() !== clean(expected.currency).toUpperCase()
+    || request.continuation !== (continuation.fk200 ? "N" : "")
+  ) {
+    fail("KIS_ACCOUNT_READ_REQUEST_CONTRACT_INVALID");
+  }
+  return true;
+}
+
 export function buildKisOverseasAccountReadOnlyStatus(options = {}) {
   const env = options.env ?? process.env;
   const accountId = clean(env[TRADING_ENV_NAMES.accountId]);

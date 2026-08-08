@@ -4,6 +4,9 @@ import process from "node:process";
 import test from "node:test";
 
 import {
+  handleKisAccountReadStartRequest,
+  handleKisAccountReadStatusRequest,
+  handleKisAccountReadStopRequest,
   handleKisHistoricalCaptureStatusRequest,
   handleKisProviderSmokeStartRequest,
   handleKisProviderSmokeStatusRequest,
@@ -242,5 +245,92 @@ test("provider smoke status is admin-only and no-store", () => {
     else process.env.FINPLE_ADMIN_PREVIEW_ENABLED = previousPreview;
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
+  }
+});
+
+test("account-read routes require admin boundaries, ignore body configuration and return no-store status", async () => {
+  const previous = {
+    NODE_ENV: process.env.NODE_ENV,
+    FINPLE_ADMIN_PREVIEW_ENABLED: process.env.FINPLE_ADMIN_PREVIEW_ENABLED,
+    FINPLE_ADMIN_TOKEN: process.env.FINPLE_ADMIN_TOKEN,
+  };
+  try {
+    process.env.NODE_ENV = "test";
+    process.env.FINPLE_ADMIN_PREVIEW_ENABLED = "true";
+    process.env.FINPLE_ADMIN_TOKEN = "expected-token";
+
+    for (const handler of [handleKisAccountReadStartRequest, handleKisAccountReadStatusRequest, handleKisAccountReadStopRequest]) {
+      const response = createGuardResponse();
+      handler({ get: () => "", body: {} }, response, (error) => assert.fail(error));
+      assert.equal(response.statusCode, 403);
+      assert.equal(response.payload.code, "ADMIN_TOKEN_REQUIRED");
+    }
+
+    let startInput;
+    const started = createGuardResponse();
+    handleKisAccountReadStartRequest(
+      { get: () => "", body: { accountId: "must-not-pass", baseUrl: "https://invalid.example" } },
+      started,
+      (error) => assert.fail(error),
+      {
+        requireAdminStartAccess: (request, response, next) => next(Object.freeze({ opaque: true })),
+        startRuntime: async (input) => { startInput = input; return { state: "STOPPED" }; },
+      },
+    );
+    await Promise.resolve();
+    assert.deepEqual(Object.keys(startInput), ["adminStartAuthorization"]);
+    assert.equal(started.statusCode, 201);
+
+    const status = createGuardResponse();
+    const headers = new Map();
+    status.setHeader = (name, value) => headers.set(String(name).toLowerCase(), value);
+    handleKisAccountReadStatusRequest(
+      { get: () => "" },
+      status,
+      (error) => assert.fail(error),
+      { requireAdminAccess: (request, response, next) => next(), readStatus: () => ({ state: "IDLE" }) },
+    );
+    assert.equal(status.payload.state, "IDLE");
+    assert.equal(headers.get("cache-control"), "no-store, max-age=0");
+
+    let stopArgumentCount;
+    const stopped = createGuardResponse();
+    handleKisAccountReadStopRequest(
+      { get: () => "", body: { reason: "operator_stop" } },
+      stopped,
+      (error) => assert.fail(error),
+      {
+        requireAdminAccess: (request, response, next) => next(),
+        stopRuntime: (...args) => { stopArgumentCount = args.length; return { state: "STOPPED" }; },
+      },
+    );
+    assert.equal(stopArgumentCount, 0);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("account-read start cannot mint authorization in dev-open mode", () => {
+  const previous = {
+    NODE_ENV: process.env.NODE_ENV,
+    FINPLE_ADMIN_PREVIEW_ENABLED: process.env.FINPLE_ADMIN_PREVIEW_ENABLED,
+    FINPLE_ADMIN_TOKEN: process.env.FINPLE_ADMIN_TOKEN,
+  };
+  try {
+    process.env.NODE_ENV = "test";
+    process.env.FINPLE_ADMIN_PREVIEW_ENABLED = "true";
+    delete process.env.FINPLE_ADMIN_TOKEN;
+    const response = createGuardResponse();
+    handleKisAccountReadStartRequest({ get: () => "", body: {} }, response, (error) => assert.fail(error));
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.payload.code, "ADMIN_TOKEN_REQUIRED");
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
 });
