@@ -21,6 +21,11 @@ import {
   stopKisProviderSmokeRuntime,
 } from "../services/tradingKisProviderSmokeRuntimeService.js";
 import {
+  readKisAccountReadRuntimeStatus,
+  startKisAccountReadRuntime,
+  stopKisAccountReadRuntime,
+} from "../services/tradingKisAccountReadRuntimeService.js";
+import {
   acknowledgeScalpingModelSignalCircuitBreaker,
   readScalpingModelSignalRuntimeStatus,
 } from "../services/tradingScalpingModelSignalRuntimeService.js";
@@ -335,6 +340,39 @@ export function handleKisProviderSmokeStopRequest(request, response, next) {
 router.post("/scalping-kis-provider-smoke/start", handleKisProviderSmokeStartRequest);
 router.get("/scalping-kis-provider-smoke/status", handleKisProviderSmokeStatusRequest);
 router.post("/scalping-kis-provider-smoke/stop", handleKisProviderSmokeStopRequest);
+
+export function handleKisAccountReadStartRequest(request, response, next, dependencies = {}) {
+  (dependencies.requireAdminStartAccess ?? requireAdminStartAccess)(request, response, (adminStartAuthorization) => {
+    (dependencies.startRuntime ?? startKisAccountReadRuntime)({ adminStartAuthorization })
+      .then((result) => response.status(201).json(result))
+      .catch(next);
+  });
+}
+
+export function handleKisAccountReadStatusRequest(request, response, next, dependencies = {}) {
+  (dependencies.requireAdminAccess ?? requireAdminAccess)(request, response, () => {
+    try {
+      response.setHeader("Cache-Control", "no-store, max-age=0");
+      response.json((dependencies.readStatus ?? readKisAccountReadRuntimeStatus)());
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
+export function handleKisAccountReadStopRequest(request, response, next, dependencies = {}) {
+  (dependencies.requireAdminAccess ?? requireAdminAccess)(request, response, () => {
+    try {
+      response.json((dependencies.stopRuntime ?? stopKisAccountReadRuntime)());
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
+router.post("/scalping-kis-account-read/start", handleKisAccountReadStartRequest);
+router.get("/scalping-kis-account-read/status", handleKisAccountReadStatusRequest);
+router.post("/scalping-kis-account-read/stop", handleKisAccountReadStopRequest);
 
 export function handleKisHistoricalCaptureStatusRequest(request, response, next, dependencies = {}) {
   response.setHeader("Cache-Control", "no-store, max-age=0");
