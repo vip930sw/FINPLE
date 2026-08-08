@@ -5,6 +5,7 @@
 - Admin-only routes: `POST .../start`, `GET .../status`, `POST .../stop`.
 - Start requires the genuine, one-time `requireAdminStartAccess` proof.
 - `FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED` is dedicated to this capability and defaults to disabled.
+- Phase 2C-1B runtime execution is fixed to the paper environment; the executable provider contract is `VTTS3012R` only.
 - The runner fixes the request to one `USD` / `NASD` read through the Phase 2C-0 builder and normalizer.
 
 ## Runtime contract
@@ -18,5 +19,7 @@
 ## Delivery state
 
 Phase 2C-1B adds the disabled boundary and validates it with synthetic network dependencies only. It performs no KIS token or account request and changes no environment or deployment.
+
+The generic Phase 2C-0 builder retains `TTTS3012R` for a future Production phase, but this runner cannot execute it. Production live account access requires a separate approval contract and code change.
 
 Phase 2C-1C — one separately approved Staging paper account read — is not approved by this change.

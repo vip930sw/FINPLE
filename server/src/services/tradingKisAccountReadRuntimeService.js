@@ -19,6 +19,7 @@ export const KIS_ACCOUNT_READ_FEATURE_ENV = "FINPLE_TRADING_KIS_ACCOUNT_READ_ENA
 const TOKEN_PATH = "/oauth2/tokenP";
 const FIXED_EXCHANGE = "NASD";
 const FIXED_CURRENCY = "USD";
+const KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT = "paper";
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 const SAFE_FAILURE_CODES = new Set([
   "KIS_ACCOUNT_READ_ABORTED",
@@ -78,6 +79,10 @@ function assessConfiguration(env) {
     baseUrlEnv === "invalid" ? "kis_account_read_base_url_invalid" : null,
     credentialEnv !== "invalid" && baseUrlEnv !== "invalid" && credentialEnv !== baseUrlEnv
       ? "kis_account_read_environment_mismatch"
+      : null,
+    credentialEnv !== "invalid" && baseUrlEnv !== "invalid"
+      && (credentialEnv !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT || baseUrlEnv !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT)
+      ? "kis_account_read_paper_environment_required"
       : null,
   ].filter(Boolean);
   return {
@@ -143,6 +148,8 @@ function status(run = currentRun, env = process.env) {
     credentialEnvironment: config.credentialEnvironment,
     baseUrlEnvironment: config.baseUrlEnvironment,
     environmentMatch: config.environmentMatch,
+    rolloutEnvironment: KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT,
+    runtimeAuthorized: config.reasons.length === 0,
     providerIoPending: run?.providerIoPending === true,
     accessTokenRequestCount: run?.accessTokenRequestCount || 0,
     accountRequestCount: run?.accountRequestCount || 0,
@@ -200,7 +207,15 @@ function createKisAccountReadRestTransport(options = {}) {
   const appSecret = clean(options.appSecret);
   const accountId = clean(options.accountId);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch?.bind(globalThis);
-  if (!baseUrl || !trId || !appKey || !appSecret || !isKisTradingAccountIdValid(accountId) || typeof fetchImpl !== "function") {
+  if (
+    environment !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT
+    || !baseUrl
+    || !trId
+    || !appKey
+    || !appSecret
+    || !isKisTradingAccountIdValid(accountId)
+    || typeof fetchImpl !== "function"
+  ) {
     throw runtimeError("KIS_ACCOUNT_READ_TRANSPORT_CONFIGURATION_INVALID");
   }
 

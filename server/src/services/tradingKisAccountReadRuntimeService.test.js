@@ -117,26 +117,60 @@ test("feature and configuration failures are fail-closed before provider I/O", a
   }
 });
 
-test("paper and live environment pairs are accepted while mismatch is rejected", async () => {
+test("paper rollout accepts paper and blocks live configurations before provider I/O", async () => {
   const paper = fakeTransport();
   const paperResult = await startWith(paper);
   assert.equal(paperResult.credentialEnvironment, "paper");
   assert.equal(paperResult.environmentMatch, true);
+  assert.equal(paperResult.rolloutEnvironment, "paper");
+  assert.equal(paperResult.runtimeAuthorized, true);
 
   resetKisAccountReadRuntimeForTest();
-  const live = fakeTransport();
-  const liveResult = await startKisAccountReadRuntime(
-    { adminStartAuthorization: adminStartAuthorization() },
+  const cases = [
     {
-      env: paperEnv({
-        FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
-        KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
-      }),
-      transportFactory: () => live.transport,
+      FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+      KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
     },
-  );
-  assert.equal(liveResult.credentialEnvironment, "live");
-  assert.equal(liveResult.environmentMatch, true);
+    { KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live },
+    { FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live" },
+  ];
+  for (const overrides of cases) {
+    let transportCalls = 0;
+    let fetchCalls = 0;
+    const env = paperEnv(overrides);
+    const inspected = readKisAccountReadRuntimeStatus({ env });
+    if (overrides.FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT === "live"
+      && overrides.KIS_TRADING_BASE_URL === KIS_READ_ONLY_BASE_URLS.live) {
+      assert.equal(inspected.credentialEnvironment, "live");
+      assert.equal(inspected.baseUrlEnvironment, "live");
+      assert.equal(inspected.environmentMatch, true);
+      assert.equal(inspected.runtimeAuthorized, false);
+    }
+    await assert.rejects(
+      startKisAccountReadRuntime(
+        { adminStartAuthorization: adminStartAuthorization() },
+        {
+          env,
+          fetchImpl: async () => { fetchCalls += 1; },
+          transportFactory: () => { transportCalls += 1; return fakeTransport().transport; },
+        },
+      ),
+      (error) => error.code === "KIS_ACCOUNT_READ_CONFIGURATION_BLOCKED"
+        && error.details.includes("kis_account_read_paper_environment_required"),
+    );
+    assert.equal(transportCalls, 0);
+    assert.equal(fetchCalls, 0);
+  }
+});
+
+test("generic Phase 2C-0 builder retains the future live TTTS3012R contract", () => {
+  const request = buildKisOverseasBalanceRequest({
+    environment: "live",
+    accountId: secrets[0],
+    exchange: "NASD",
+    currency: "USD",
+  });
+  assert.equal(request.trId, "TTTS3012R");
 });
 
 test("only a genuine one-time admin proof can start the runtime", async () => {
