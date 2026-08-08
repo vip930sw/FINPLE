@@ -6,6 +6,7 @@ import {
   KIS_OVERSEAS_BALANCE_ENDPOINT,
   KIS_OVERSEAS_BALANCE_MAX_PAGES,
   KIS_OVERSEAS_BALANCE_TR_IDS,
+  assertKisOverseasBalanceRequestContract,
   requestKisOverseasAccountBalance,
 } from "./tradingKisOverseasAccountReadOnly.js";
 import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
@@ -191,14 +192,15 @@ async function parseJson(response, code) {
   }
 }
 
-export function createKisAccountReadRestTransport(options = {}) {
+function createKisAccountReadRestTransport(options = {}) {
   const environment = clean(options.environment).toLowerCase();
   const baseUrl = KIS_READ_ONLY_BASE_URLS[environment];
   const trId = KIS_OVERSEAS_BALANCE_TR_IDS[environment];
   const appKey = clean(options.appKey);
   const appSecret = clean(options.appSecret);
+  const accountId = clean(options.accountId);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch?.bind(globalThis);
-  if (!baseUrl || !trId || !appKey || !appSecret || typeof fetchImpl !== "function") {
+  if (!baseUrl || !trId || !appKey || !appSecret || !isKisTradingAccountIdValid(accountId) || typeof fetchImpl !== "function") {
     throw runtimeError("KIS_ACCOUNT_READ_TRANSPORT_CONFIGURATION_INVALID");
   }
 
@@ -227,13 +229,12 @@ export function createKisAccountReadRestTransport(options = {}) {
       const token = clean(accessToken);
       if (!token) throw runtimeError("KIS_ACCOUNT_READ_TOKEN_REQUIRED");
       return async ({ request, signal }) => {
-        if (
-          request?.method !== "GET"
-          || request?.path !== KIS_OVERSEAS_BALANCE_ENDPOINT
-          || request?.trId !== trId
-        ) {
-          throw runtimeError("KIS_ACCOUNT_READ_REQUEST_CONTRACT_INVALID");
-        }
+        assertKisOverseasBalanceRequestContract(request, {
+          environment,
+          accountId,
+          exchange: FIXED_EXCHANGE,
+          currency: FIXED_CURRENCY,
+        });
         const url = new URL(`${baseUrl}${KIS_OVERSEAS_BALANCE_ENDPOINT}`);
         for (const [name, value] of Object.entries(request.query || {})) url.searchParams.set(name, value);
         let response;
@@ -322,6 +323,7 @@ export async function startKisAccountReadRuntime(options = {}, dependencies = {}
     const transport = dependencies.transportFactory?.({ env, environment: config.credentialEnvironment, signal: abortController.signal })
       ?? createKisAccountReadRestTransport({
         environment: config.credentialEnvironment,
+        accountId: config.accountId,
         appKey: env[TRADING_ENV_NAMES.appKey],
         appSecret: env[TRADING_ENV_NAMES.appSecret],
         fetchImpl: dependencies.fetchImpl,

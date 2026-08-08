@@ -3,10 +3,14 @@ import process from "node:process";
 import test from "node:test";
 
 import { requireAdminStartAccess } from "../middleware/adminGuard.js";
+import {
+  assertKisOverseasBalanceRequestContract,
+  buildKisOverseasBalanceRequest,
+} from "./tradingKisOverseasAccountReadOnly.js";
 import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
+import * as accountReadRuntime from "./tradingKisAccountReadRuntimeService.js";
 import {
   KIS_ACCOUNT_READ_MAX_RUNTIME_MS,
-  createKisAccountReadRestTransport,
   readKisAccountReadRuntimeStatus,
   resetKisAccountReadRuntimeForTest,
   startKisAccountReadRuntime,
@@ -297,28 +301,28 @@ test("status is structural, redacted and contains no financial snapshot", async 
   assert.equal(result.safety.approvalKeyRequestsAllowed, false);
 });
 
-test("REST transport pins official token and account contracts with no hidden retry", async () => {
+test("private REST transport is reachable only through the genuine runtime boundary", async () => {
+  assert.equal("createKisAccountReadRestTransport" in accountReadRuntime, false);
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({ url: String(url), init });
     if (calls.length === 1) return { ok: true, json: async () => ({ access_token: secrets[3] }) };
+    if (calls.length === 2) {
+      return {
+        ok: true,
+        headers: { get: (name) => name === "tr_cont" ? "M" : "" },
+        json: async () => page({ fk200: "NEXT_FK", nk200: "NEXT_NK" }).body,
+      };
+    }
     return { ok: true, headers: { get: () => "" }, json: async () => page().body };
   };
-  const client = createKisAccountReadRestTransport({ environment: "paper", appKey: secrets[1], appSecret: secrets[2], fetchImpl });
-  const token = await client.requestAccessToken(new AbortController().signal);
-  const transport = client.accountTransport(token);
-  const response = await transport({
-    signal: new AbortController().signal,
-    request: {
-      method: "GET",
-      path: "/uapi/overseas-stock/v1/trading/inquire-balance",
-      trId: "VTTS3012R",
-      continuation: "",
-      query: { CANO: "12345678", ACNT_PRDT_CD: "01", OVRS_EXCG_CD: "NASD", TR_CRCY_CD: "USD", CTX_AREA_FK200: "", CTX_AREA_NK200: "" },
-    },
-  });
-  assert.equal(response.ok, true);
-  assert.equal(calls.length, 2);
+  const result = await startKisAccountReadRuntime(
+    { adminStartAuthorization: adminStartAuthorization() },
+    { env: paperEnv(), fetchImpl },
+  );
+  assert.equal(result.schemaAccepted, true);
+  assert.equal(result.accountRequestCount, 2);
+  assert.equal(calls.length, 3);
   assert.equal(calls[0].url, `${KIS_READ_ONLY_BASE_URLS.paper}/oauth2/tokenP`);
   assert.equal(calls[0].init.method, "POST");
   assert.deepEqual(calls[0].init.headers, { "Content-Type": "application/json", Accept: "text/plain", charset: "UTF-8" });
@@ -330,19 +334,36 @@ test("REST transport pins official token and account contracts with no hidden re
   assert.equal(calls[1].init.headers.tr_cont, "");
   assert.equal(calls[1].init.headers["Content-Type"], "application/json");
   assert.equal(calls[1].init.headers.authorization, `Bearer ${secrets[3]}`);
+  assert.equal(new URL(calls[1].url).searchParams.get("CANO"), "12345678");
+  assert.equal(new URL(calls[1].url).searchParams.get("CTX_AREA_FK200"), "");
+  assert.equal(new URL(calls[2].url).searchParams.get("CTX_AREA_FK200"), "NEXT_FK");
+  assert.equal(new URL(calls[2].url).searchParams.get("CTX_AREA_NK200"), "NEXT_NK");
+  assert.equal(calls[2].init.headers.tr_cont, "N");
+  assert.equal(JSON.stringify(result).includes("12345678"), false);
 });
 
-test("REST transport rejects arbitrary environment, path and TR ID before provider I/O", async () => {
-  let calls = 0;
-  assert.throws(
-    () => createKisAccountReadRestTransport({ environment: "arbitrary", appKey: "x", appSecret: "y", fetchImpl: async () => { calls += 1; } }),
-    { code: "KIS_ACCOUNT_READ_TRANSPORT_CONFIGURATION_INVALID" },
-  );
-  const client = createKisAccountReadRestTransport({ environment: "paper", appKey: "x", appSecret: "y", fetchImpl: async () => { calls += 1; } });
-  const transport = client.accountTransport("token");
-  await assert.rejects(
-    transport({ request: { method: "POST", path: "/arbitrary", trId: "TTTS3012R" } }),
-    { code: "KIS_ACCOUNT_READ_REQUEST_CONTRACT_INVALID" },
-  );
-  assert.equal(calls, 0);
+test("canonical request guard rejects every identity override before fetch", () => {
+  const expected = { environment: "paper", accountId: secrets[0], exchange: "NASD", currency: "USD" };
+  const initial = buildKisOverseasBalanceRequest(expected);
+  const continuation = buildKisOverseasBalanceRequest({ ...expected, continuation: { fk200: "NEXT_FK", nk200: "NEXT_NK" } });
+  assert.equal(assertKisOverseasBalanceRequestContract(initial, expected), true);
+  assert.equal(assertKisOverseasBalanceRequestContract(continuation, expected), true);
+
+  const tampered = [
+    { ...initial, query: { ...initial.query, CANO: "00000000" } },
+    { ...initial, query: { ...initial.query, ACNT_PRDT_CD: "99" } },
+    { ...initial, query: { ...initial.query, OVRS_EXCG_CD: "NYSE" } },
+    { ...initial, query: { ...initial.query, TR_CRCY_CD: "KRW" } },
+    { ...initial, query: { ...initial.query, EXTRA: "blocked" } },
+    { ...initial, query: Object.fromEntries(Object.entries(initial.query).filter(([key]) => key !== "CANO")) },
+  ];
+  let fetchCalls = 0;
+  const guardedFetch = (request) => {
+    assertKisOverseasBalanceRequestContract(request, expected);
+    fetchCalls += 1;
+  };
+  for (const request of tampered) {
+    assert.throws(() => guardedFetch(request), { code: "KIS_ACCOUNT_READ_REQUEST_CONTRACT_INVALID" });
+    assert.equal(fetchCalls, 0);
+  }
 });
