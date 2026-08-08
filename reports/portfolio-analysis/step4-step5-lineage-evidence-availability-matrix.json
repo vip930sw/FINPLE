@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "finple.step4-step5-lineage-evidence-availability.v1",
+  "reportAsOf": "2026-07-26",
+  "groups": {
+    "currentReady": 1338,
+    "directCandidate": 2323
+  },
+  "allowedStatuses": [
+    "external_evidence_required",
+    "not_applicable",
+    "present_in_repository",
+    "present_only_as_pinned_binding",
+    "referenced_but_not_preserved",
+    "unknown"
+  ],
+  "items": [
+    {
+      "key": "runtime_catalog_row",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "src/data/tickers/finple_app_candidates_v2.csv"
+      ],
+      "note": "The frozen runtime catalog row is committed."
+    },
+    {
+      "key": "metrics_overlay_row",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/metrics-overlay.json"
+      ],
+      "note": "The pinned overlay row and catalog review fields are committed."
+    },
+    {
+      "key": "monthly_index_identity",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/monthly-returns-index.json"
+      ],
+      "note": "Every ready and direct-candidate identity is in the pinned monthly index."
+    },
+    {
+      "key": "monthly_shard_rows",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/monthly-returns"
+      ],
+      "note": "The bound legacy_v1 rows are committed in 64 shards."
+    },
+    {
+      "key": "release_manifest",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/production-app-export-release.json"
+      ],
+      "note": "The Production release binding is committed."
+    },
+    {
+      "key": "source_review_manifest",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/app-preview-manifest.json"
+      ],
+      "note": "The app-export source review manifest is committed."
+    },
+    {
+      "key": "source_provider_class",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "Repository code is consistent with the documented provider class, but the exact executed provider session is not preserved."
+    },
+    {
+      "key": "collector_ref",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "Collector code exists, but the exact operator checkout used for each source run is not preserved."
+    },
+    {
+      "key": "per_identity_collector_ref",
+      "statusByGroup": {
+        "currentReady": "external_evidence_required",
+        "directCandidate": "external_evidence_required"
+      },
+      "repositoryPaths": [],
+      "note": "No per-identity collector/run receipt is committed."
+    },
+    {
+      "key": "raw_daily_bytes",
+      "statusByGroup": {
+        "currentReady": "external_evidence_required",
+        "directCandidate": "external_evidence_required"
+      },
+      "repositoryPaths": [],
+      "note": "Raw daily source bytes are intentionally outside this repository."
+    },
+    {
+      "key": "source_audit_csv",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "The source audit is referenced by runbooks but is not committed."
+    },
+    {
+      "key": "operator_run_receipt",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "No exact operator execution receipt is committed."
+    },
+    {
+      "key": "candidate_zip",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "A pinned digest does not mean the candidate ZIP bytes are present in the repository."
+    },
+    {
+      "key": "normalization_version",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/app-preview-manifest.json",
+        "public/app-data/finple-universe-v2-2026-07-24/metrics-overlay.json"
+      ],
+      "note": "The common normalization version is bound in the source review manifest and overlay."
+    },
+    {
+      "key": "calculation_version",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/app-preview-manifest.json"
+      ],
+      "note": "The calculation policy version is bound in the source review manifest."
+    },
+    {
+      "key": "direct_non_proxy_row_fields",
+      "statusByGroup": {
+        "currentReady": "referenced_but_not_preserved",
+        "directCandidate": "referenced_but_not_preserved"
+      },
+      "repositoryPaths": [],
+      "note": "legacy_v1 rows do not carry explicit row-level isProxy=false or direct-lineage fields."
+    },
+    {
+      "key": "review_decision",
+      "statusByGroup": {
+        "currentReady": "present_in_repository",
+        "directCandidate": "present_in_repository"
+      },
+      "repositoryPaths": [
+        "public/app-data/finple-universe-v2-2026-07-24/metrics-overlay.json"
+      ],
+      "note": "Current catalog review fields are committed; direct candidates remain unapproved review triggers."
+    },
+    {
+      "key": "previous_release_binding",
+      "statusByGroup": {
+        "currentReady": "present_only_as_pinned_binding",
+        "directCandidate": "present_only_as_pinned_binding"
+      },
+      "repositoryPaths": [],
+      "note": "The exact current legacy binding is present, but a reusable previous-release inheritance receipt is not."
+    }
+  ]
+}
