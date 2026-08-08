@@ -321,10 +321,14 @@ test("REST transport pins official token and account contracts with no hidden re
   assert.equal(calls.length, 2);
   assert.equal(calls[0].url, `${KIS_READ_ONLY_BASE_URLS.paper}/oauth2/tokenP`);
   assert.equal(calls[0].init.method, "POST");
+  assert.deepEqual(calls[0].init.headers, { "Content-Type": "application/json", Accept: "text/plain", charset: "UTF-8" });
   assert.deepEqual(JSON.parse(calls[0].init.body), { grant_type: "client_credentials", appkey: secrets[1], appsecret: secrets[2] });
   assert.equal(new URL(calls[1].url).pathname, "/uapi/overseas-stock/v1/trading/inquire-balance");
   assert.equal(calls[1].init.method, "GET");
   assert.equal(calls[1].init.headers.tr_id, "VTTS3012R");
+  assert.equal(calls[1].init.headers.custtype, "P");
+  assert.equal(calls[1].init.headers.tr_cont, "");
+  assert.equal(calls[1].init.headers["Content-Type"], "application/json");
   assert.equal(calls[1].init.headers.authorization, `Bearer ${secrets[3]}`);
 });
 

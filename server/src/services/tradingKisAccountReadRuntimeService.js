@@ -208,7 +208,7 @@ export function createKisAccountReadRestTransport(options = {}) {
       try {
         response = await fetchImpl(`${baseUrl}${TOKEN_PATH}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "text/plain" },
+          headers: { "Content-Type": "application/json", Accept: "text/plain", charset: "UTF-8" },
           body: JSON.stringify({ grant_type: "client_credentials", appkey: appKey, appsecret: appSecret }),
           signal,
         });
@@ -241,10 +241,14 @@ export function createKisAccountReadRestTransport(options = {}) {
           response = await fetchImpl(url, {
             method: "GET",
             headers: {
+              "Content-Type": "application/json",
+              Accept: "text/plain",
+              charset: "UTF-8",
               authorization: `Bearer ${token}`,
               appkey: appKey,
               appsecret: appSecret,
               tr_id: trId,
+              custtype: "P",
               tr_cont: request.continuation,
             },
             signal,
