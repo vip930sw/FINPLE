@@ -2,6 +2,12 @@ import process from "node:process";
 
 import { consumeAdminStartAuthorization } from "../middleware/adminGuard.js";
 import {
+  KIS_ACCOUNT_LIVE_READ_FEATURE_ENV,
+  assessKisAccountLiveReadApproval,
+  createKisAccountLiveReadAccessDecision,
+  isKisAccountLiveReadAccessDecisionValid,
+} from "./tradingKisAccountLiveReadApproval.js";
+import {
   KIS_OVERSEAS_ACCOUNT_READ_ONLY_SCOPE,
   KIS_OVERSEAS_BALANCE_ENDPOINT,
   KIS_OVERSEAS_BALANCE_MAX_PAGES,
@@ -19,7 +25,8 @@ export const KIS_ACCOUNT_READ_FEATURE_ENV = "FINPLE_TRADING_KIS_ACCOUNT_READ_ENA
 const TOKEN_PATH = "/oauth2/tokenP";
 const FIXED_EXCHANGE = "NASD";
 const FIXED_CURRENCY = "USD";
-const KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT = "paper";
+const PAPER_ENVIRONMENT = "paper";
+const LIVE_ENVIRONMENT = "live";
 const TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 const SAFE_FAILURE_CODES = new Set([
   "KIS_ACCOUNT_READ_ABORTED",
@@ -29,6 +36,7 @@ const SAFE_FAILURE_CODES = new Set([
   "KIS_ACCOUNT_READ_TOKEN_REQUIRED",
   "KIS_ACCOUNT_READ_PROVIDER_REQUEST_FAILED",
   "KIS_ACCOUNT_READ_PROVIDER_SCHEMA_INVALID",
+  "KIS_ACCOUNT_READ_LIVE_ACCESS_REQUIRED",
   "KIS_ACCOUNT_READ_REQUEST_CONTRACT_INVALID",
   "KIS_ACCOUNT_REQUEST_ABORTED",
   "KIS_ACCOUNT_PROVIDER_REQUEST_FAILED",
@@ -49,8 +57,12 @@ function clean(value) {
   return String(value ?? "").trim();
 }
 
-function featureEnabled(env) {
+function paperFeatureEnabled(env) {
   return TRUE_VALUES.has(clean(env[KIS_ACCOUNT_READ_FEATURE_ENV]).toLowerCase());
+}
+
+function liveFeatureEnabled(env) {
+  return TRUE_VALUES.has(clean(env[KIS_ACCOUNT_LIVE_READ_FEATURE_ENV]).toLowerCase());
 }
 
 function credentialEnvironment(env) {
@@ -65,12 +77,17 @@ function baseUrlEnvironment(env) {
   return "invalid";
 }
 
-function assessConfiguration(env) {
+function assessConfiguration(env, nowMs = Date.now()) {
   const accountId = clean(env[TRADING_ENV_NAMES.accountId]);
   const credentialEnv = credentialEnvironment(env);
   const baseUrlEnv = baseUrlEnvironment(env);
+  const rolloutMode = credentialEnv !== "invalid" && credentialEnv === baseUrlEnv
+    ? credentialEnv
+    : "invalid";
+  const liveApproval = assessKisAccountLiveReadApproval({}, { env, accountId, nowMs });
+  const paperEnabled = paperFeatureEnabled(env);
+  const liveEnabled = liveFeatureEnabled(env);
   const reasons = [
-    featureEnabled(env) ? null : "kis_account_read_feature_flag_disabled",
     accountId ? null : "kis_account_read_account_required",
     accountId && !isKisTradingAccountIdValid(accountId) ? "kis_account_read_account_invalid" : null,
     clean(env[TRADING_ENV_NAMES.appKey]) ? null : "kis_account_read_app_key_required",
@@ -80,10 +97,9 @@ function assessConfiguration(env) {
     credentialEnv !== "invalid" && baseUrlEnv !== "invalid" && credentialEnv !== baseUrlEnv
       ? "kis_account_read_environment_mismatch"
       : null,
-    credentialEnv !== "invalid" && baseUrlEnv !== "invalid"
-      && (credentialEnv !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT || baseUrlEnv !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT)
-      ? "kis_account_read_paper_environment_required"
-      : null,
+    rolloutMode === PAPER_ENVIRONMENT && !paperEnabled ? "kis_account_read_feature_flag_disabled" : null,
+    rolloutMode === LIVE_ENVIRONMENT && !liveEnabled ? "kis_account_read_live_feature_flag_disabled" : null,
+    ...(rolloutMode === LIVE_ENVIRONMENT ? liveApproval.reasons : []),
   ].filter(Boolean);
   return {
     accountId,
@@ -92,6 +108,10 @@ function assessConfiguration(env) {
     credentialEnvironment: credentialEnv,
     baseUrlEnvironment: baseUrlEnv,
     environmentMatch: credentialEnv !== "invalid" && credentialEnv === baseUrlEnv,
+    rolloutMode,
+    paperFeatureEnabled: paperEnabled,
+    liveFeatureEnabled: liveEnabled,
+    liveApproval,
     reasons,
   };
 }
@@ -131,9 +151,12 @@ function finish(run, reason) {
   transition(run, "STOPPED");
 }
 
-function status(run = currentRun, env = process.env) {
-  const config = assessConfiguration(env);
+function status(run = currentRun, env = process.env, nowMs = Date.now()) {
+  const config = assessConfiguration(env, nowMs);
   const active = Boolean(run && !run.finished);
+  const enabled = config.rolloutMode === LIVE_ENVIRONMENT
+    ? config.liveFeatureEnabled
+    : config.rolloutMode === PAPER_ENVIRONMENT && config.paperFeatureEnabled;
   return {
     ok: true,
     version: KIS_ACCOUNT_READ_RUNTIME_VERSION,
@@ -141,14 +164,24 @@ function status(run = currentRun, env = process.env) {
     state: run?.state || "IDLE",
     lifecycle: run ? [...run.lifecycle] : ["IDLE"],
     active,
-    featureEnabled: featureEnabled(env),
-    accountReadEnabled: featureEnabled(env),
+    featureEnabled: enabled,
+    accountReadEnabled: enabled,
+    paperFeatureEnabled: config.paperFeatureEnabled,
+    liveFeatureEnabled: config.liveFeatureEnabled,
     accountConfigured: config.accountConfigured,
     accountFormatValid: config.accountFormatValid,
     credentialEnvironment: config.credentialEnvironment,
     baseUrlEnvironment: config.baseUrlEnvironment,
     environmentMatch: config.environmentMatch,
-    rolloutEnvironment: KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT,
+    rolloutEnvironment: config.rolloutMode,
+    rolloutMode: config.rolloutMode,
+    liveApprovalReady: config.liveApproval.ready,
+    liveApprovalReasonCount: config.liveApproval.reasons.length,
+    liveApprovalActive: config.liveApproval.approvalActive,
+    liveApprovalScopeMatch: config.liveApproval.scopeMatch,
+    liveApprovalEnvironmentMatch: config.liveApproval.environmentMatch,
+    liveApprovalBaseUrlMatch: config.liveApproval.baseUrlMatch,
+    liveApprovalAccountBindingMatch: config.liveApproval.accountBindingMatch,
     runtimeAuthorized: config.reasons.length === 0,
     providerIoPending: run?.providerIoPending === true,
     accessTokenRequestCount: run?.accessTokenRequestCount || 0,
@@ -207,8 +240,14 @@ function createKisAccountReadRestTransport(options = {}) {
   const appSecret = clean(options.appSecret);
   const accountId = clean(options.accountId);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch?.bind(globalThis);
+  if (environment === LIVE_ENVIRONMENT && !isKisAccountLiveReadAccessDecisionValid(
+    options.liveAccessDecision,
+    { accountId, nowMs: options.nowMs },
+  )) {
+    throw runtimeError("KIS_ACCOUNT_READ_LIVE_ACCESS_REQUIRED");
+  }
   if (
-    environment !== KIS_ACCOUNT_READ_ROLLOUT_ENVIRONMENT
+    (environment !== PAPER_ENVIRONMENT && environment !== LIVE_ENVIRONMENT)
     || !baseUrl
     || !trId
     || !appKey
@@ -281,13 +320,10 @@ function createKisAccountReadRestTransport(options = {}) {
 }
 
 export function readKisAccountReadRuntimeStatus(options = {}) {
-  return status(currentRun, options.env ?? process.env);
+  return status(currentRun, options.env ?? process.env, options.nowMs);
 }
 
 export async function startKisAccountReadRuntime(options = {}, dependencies = {}) {
-  if (!consumeAdminStartAuthorization(options.adminStartAuthorization)) {
-    throw runtimeError("KIS_ADMIN_START_AUTHORIZATION_REQUIRED", ["authenticated_admin_start_required"], 403);
-  }
   if (currentRun && !currentRun.finished) {
     throw runtimeError("KIS_ACCOUNT_READ_ALREADY_ACTIVE", ["kis_account_read_single_flight_required"]);
   }
@@ -296,12 +332,31 @@ export async function startKisAccountReadRuntime(options = {}, dependencies = {}
   }
 
   const env = dependencies.env ?? process.env;
-  const config = assessConfiguration(env);
+  const now = dependencies.now ?? Date.now;
+  const config = assessConfiguration(env, now());
+  let liveAccessDecision = null;
+  if (config.rolloutMode === LIVE_ENVIRONMENT) {
+    const mintedDecision = createKisAccountLiveReadAccessDecision(
+      config.liveApproval,
+      options.adminStartAuthorization,
+    );
+    if (!mintedDecision) {
+      throw runtimeError("KIS_ADMIN_START_AUTHORIZATION_REQUIRED", ["authenticated_admin_start_required"], 403);
+    }
+    liveAccessDecision = dependencies.liveAccessDecision ?? mintedDecision;
+  } else if (!consumeAdminStartAuthorization(options.adminStartAuthorization)) {
+    throw runtimeError("KIS_ADMIN_START_AUTHORIZATION_REQUIRED", ["authenticated_admin_start_required"], 403);
+  }
   if (config.reasons.length > 0) {
     throw runtimeError("KIS_ACCOUNT_READ_CONFIGURATION_BLOCKED", config.reasons);
   }
+  if (config.rolloutMode === LIVE_ENVIRONMENT && !isKisAccountLiveReadAccessDecisionValid(
+    liveAccessDecision,
+    { accountId: config.accountId, nowMs: now() },
+  )) {
+    throw runtimeError("KIS_ACCOUNT_READ_LIVE_ACCESS_REQUIRED", ["kis_account_read_live_approval_required"]);
+  }
 
-  const now = dependencies.now ?? Date.now;
   const setTimeoutImpl = dependencies.setTimeoutImpl ?? setTimeout;
   const clearTimeoutImpl = dependencies.clearTimeoutImpl ?? clearTimeout;
   const abortController = new AbortController();
@@ -342,7 +397,10 @@ export async function startKisAccountReadRuntime(options = {}, dependencies = {}
         appKey: env[TRADING_ENV_NAMES.appKey],
         appSecret: env[TRADING_ENV_NAMES.appSecret],
         fetchImpl: dependencies.fetchImpl,
+        liveAccessDecision,
+        nowMs: now(),
       });
+    if (config.rolloutMode === LIVE_ENVIRONMENT) transition(run, "LIVE_APPROVAL_VALIDATED");
     transition(run, "TOKEN_REQUESTING");
     run.accessTokenRequestCount = 1;
     const accessToken = await transport.requestAccessToken(abortController.signal);
