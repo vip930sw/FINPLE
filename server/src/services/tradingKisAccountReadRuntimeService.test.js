@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import process from "node:process";
 import test from "node:test";
 
@@ -8,6 +9,11 @@ import {
   buildKisOverseasBalanceRequest,
 } from "./tradingKisOverseasAccountReadOnly.js";
 import { KIS_READ_ONLY_BASE_URLS } from "./tradingKisReadOnlyApproval.js";
+import {
+  KIS_ACCOUNT_LIVE_READ_ENVIRONMENT,
+  KIS_ACCOUNT_LIVE_READ_SCOPE,
+  REQUIRED_KIS_ACCOUNT_LIVE_READ_FORBIDDEN_ACTIONS,
+} from "./tradingKisAccountLiveReadApproval.js";
 import * as accountReadRuntime from "./tradingKisAccountReadRuntimeService.js";
 import {
   KIS_ACCOUNT_READ_MAX_RUNTIME_MS,
@@ -44,6 +50,33 @@ function paperEnv(overrides = {}) {
     KIS_TRADING_ACCOUNT_ID: secrets[0],
     KIS_TRADING_APP_KEY: secrets[1],
     KIS_TRADING_APP_SECRET: secrets[2],
+    ...overrides,
+  };
+}
+
+function liveEnv(overrides = {}) {
+  return {
+    FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "true",
+    FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
+    KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+    KIS_TRADING_ACCOUNT_ID: secrets[0],
+    KIS_TRADING_APP_KEY: secrets[1],
+    KIS_TRADING_APP_SECRET: secrets[2],
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVAL_ID: "synthetic-approval",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVED_BY: "synthetic-operator",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVED_AT: "2026-08-07T00:00:00.000Z",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_EXPIRES_AT: "2026-08-30T00:00:00.000Z",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_SCOPE: KIS_ACCOUNT_LIVE_READ_SCOPE,
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENVIRONMENT: KIS_ACCOUNT_LIVE_READ_ENVIRONMENT,
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ACCOUNT_ID_HASH: createHash("sha256")
+      .update(secrets[0], "utf8").digest("hex"),
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_FORBIDDEN_ACTIONS:
+      REQUIRED_KIS_ACCOUNT_LIVE_READ_FORBIDDEN_ACTIONS.join(","),
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_EVIDENCE_TICKET: "synthetic-evidence",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_REVOCATION_PLAN: "synthetic-revocation",
+    FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_REDACTION_VERSION: "v1",
     ...overrides,
   };
 }
@@ -117,7 +150,7 @@ test("feature and configuration failures are fail-closed before provider I/O", a
   }
 });
 
-test("paper rollout accepts paper and blocks live configurations before provider I/O", async () => {
+test("paper rollout remains unchanged and live configurations stay closed by default", async () => {
   const paper = fakeTransport();
   const paperResult = await startWith(paper);
   assert.equal(paperResult.credentialEnvironment, "paper");
@@ -127,14 +160,14 @@ test("paper rollout accepts paper and blocks live configurations before provider
 
   resetKisAccountReadRuntimeForTest();
   const cases = [
-    {
+    [{
       FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live",
       KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live,
-    },
-    { KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live },
-    { FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live" },
+    }, "kis_account_read_live_feature_flag_disabled"],
+    [{ KIS_TRADING_BASE_URL: KIS_READ_ONLY_BASE_URLS.live }, "kis_account_read_environment_mismatch"],
+    [{ FINPLE_TRADING_KIS_CREDENTIAL_ENVIRONMENT: "live" }, "kis_account_read_environment_mismatch"],
   ];
-  for (const overrides of cases) {
+  for (const [overrides, reason] of cases) {
     let transportCalls = 0;
     let fetchCalls = 0;
     const env = paperEnv(overrides);
@@ -156,10 +189,60 @@ test("paper rollout accepts paper and blocks live configurations before provider
         },
       ),
       (error) => error.code === "KIS_ACCOUNT_READ_CONFIGURATION_BLOCKED"
-        && error.details.includes("kis_account_read_paper_environment_required"),
+        && error.details.includes(reason),
     );
     assert.equal(transportCalls, 0);
     assert.equal(fetchCalls, 0);
+  }
+});
+
+test("live rollout requires its dedicated flag and every approval gate before provider I/O", async () => {
+  const productionLike = readKisAccountReadRuntimeStatus({
+    env: liveEnv({
+      FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "",
+      FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "",
+    }),
+    nowMs: Date.parse("2026-08-08T00:00:00.000Z"),
+  });
+  assert.equal(productionLike.rolloutMode, "live");
+  assert.equal(productionLike.paperFeatureEnabled, false);
+  assert.equal(productionLike.liveFeatureEnabled, false);
+  assert.equal(productionLike.runtimeAuthorized, false);
+  assert.equal(productionLike.active, false);
+  assert.equal(productionLike.providerIoPending, false);
+
+  const cases = [
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "", FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "" }, "kis_account_read_live_feature_flag_disabled"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "true", FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "" }, "kis_account_read_live_feature_flag_disabled"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVAL_ID: "" }, "kis_account_read_live_approval_required"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVED_AT: "invalid" }, "kis_account_read_live_approved_at_invalid"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_APPROVED_AT: "2026-08-09T00:00:00.000Z" }, "kis_account_read_live_approval_inactive"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_EXPIRES_AT: "2026-08-07T00:00:00.000Z" }, "kis_account_read_live_approval_expired"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_SCOPE: "trading_read_only_market_data" }, "kis_account_read_live_scope_mismatch"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENVIRONMENT: "virtual_shadow" }, "kis_account_read_live_environment_mismatch"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_BASE_URL: KIS_READ_ONLY_BASE_URLS.paper }, "kis_account_read_live_base_url_mismatch"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ACCOUNT_ID_HASH: "mismatch" }, "kis_account_read_live_account_binding_mismatch"],
+    [{ FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_FORBIDDEN_ACTIONS: "order_submission" }, "kis_account_read_live_forbidden_actions_incomplete"],
+  ];
+  for (const [overrides, reason] of cases) {
+    let transportCalls = 0;
+    let fetchCalls = 0;
+    const env = liveEnv(overrides);
+    await assert.rejects(
+      startKisAccountReadRuntime(
+        { adminStartAuthorization: adminStartAuthorization() },
+        {
+          env,
+          now: () => Date.parse("2026-08-08T00:00:00.000Z"),
+          fetchImpl: async () => { fetchCalls += 1; },
+          transportFactory: () => { transportCalls += 1; return fakeTransport().transport; },
+        },
+      ),
+      (error) => error.code === "KIS_ACCOUNT_READ_CONFIGURATION_BLOCKED" && error.details.includes(reason),
+    );
+    assert.equal(transportCalls, 0);
+    assert.equal(fetchCalls, 0);
+    resetKisAccountReadRuntimeForTest();
   }
 });
 
@@ -171,6 +254,104 @@ test("generic Phase 2C-0 builder retains the future live TTTS3012R contract", ()
     currency: "USD",
   });
   assert.equal(request.trId, "TTTS3012R");
+});
+
+test("the live flag cannot authorize paper and the paper flag cannot authorize live", async () => {
+  for (const [env, reason] of [
+    [paperEnv({ FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "", FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "true" }), "kis_account_read_feature_flag_disabled"],
+    [liveEnv({ FINPLE_TRADING_KIS_ACCOUNT_READ_ENABLED: "true", FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ENABLED: "" }), "kis_account_read_live_feature_flag_disabled"],
+  ]) {
+    let providerCalls = 0;
+    await assert.rejects(
+      startKisAccountReadRuntime(
+        { adminStartAuthorization: adminStartAuthorization() },
+        {
+          env,
+          now: () => Date.parse("2026-08-08T00:00:00.000Z"),
+          transportFactory: () => { providerCalls += 1; return fakeTransport().transport; },
+        },
+      ),
+      (error) => error.code === "KIS_ACCOUNT_READ_CONFIGURATION_BLOCKED" && error.details.includes(reason),
+    );
+    assert.equal(providerCalls, 0);
+    resetKisAccountReadRuntimeForTest();
+  }
+});
+
+test("a synthetic approved live run uses TTTS3012R and finishes without persistence", async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (calls.length === 1) return { ok: true, json: async () => ({ access_token: secrets[3] }) };
+    return { ok: true, headers: { get: () => "" }, json: async () => page().body };
+  };
+  const result = await startKisAccountReadRuntime(
+    { adminStartAuthorization: adminStartAuthorization() },
+    {
+      env: liveEnv(),
+      now: () => Date.parse("2026-08-08T00:00:00.000Z"),
+      fetchImpl,
+    },
+  );
+  assert.deepEqual(result.lifecycle, [
+    "AUTHORIZED",
+    "LIVE_APPROVAL_VALIDATED",
+    "TOKEN_REQUESTING",
+    "TOKEN_READY",
+    "ACCOUNT_READING",
+    "ACCOUNT_VALIDATED",
+    "STOPPED",
+  ]);
+  assert.equal(result.rolloutMode, "live");
+  assert.equal(result.liveApprovalReady, true);
+  assert.equal(result.liveApprovalReasonCount, 0);
+  assert.equal(result.liveApprovalActive, true);
+  assert.equal(result.liveApprovalScopeMatch, true);
+  assert.equal(result.liveApprovalEnvironmentMatch, true);
+  assert.equal(result.liveApprovalBaseUrlMatch, true);
+  assert.equal(result.liveApprovalAccountBindingMatch, true);
+  assert.equal(result.runtimeAuthorized, true);
+  assert.equal(result.accessTokenRequestCount, 1);
+  assert.equal(result.accountRequestCount, 1);
+  assert.equal(result.schemaAccepted, true);
+  assert.equal(result.rawStored, false);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, `${KIS_READ_ONLY_BASE_URLS.live}/oauth2/tokenP`);
+  assert.equal(new URL(calls[1].url).pathname, "/uapi/overseas-stock/v1/trading/inquire-balance");
+  assert.equal(calls[1].init.headers.tr_id, "TTTS3012R");
+  assert.equal(new URL(calls[1].url).searchParams.get("OVRS_EXCG_CD"), "NASD");
+  assert.equal(new URL(calls[1].url).searchParams.get("TR_CRCY_CD"), "USD");
+  const serialized = JSON.stringify(result);
+  for (const hidden of [
+    secrets[0],
+    secrets[1],
+    secrets[2],
+    secrets[3],
+    liveEnv().FINPLE_TRADING_KIS_ACCOUNT_READ_LIVE_ACCOUNT_ID_HASH,
+    "synthetic-approval",
+    "synthetic-operator",
+    "synthetic-evidence",
+  ]) assert.equal(serialized.includes(hidden), false);
+});
+
+test("a forged live access decision fails before transport or fetch", async () => {
+  let transportCalls = 0;
+  let fetchCalls = 0;
+  await assert.rejects(
+    startKisAccountReadRuntime(
+      { adminStartAuthorization: adminStartAuthorization() },
+      {
+        env: liveEnv(),
+        now: () => Date.parse("2026-08-08T00:00:00.000Z"),
+        liveAccessDecision: {},
+        fetchImpl: async () => { fetchCalls += 1; },
+        transportFactory: () => { transportCalls += 1; return fakeTransport().transport; },
+      },
+    ),
+    { code: "KIS_ACCOUNT_READ_LIVE_ACCESS_REQUIRED" },
+  );
+  assert.equal(transportCalls, 0);
+  assert.equal(fetchCalls, 0);
 });
 
 test("only a genuine one-time admin proof can start the runtime", async () => {
